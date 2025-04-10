@@ -17,6 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
+          - ubuntu-latest
           - ubuntu-20.04
           - windows-latest
         sm_version:
@@ -32,9 +33,12 @@ jobs:
             
           - os: windows-latest
             os_short: win
-            
-          - os: ubuntu-20.04
+
+          - os: ubuntu-latest
             os_short: linux
+
+          - os: ubuntu-20.04
+            os_short: linux-debian11
             
     steps:
       - name: Prepare env
