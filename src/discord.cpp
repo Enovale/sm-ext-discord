@@ -26,7 +26,7 @@ bool DiscordClient::Initialize()
 void DiscordClient::RunBot()
 {
 	try {
-		m_cluster->start(false);
+		m_cluster->start(dpp::st_wait);
 	}
 	catch (const std::exception& e) {
 		g_TaskQueue.Push([this, error = std::string(e.what())]() {
