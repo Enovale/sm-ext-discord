@@ -1,0 +1,37 @@
+# vim: sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os
+import glob
+
+builder.SetBuildFolder('DPP')
+dppPath = os.path.join(builder.sourcePath, 'third_party', 'DPP');
+dppSrcPath = os.path.join(dppPath, 'src', 'dpp');
+
+rvalue = {}
+for cxx in builder.targets:
+  binary = Extension.StaticLibrary(builder, cxx, 'DPP')
+
+  binary.compiler.defines += [
+    'HAVE_EPOLL=ON',
+    'DPP_NO_CORO=ON'
+  ]
+
+  binary.compiler.cflags += [
+    '-fpermissive',
+    '-Wmismatched-tags'
+  ]
+
+  if binary.compiler.target.platform == 'linux':
+    binary.compiler.includes += [
+      os.path.join(dppPath, 'include'),
+      "/usr/include"
+    ]
+    binary.compiler.includes += glob.glob(f'{dppPath}/**/*.h', recursive=True)
+
+  # from DPP CMakeLists.txt
+  binary.sources += glob.glob(f'{dppSrcPath}/*.cpp', recursive=False)
+  binary.sources += glob.glob(f'{dppSrcPath}/socketengines/epoll.cpp', recursive=False)
+  binary.sources += glob.glob(f'{dppSrcPath}/cluster/*.cpp', recursive=False)
+  binary.sources += glob.glob(f'{dppSrcPath}/events/*.cpp', recursive=False)
+  binary.sources += [os.path.join(dppSrcPath, 'voice', 'stub', 'stubs.cpp')]
+
+  rvalue[binary.compiler.target.arch] = builder.Add(binary)

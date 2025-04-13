@@ -2,7 +2,7 @@
 import os
 
 if builder.host.platform == 'linux':
-  dpp = builder.Build('third_party/DPP/src/dpp/AMBuilder')
+  dpp = builder.Build('third_party/AMBuilder')
 
 for cxx in builder.targets:
   binary = Extension.Library(builder, cxx, 'discord.ext')
