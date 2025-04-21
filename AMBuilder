@@ -1,9 +1,6 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
-if builder.host.platform == 'linux':
-  dpp = builder.Build('third_party/AMBuilder')
-
 for cxx in builder.targets:
   binary = Extension.Library(builder, cxx, 'discord.ext')
   arch = binary.compiler.target.arch
@@ -23,7 +20,7 @@ for cxx in builder.targets:
     binary.compiler.postlink += [
       '-lz',
       '-lssl',
-      dpp[arch].binary,
+      os.path.join(builder.sourcePath, 'third_party', 'DPP', 'build', 'library', 'libdppstatic.a')
     ]
   elif binary.compiler.target.platform == 'windows':
     binary.compiler.postlink += [
