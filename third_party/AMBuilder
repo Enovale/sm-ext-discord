@@ -15,11 +15,6 @@ for cxx in builder.targets:
     'DPP_NO_CORO=ON'
   ]
 
-  binary.compiler.cflags += [
-    '-fpermissive',
-    '-Wmismatched-tags'
-  ]
-
   if binary.compiler.target.platform == 'linux':
     binary.compiler.includes += [
       os.path.join(dppPath, 'include'),
