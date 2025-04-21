@@ -46,7 +46,17 @@ enum DiscordActivityType
  */
 typeset GetChannelCallback
 {
-	function void (Discord discord, DiscordChannel channel, any data);
+  function void (Discord discord, DiscordChannel channel, any data);
+};
+
+typeset GetChannelWebhooksCallback
+{
+  function void (Discord discord, DiscordWebhook[] webhookMap, float count, any data);
+};
+
+typeset CreateWebhookCallback
+{
+  function void (Discord discord, DiscordWebhook webhook, any data);
 };
 
 /**
@@ -129,6 +139,46 @@ methodmap Discord < Handle {
   public native bool SetPresence(DiscordPresenceStatus status, DiscordActivityType activity, const char[] statusText);
 
   /**
+   * Executes the given webhook with a message
+   *
+   * @param wh        Target webhook
+   * @param message   Message content to send
+   * @return          true on success, false on failure
+   */
+  public native bool ExecuteWebhook(DiscordWebhook wh, const char[] message);
+
+  /**
+   * Creates a webhook for a channel
+   *
+   * @param channelId Target channel ID
+   * @param name      Name of the webhook to be created
+   * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
+   * @return          true on success, false on failure
+   */
+  public native bool CreateWebhook(const char[] channelId, const char[] name, CreateWebhookCallback callback, any data = 0);
+
+  /**
+   * Gets all webhooks assigned to a channel
+   *
+   * @param channelId Target channel ID
+   * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
+   * @return          true on success, false on failure
+   */
+  public native bool GetChannelWebhooks(const char[] channelId, GetChannelWebhooksCallback callback, any data = 0);
+
+  /**
+   * Gets a channel by it's ID
+   *
+   * @param channelId Target channel ID
+   * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
+   * @return          true on success, false on failure
+   */
+  public native bool GetChannel(const char[] channelId, GetChannelCallback callback, any data = 0);
+
+  /**
    * Sends a message to a specified channel
    *
    * @param channelId Target channel ID (numeric string)
@@ -146,16 +196,6 @@ methodmap Discord < Handle {
    * @return          true on success, false on failure
    */
   public native bool SendMessageEmbed(const char[] channelId, const char[] message, DiscordEmbed embed);
-
-  /**
-   * Gets a channel by it's ID
-   *
-   * @param channelId Target channel ID
-   * @param callback  Method to run on success
-   * @param data      Arbitrary value to pass to the callback
-   * @return          true on success, false on failure
-   */
-  public native bool GetChannel(const char[] channelId, GetChannelCallback callback, any data = 0);
 
   /**
    * Edits an existing message
@@ -268,6 +308,20 @@ methodmap Discord < Handle {
 }
 
 /**
+ * Discord user handle
+ */
+methodmap DiscordUser < Handle
+{
+  /**
+   * Gets the ID of the user
+   *
+   * @param buffer      Buffer to store the ID
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetId(char[] buffer, int maxlength);
+}
+
+/**
  * Discord message handle
  */
 methodmap DiscordMessage < Handle
@@ -321,6 +375,22 @@ methodmap DiscordMessage < Handle
   public native void GetAuthorName(char[] buffer, int maxlength);
 
   /**
+   * Gets the global display name of the message author
+   *
+   * @param buffer      Buffer to store the display name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAuthorDisplayName(char[] buffer, int maxlength);
+
+  /**
+   * Gets the nickname of the message author within the guild this message was sent in
+   *
+   * @param buffer      Buffer to store the author nickname
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAuthorNickname(char[] buffer, int maxlength);
+
+  /**
    * Gets the discriminator of the message author
    *
    * @param buffer      Buffer to store the discriminator
@@ -369,6 +439,63 @@ methodmap DiscordChannel < Handle
    * @param maxlength   Maximum length of the buffer
    */
   public native void GetName(char[] buffer, int maxlength);
+}
+
+/**
+ * Discord webhook handle
+ */
+methodmap DiscordWebhook < Handle
+{
+  /**
+   * Creates a new Discord Webhook
+   *
+   * @param webhookUrl Webhook Url
+   * @return           New Discord webhook handle, or INVALID_HANDLE on failure
+   */
+  public native DiscordWebhook(const char[] webhookUrl);
+
+  /**
+   * Gets the ID of the webhook
+   *
+   * @param buffer      Buffer to store the ID
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetId(char[] buffer, int maxlength);
+
+  /**
+   * Gets the user that created the webhook
+   */
+  public native DiscordUser GetUser();
+
+  /**
+   * Gets the name of the webhook
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetName(char[] buffer, int maxlength);
+
+  /**
+   * Sets the name of the webhook
+   *
+   * @param name		New string to set the name to
+   */
+  public native void SetName(char[] name);
+
+  /**
+   * Gets the avatar_url of the webhook
+   *
+   * @param buffer      Buffer to store the url
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAvatarUrl(char[] buffer, int maxlength);
+
+  /**
+   * Sets the avatar_url of the webhook
+   *
+   * @param name		New string to set the avatar_url to
+   */
+  public native void SetAvatarUrl(char[] avatarUrl);
 }
 
 /**

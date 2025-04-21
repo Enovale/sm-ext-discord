@@ -30,6 +30,17 @@ public:
 	const dpp::embed& GetEmbed() const { return m_embed; }
 };
 
+class DiscordUser
+{
+private:
+	dpp::user m_user;
+
+public:
+	DiscordUser(const dpp::user& user) : m_user(user) {}
+
+	std::string GetId() const { return std::to_string(m_user.id); }
+};
+
 class DiscordMessage
 {
 private:
@@ -44,6 +55,8 @@ public:
 	std::string GetGuildId() const { return std::to_string(m_message.guild_id); }
 	std::string GetAuthorId() const { return std::to_string(m_message.author.id); }
 	const char* GetAuthorName() const { return m_message.author.username.c_str(); }
+	const char* GetAuthorDisplayName() const { return m_message.author.global_name.c_str(); }
+	const char* GetAuthorNickname() const { return m_message.member.get_nickname().c_str(); }
 	const uint16_t GetAuthorDiscriminator() const { return m_message.author.discriminator; }
 	bool IsPinned() const { return m_message.pinned; }
 	bool IsTTS() const { return m_message.tts; }
@@ -60,6 +73,25 @@ public:
 	DiscordChannel(const dpp::channel& chnl) : m_channel(chnl) {}
 
 	const char* GetName() const { return m_channel.name.c_str(); }
+};
+
+class DiscordWebhook
+{
+public:
+	dpp::webhook m_webhook;
+	DiscordWebhook(const dpp::webhook& wbhk) : m_webhook(wbhk) {m_webhook.avatar = dpp::utility::iconhash("");}
+
+	std::string GetId() const { return std::to_string(m_webhook.id); }
+
+	DiscordUser* GetUser() const { return new DiscordUser(m_webhook.user_obj); }
+
+	const char* GetName() const { return m_webhook.name.c_str(); }
+
+	void SetName(const char* value) { m_webhook.name = value; }
+
+	const char* GetAvatarUrl() const { return m_webhook.avatar_url.c_str(); }
+
+	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
 };
 
 class DiscordClient
@@ -88,9 +120,12 @@ public:
 	bool IsRunning() const { return m_isRunning; }
 	void SetHandle(Handle_t handle) { m_discord_handle = handle; }
 	bool SetPresence(dpp::presence presence);
+	bool CreateWebhook(dpp::webhook wh, IForward *callback_forward, cell_t data);
+	bool ExecuteWebhook(dpp::webhook wh, const char* message);
 	bool SendMessage(dpp::snowflake channel_id, const char* message);
 	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed);
 	bool GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
+	bool GetChannelWebhooks(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
     bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description);
 	bool RegisterGlobalSlashCommand(const char* name, const char* description);
 	bool RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description, const std::vector<dpp::command_option>& options);

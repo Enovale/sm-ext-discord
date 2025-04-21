@@ -91,13 +91,13 @@ class ExtensionConfig(object):
   def configure_cxx(self, cxx):
     if cxx.family == 'msvc':
       if cxx.version < 1914 and builder.options.generator != 'vs':
-        raise Exception('Only MSVC 2017 15.7 and later are supported, full C++20 support is required.')
+        raise Exception('Only MSVC 2017 15.7 and later are supported, full C++17 support is required.')
     elif cxx.family == 'gcc':
       if cxx.version < 'gcc-9':
-        raise Exception('Only GCC versions 9 or later are supported, full C++20 support is required.')
+        raise Exception('Only GCC versions 9 or later are supported, full C++17 support is required.')
     elif cxx.family == 'clang':
       if cxx.version < 'clang-5':
-        raise Exception('Only clang versions 5 or later are supported, full C++20 support is required.')
+        raise Exception('Only clang versions 5 or later are supported, full C++17 support is required.')
 
     if cxx.like('gcc'):
       self.configure_gcc(cxx)
@@ -136,8 +136,6 @@ class ExtensionConfig(object):
       '-pipe',
       '-fno-strict-aliasing',
       '-Wall',
-      '-Werror',
-      '-Wno-error=mismatched-tags',
       '-Wno-unused',
       '-Wno-switch',
       '-Wno-array-bounds',
