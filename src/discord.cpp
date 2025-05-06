@@ -185,7 +185,7 @@ bool DiscordClient::GetChannelWebhooks(dpp::snowflake channel_id, IForward *call
 				for (auto pair : webhooks)
 				{
 					DiscordWebhook* wbk = new DiscordWebhook(pair.second);
-					Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, wbk, &sec, nullptr, &err);
+					Handle_t webhookHandle = g_DiscordWebhookHandler.CreateHandle(wbk, &sec, &err);
 					if (webhookHandle == BAD_HANDLE)
 					{
 						smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
@@ -241,7 +241,7 @@ bool DiscordClient::CreateWebhook(dpp::webhook wh, IForward *callback_forward, c
 
 				HandleError err;
 				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
-				Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, webhook, &sec, nullptr, &err);
+				Handle_t webhookHandle = g_DiscordWebhookHandler.CreateHandle(webhook, &sec, &err);
 				if (webhookHandle == BAD_HANDLE)
 				{
 					smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
@@ -291,12 +291,7 @@ bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_for
 
 				HandleError err;
 				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
-				Handle_t channelHandle = handlesys->CreateHandleEx(g_DiscordChannelHandle, channel, &sec, nullptr, &err);
-				if (channelHandle == BAD_HANDLE)
-				{
-					smutils->LogError(myself, "Could not create channel handle (error %d)", err);
-					return;
-				}
+				Handle_t channelHandle = g_DiscordChannelHandler.CreateHandle(channel, &sec, &err);
 
 				forward->PushCell(m_discord_handle);
 				forward->PushCell(channelHandle);
@@ -312,6 +307,70 @@ bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_for
 	}
 	catch (const std::exception& e) {
 		smutils->LogError(myself, "Failed to get channel: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::DeleteGuildCommand(dpp::snowflake guild_id, dpp::snowflake command_id)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->guild_command_delete(command_id, guild_id);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to delete guild command: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::DeleteGlobalCommand(dpp::snowflake command_id)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->global_command_delete(command_id);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to delete global command: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::BulkDeleteGuildCommands(dpp::snowflake guild_id)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->guild_bulk_command_delete(guild_id);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to bulk delete guild commands: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::BulkDeleteGlobalCommands()
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->global_bulk_command_delete();
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to bulk delete global commands: %s", e.what());
 		return false;
 	}
 }
@@ -341,11 +400,7 @@ void DiscordClient::SetupEventHandlers()
 				sec.pOwner = myself->GetIdentity();
 				sec.pIdentity = myself->GetIdentity();
 
-				Handle_t messageHandle = handlesys->CreateHandleEx(g_DiscordMessageHandle,
-					message,
-					&sec,
-					nullptr,
-					&err);
+				Handle_t messageHandle = g_DiscordMessageHandler.CreateHandle(message, &sec, &err);
 
 				if (messageHandle != BAD_HANDLE) {
 					g_pForwardMessage->PushCell(m_discord_handle);
@@ -378,11 +433,7 @@ void DiscordClient::SetupEventHandlers()
 				sec.pOwner = myself->GetIdentity();
 				sec.pIdentity = myself->GetIdentity();
 
-				Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordInteractionHandle,
-					interaction,
-					&sec,
-					nullptr,
-					&err);
+				Handle_t interactionHandle = g_DiscordInteractionHandler.CreateHandle(interaction, &sec, &err);
 
 				if (interactionHandle != BAD_HANDLE) {
 					g_pForwardSlashCommand->PushCell(m_discord_handle);
@@ -405,11 +456,7 @@ void DiscordClient::SetupEventHandlers()
 				sec.pOwner = myself->GetIdentity();
 				sec.pIdentity = myself->GetIdentity();
 
-				Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordAutocompleteInteractionHandle,
-						interaction,
-						&sec,
-						nullptr,
-						&err);
+				Handle_t interactionHandle = g_DiscordAutocompleteInteractionHandler.CreateHandle(interaction, &sec, &err);
 
 				if (interactionHandle != BAD_HANDLE) {
 					std::string str;
@@ -432,36 +479,6 @@ void DiscordClient::SetupEventHandlers()
 }
 
 // Natives Implementation
-static DiscordClient* GetDiscordPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordClient* discord;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordHandle, &sec, (void**)&discord)) != HandleError_None)
-	{
-		pContext->ReportError("Invalid Discord handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return discord;
-}
-
-static DiscordWebhook* GetWebhookPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordWebhook* webhook;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordWebhookHandle, &sec, (void**)&webhook)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord webhook handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return webhook;
-}
-
 static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* params)
 {
 	char* token;
@@ -477,7 +494,7 @@ static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* param
 
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordHandle, pDiscordClient, &sec, nullptr, &err);
+	Handle_t handle = g_DiscordHandler.CreateHandle(pDiscordClient, &sec, &err);
 
 	if (handle == BAD_HANDLE)
 	{
@@ -492,7 +509,7 @@ static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* param
 
 static cell_t discord_Start(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -503,7 +520,7 @@ static cell_t discord_Start(IPluginContext* pContext, const cell_t* params)
 
 static cell_t discord_Stop(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -514,7 +531,7 @@ static cell_t discord_Stop(IPluginContext* pContext, const cell_t* params)
 
 static cell_t discord_GetBotId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -530,7 +547,7 @@ static cell_t discord_GetBotId(IPluginContext* pContext, const cell_t* params)
 
 static cell_t discord_GetBotName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -546,7 +563,7 @@ static cell_t discord_GetBotName(IPluginContext* pContext, const cell_t* params)
 
 static cell_t discord_GetBotDiscriminator(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -562,7 +579,7 @@ static cell_t discord_GetBotDiscriminator(IPluginContext* pContext, const cell_t
 
 static cell_t discord_GetBotAvatarUrl(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -578,7 +595,7 @@ static cell_t discord_GetBotAvatarUrl(IPluginContext* pContext, const cell_t* pa
 
 static cell_t discord_SetPresence(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -598,7 +615,7 @@ static cell_t discord_SetPresence(IPluginContext* pContext, const cell_t* params
 
 static cell_t discord_GetChannelWebhooks(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -628,7 +645,7 @@ static cell_t discord_GetChannelWebhooks(IPluginContext* pContext, const cell_t*
 
 static cell_t discord_CreateWebhook(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -664,12 +681,12 @@ static cell_t discord_CreateWebhook(IPluginContext* pContext, const cell_t* para
 
 static cell_t discord_ExecuteWebhook(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
 
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[2]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[2]);
 
 	char* message;
 	pContext->LocalToString(params[3], &message);
@@ -718,7 +735,7 @@ static cell_t discord_ExecuteWebhook(IPluginContext* pContext, const cell_t* par
 
 static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -774,7 +791,7 @@ static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params
 
 static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -818,14 +835,7 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 		}
 	}
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[4], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[4], err);
-	}
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[4]);
 
 	try {
 		dpp::snowflake channel = std::stoull(channelId);
@@ -839,7 +849,7 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 
 static cell_t discord_GetChannel(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -869,7 +879,7 @@ static cell_t discord_GetChannel(IPluginContext* pContext, const cell_t* params)
 
 static cell_t discord_IsRunning(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -884,7 +894,7 @@ static cell_t embed_CreateEmbed(IPluginContext* pContext, const cell_t* params)
 
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordEmbedHandle, embed, &sec, nullptr, &err);
+	Handle_t handle = g_DiscordEmbedHandler.CreateHandle(embed, &sec, &err);
 
 	if (handle == BAD_HANDLE)
 	{
@@ -895,24 +905,9 @@ static cell_t embed_CreateEmbed(IPluginContext* pContext, const cell_t* params)
 	return handle;
 }
 
-static DiscordEmbed* GetEmbedPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return embed;
-}
-
 static cell_t embed_SetTitle(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -926,7 +921,7 @@ static cell_t embed_SetTitle(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_SetDescription(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -940,7 +935,7 @@ static cell_t embed_SetDescription(IPluginContext* pContext, const cell_t* param
 
 static cell_t embed_SetColor(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -951,7 +946,7 @@ static cell_t embed_SetColor(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_SetUrl(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -965,7 +960,7 @@ static cell_t embed_SetUrl(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_SetAuthor(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -989,7 +984,7 @@ static cell_t embed_SetAuthor(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_SetFooter(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -1008,7 +1003,7 @@ static cell_t embed_SetFooter(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_AddField(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -1027,7 +1022,7 @@ static cell_t embed_AddField(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_SetThumbnail(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -1041,7 +1036,7 @@ static cell_t embed_SetThumbnail(IPluginContext* pContext, const cell_t* params)
 
 static cell_t embed_SetImage(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[1]);
 	if (!embed) {
 		return 0;
 	}
@@ -1053,25 +1048,10 @@ static cell_t embed_SetImage(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static DiscordUser* GetUserPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordUser* user;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordUserHandle, &sec, (void**)&user)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord user handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return user;
-}
-
 // User natives
 static cell_t user_GetId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
 	if (!user) {
 		return 0;
 	}
@@ -1082,7 +1062,7 @@ static cell_t user_GetId(IPluginContext* pContext, const cell_t* params)
 
 static cell_t user_GetUsername(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
 	if (!user) {
 		return 0;
 	}
@@ -1093,7 +1073,7 @@ static cell_t user_GetUsername(IPluginContext* pContext, const cell_t* params)
 
 static cell_t user_GetDiscriminator(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
 	if (!user) {
 		return 0;
 	}
@@ -1103,7 +1083,7 @@ static cell_t user_GetDiscriminator(IPluginContext* pContext, const cell_t* para
 
 static cell_t user_GetGlobalName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
 	if (!user) {
 		return 0;
 	}
@@ -1114,7 +1094,7 @@ static cell_t user_GetGlobalName(IPluginContext* pContext, const cell_t* params)
 
 static cell_t user_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
 	if (!user) {
 		return 0;
 	}
@@ -1125,7 +1105,7 @@ static cell_t user_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
 
 static cell_t user_IsBot(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
 	if (!user) {
 		return 0;
 	}
@@ -1133,25 +1113,10 @@ static cell_t user_IsBot(IPluginContext* pContext, const cell_t* params)
 	return user->IsBot() ? 1 : 0;
 }
 
-static DiscordMessage* GetMessagePointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return message;
-}
-
 // Message natives
 static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1162,7 +1127,7 @@ static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
 
 static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1173,7 +1138,7 @@ static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* param
 
 static cell_t message_GetChannelId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1184,7 +1149,7 @@ static cell_t message_GetChannelId(IPluginContext* pContext, const cell_t* param
 
 static cell_t message_GetGuildId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1195,7 +1160,7 @@ static cell_t message_GetGuildId(IPluginContext* pContext, const cell_t* params)
 
 static cell_t message_GetAuthor(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1204,7 +1169,7 @@ static cell_t message_GetAuthor(IPluginContext* pContext, const cell_t* params)
 
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
 
 	if (handle == BAD_HANDLE)
 	{
@@ -1218,7 +1183,7 @@ static cell_t message_GetAuthor(IPluginContext* pContext, const cell_t* params)
 
 static cell_t message_GetAuthorId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1229,7 +1194,7 @@ static cell_t message_GetAuthorId(IPluginContext* pContext, const cell_t* params
 
 static cell_t message_GetAuthorName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1240,7 +1205,7 @@ static cell_t message_GetAuthorName(IPluginContext* pContext, const cell_t* para
 
 static cell_t message_GetAuthorDisplayName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1251,7 +1216,7 @@ static cell_t message_GetAuthorDisplayName(IPluginContext* pContext, const cell_
 
 static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1262,7 +1227,7 @@ static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* 
 
 static cell_t message_GetAuthorDiscriminator(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1272,7 +1237,7 @@ static cell_t message_GetAuthorDiscriminator(IPluginContext* pContext, const cel
 
 static cell_t message_IsBot(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
 	if (!message) {
 		return 0;
 	}
@@ -1280,25 +1245,10 @@ static cell_t message_IsBot(IPluginContext* pContext, const cell_t* params)
 	return message->IsBot() ? 1 : 0;
 }
 
-static DiscordChannel* GetChannelPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordChannel* channel;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordChannelHandle, &sec, (void**)&channel)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord channel handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return channel;
-}
-
 // Channel natives
 static cell_t channel_GetName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordChannel* channel = GetChannelPointer(pContext, params[1]);
+	DiscordChannel* channel = g_DiscordChannelHandler.ReadHandle(params[1]);
 	if (!channel) {
 		return 0;
 	}
@@ -1328,7 +1278,7 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, pDiscordWebhook, &sec, nullptr, &err);
+	Handle_t handle = g_DiscordWebhookHandler.CreateHandle(pDiscordWebhook, &sec, &err);
 
 	if (handle == BAD_HANDLE)
 	{
@@ -1342,7 +1292,7 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 
 static cell_t webhook_GetId(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1353,7 +1303,7 @@ static cell_t webhook_GetId(IPluginContext* pContext, const cell_t* params)
 
 static cell_t webhook_GetUser(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1362,7 +1312,7 @@ static cell_t webhook_GetUser(IPluginContext* pContext, const cell_t* params)
 
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
 
 	if (handle == BAD_HANDLE)
 	{
@@ -1376,7 +1326,7 @@ static cell_t webhook_GetUser(IPluginContext* pContext, const cell_t* params)
 
 static cell_t webhook_GetName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1387,7 +1337,7 @@ static cell_t webhook_GetName(IPluginContext* pContext, const cell_t* params)
 
 static cell_t webhook_SetName(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1400,7 +1350,7 @@ static cell_t webhook_SetName(IPluginContext* pContext, const cell_t* params)
 
 static cell_t webhook_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1411,7 +1361,7 @@ static cell_t webhook_GetAvatarUrl(IPluginContext* pContext, const cell_t* param
 
 static cell_t webhook_SetAvatarUrl(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1424,7 +1374,7 @@ static cell_t webhook_SetAvatarUrl(IPluginContext* pContext, const cell_t* param
 
 static cell_t webhook_GetAvatarData(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1435,7 +1385,7 @@ static cell_t webhook_GetAvatarData(IPluginContext* pContext, const cell_t* para
 
 static cell_t webhook_SetAvatarData(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
 	if (!webhook) {
 		return 0;
 	}
@@ -1443,6 +1393,453 @@ static cell_t webhook_SetAvatarData(IPluginContext* pContext, const cell_t* para
 	char* avatar_data;
 	pContext->LocalToString(params[2], &avatar_data);
 	webhook->SetAvatarData(avatar_data);
+	return 1;
+}
+
+// Interaction natives
+static cell_t interaction_CreateResponse(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* content;
+	pContext->LocalToString(params[2], &content);
+
+	interaction->CreateResponse(content);
+	return 1;
+}
+
+static cell_t interaction_CreateResponseEmbed(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* content;
+	pContext->LocalToString(params[2], &content);
+
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[3]);
+
+	interaction->CreateResponseEmbed(content, embed);
+	return 1;
+}
+
+static cell_t interaction_GetOptionValue(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	std::string value;
+	if (!interaction->GetOptionValue(name, value)) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[3], params[4], value.c_str());
+	return 1;
+}
+
+// TODO: process int64_t
+static cell_t interaction_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	int64_t value;
+	if (!interaction->GetOptionValueInt(name, value)) {
+		return 0;
+	}
+
+	return value;
+}
+
+static cell_t interaction_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	double value;
+	if (!interaction->GetOptionValueDouble(name, value)) {
+		return 0;
+	}
+
+	return sp_ftoc((float)value);
+}
+
+static cell_t interaction_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	bool value;
+	if (!interaction->GetOptionValueBool(name, value)) {
+		return 0;
+	}
+
+	return value ? 1 : 0;
+}
+
+static cell_t interaction_DeferReply(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	interaction->DeferReply(params[2] ? true : false);
+	return 1;
+}
+
+static cell_t interaction_EditResponse(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* content;
+	pContext->LocalToString(params[2], &content);
+
+	interaction->EditResponse(content);
+	return 1;
+}
+
+static cell_t interaction_CreateEphemeralResponse(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* content;
+	pContext->LocalToString(params[2], &content);
+
+	interaction->CreateEphemeralResponse(content);
+	return 1;
+}
+
+static cell_t interaction_CreateEphemeralResponseEmbed(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* content;
+	pContext->LocalToString(params[2], &content);
+
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[3]);
+
+	interaction->CreateEphemeralResponseEmbed(content, embed);
+	return 1;
+}
+
+static cell_t interaction_GetCommandName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	const char* commandName = interaction->GetCommandName();
+	pContext->StringToLocal(params[2], params[3], commandName);
+	return 1;
+}
+
+static cell_t interaction_GetGuildId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string guildId = interaction->GetGuildId();
+	pContext->StringToLocal(params[2], params[3], guildId.c_str());
+	return 1;
+}
+
+static cell_t interaction_GetChannelId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string channelId = interaction->GetChannelId();
+	pContext->StringToLocal(params[2], params[3], channelId.c_str());
+	return 1;
+}
+
+static cell_t interaction_GetUser(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	DiscordUser* pDiscordUser = interaction->GetUser();
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
+
+	if (handle == BAD_HANDLE)
+	{
+		delete pDiscordUser;
+		pContext->ReportError("Could not create user handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t interaction_GetUserId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string userId = interaction->GetUserId();
+	pContext->StringToLocal(params[2], params[3], userId.c_str());
+	return 1;
+}
+
+static cell_t interaction_GetUserName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	const char* userName = interaction->GetUserName();
+	pContext->StringToLocal(params[2], params[3], userName);
+	return 1;
+}
+
+static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	return 1;
+}
+
+// Autocomplete natives
+static cell_t autocomplete_GetCommandName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	const char* commandName = interaction->GetCommandName();
+	pContext->StringToLocal(params[2], params[3], commandName);
+	return 1;
+}
+
+static cell_t autocomplete_GetGuildId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string guildId = interaction->GetGuildId();
+	pContext->StringToLocal(params[2], params[3], guildId.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetChannelId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string channelId = interaction->GetChannelId();
+	pContext->StringToLocal(params[2], params[3], channelId.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	DiscordUser* pDiscordUser = interaction->GetUser();
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
+
+	if (handle == BAD_HANDLE)
+	{
+		delete pDiscordUser;
+		pContext->ReportError("Could not create user handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t autocomplete_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	std::string value = interaction->GetOptionValue(name);
+	pContext->StringToLocal(params[3], params[4], value.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	int64_t value = interaction->GetOptionValueInt(name);
+	return value;
+}
+
+static cell_t autocomplete_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	double value = interaction->GetOptionValueDouble(name);
+	return sp_ftoc((float)value);
+}
+
+static cell_t autocomplete_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	bool value = interaction->GetOptionValueBool(name);
+	return value;
+}
+
+static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	dpp::command_value value;
+	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[3]);
+	switch(type) {
+		case dpp::co_string:
+		{
+			char* str_value;
+			pContext->LocalToString(params[4], &str_value);
+			value = std::string(str_value);
+			break;
+		}
+		case dpp::co_number:
+			value = sp_ctof(params[4]);
+			break;
+		default:
+			value = (int64_t)params[4];
+			break;
+	}
+
+	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, value));
+	return 1;
+}
+
+static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	char* str_value;
+	pContext->LocalToString(params[4], &str_value);
+
+	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
+	return 1;
+}
+
+static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[2]);
+	if (!discord) {
+		return 0;
+	}
+
+	discord->CreateAutocompleteResponse(interaction->m_command.id, interaction->m_command.token, interaction->m_response);
 	return 1;
 }
 
@@ -1498,7 +1895,7 @@ bool DiscordClient::RegisterGlobalSlashCommand(const char* name, const char* des
 
 static cell_t discord_RegisterSlashCommand(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -1527,7 +1924,7 @@ static cell_t discord_RegisterSlashCommand(IPluginContext* pContext, const cell_
 
 static cell_t discord_RegisterGlobalSlashCommand(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -1542,495 +1939,6 @@ static cell_t discord_RegisterGlobalSlashCommand(IPluginContext* pContext, const
 	pContext->LocalToString(params[4], &permissions);
 
 	return discord->RegisterGlobalSlashCommand(name, description, permissions) ? 1 : 0;
-}
-
-static DiscordInteraction* GetInteractionPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordInteraction* interaction;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord interaction handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return interaction;
-}
-
-// Interaction natives
-static cell_t interaction_CreateResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	interaction->CreateResponse(content);
-	return 1;
-}
-
-static cell_t interaction_CreateResponseEmbed(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
-	}
-
-	interaction->CreateResponseEmbed(content, embed);
-	return 1;
-}
-
-static cell_t interaction_GetOptionValue(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	std::string value;
-	if (!interaction->GetOptionValue(name, value)) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[3], params[4], value.c_str());
-	return 1;
-}
-
-// TODO: process int64_t
-static cell_t interaction_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	int64_t value;
-	if (!interaction->GetOptionValueInt(name, value)) {
-		return 0;
-	}
-
-	return value;
-}
-
-static cell_t interaction_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	double value;
-	if (!interaction->GetOptionValueDouble(name, value)) {
-		return 0;
-	}
-
-	return sp_ftoc((float)value);
-}
-
-static cell_t interaction_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	bool value;
-	if (!interaction->GetOptionValueBool(name, value)) {
-		return 0;
-	}
-
-	return value ? 1 : 0;
-}
-
-static cell_t interaction_DeferReply(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	interaction->DeferReply(params[2] ? true : false);
-	return 1;
-}
-
-static cell_t interaction_EditResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	interaction->EditResponse(content);
-	return 1;
-}
-
-static cell_t interaction_CreateEphemeralResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	interaction->CreateEphemeralResponse(content);
-	return 1;
-}
-
-static cell_t interaction_CreateEphemeralResponseEmbed(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
-	}
-
-	interaction->CreateEphemeralResponseEmbed(content, embed);
-	return 1;
-}
-
-static cell_t interaction_GetCommandName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	const char* commandName = interaction->GetCommandName();
-	pContext->StringToLocal(params[2], params[3], commandName);
-	return 1;
-}
-
-static cell_t interaction_GetGuildId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string guildId = interaction->GetGuildId();
-	pContext->StringToLocal(params[2], params[3], guildId.c_str());
-	return 1;
-}
-
-static cell_t interaction_GetChannelId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string channelId = interaction->GetChannelId();
-	pContext->StringToLocal(params[2], params[3], channelId.c_str());
-	return 1;
-}
-
-static cell_t interaction_GetUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	DiscordUser* pDiscordUser = interaction->GetUser();
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
-
-	if (handle == BAD_HANDLE)
-	{
-		delete pDiscordUser;
-		pContext->ReportError("Could not create user handle (error %d)", err);
-		return BAD_HANDLE;
-	}
-
-	return handle;
-}
-
-static cell_t interaction_GetUserId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string userId = interaction->GetUserId();
-	pContext->StringToLocal(params[2], params[3], userId.c_str());
-	return 1;
-}
-
-static cell_t interaction_GetUserName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	const char* userName = interaction->GetUserName();
-	pContext->StringToLocal(params[2], params[3], userName);
-	return 1;
-}
-
-static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
-	return 1;
-}
-
-static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordAutocompleteInteraction* interaction;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordAutocompleteInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord autocomplete interaction handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return interaction;
-}
-
-// Autocomplete natives
-static cell_t autocomplete_GetCommandName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	const char* commandName = interaction->GetCommandName();
-	pContext->StringToLocal(params[2], params[3], commandName);
-	return 1;
-}
-
-static cell_t autocomplete_GetGuildId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string guildId = interaction->GetGuildId();
-	pContext->StringToLocal(params[2], params[3], guildId.c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetChannelId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string channelId = interaction->GetChannelId();
-	pContext->StringToLocal(params[2], params[3], channelId.c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	DiscordUser* pDiscordUser = interaction->GetUser();
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
-
-	if (handle == BAD_HANDLE)
-	{
-		delete pDiscordUser;
-		pContext->ReportError("Could not create user handle (error %d)", err);
-		return BAD_HANDLE;
-	}
-
-	return handle;
-}
-
-static cell_t autocomplete_GetUserNickname(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	std::string value = interaction->GetOptionValue(name);
-	pContext->StringToLocal(params[3], params[4], value.c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	int64_t value = interaction->GetOptionValueInt(name);
-	return value;
-}
-
-static cell_t autocomplete_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	double value = interaction->GetOptionValueDouble(name);
-	return sp_ftoc((float)value);
-}
-
-static cell_t autocomplete_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	bool value = interaction->GetOptionValueBool(name);
-	return value;
-}
-
-static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	dpp::command_value value;
-	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[3]);
-	switch(type) {
-		case dpp::co_string:
-		{
-			char* str_value;
-			pContext->LocalToString(params[4], &str_value);
-			value = std::string(str_value);
-			break;
-		}
-		case dpp::co_number:
-			value = sp_ctof(params[4]);
-			break;
-		default:
-			value = (int64_t)params[4];
-			break;
-	}
-
-	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, value));
-	return 1;
-}
-
-static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	char* str_value;
-	pContext->LocalToString(params[4], &str_value);
-
-	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
-	return 1;
-}
-
-static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	DiscordClient* discord = GetDiscordPointer(pContext, params[2]);
-	if (!discord) {
-		return 0;
-	}
-
-	discord->CreateAutocompleteResponse(interaction->m_command.id, interaction->m_command.token, interaction->m_response);
-	return 1;
 }
 
 void DiscordClient::CreateAutocompleteResponse(dpp::snowflake id, const std::string &token, const dpp::interaction_response &response)
@@ -2097,7 +2005,7 @@ bool DiscordClient::DeleteMessage(dpp::snowflake channel_id, dpp::snowflake mess
 
 static cell_t discord_EditMessage(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2124,7 +2032,7 @@ static cell_t discord_EditMessage(IPluginContext* pContext, const cell_t* params
 
 static cell_t discord_EditMessageEmbed(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2138,14 +2046,7 @@ static cell_t discord_EditMessageEmbed(IPluginContext* pContext, const cell_t* p
 	char* content;
 	pContext->LocalToString(params[4], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[5], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[5], err);
-	}
+	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[5]);
 
 	try {
 		dpp::snowflake channel = std::stoull(channelId);
@@ -2160,7 +2061,7 @@ static cell_t discord_EditMessageEmbed(IPluginContext* pContext, const cell_t* p
 
 static cell_t discord_DeleteMessage(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2238,7 +2139,7 @@ bool DiscordClient::RegisterGlobalSlashCommandWithOptions(const char* name, cons
 
 static cell_t discord_RegisterSlashCommandWithOptions(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2301,7 +2202,7 @@ static cell_t discord_RegisterSlashCommandWithOptions(IPluginContext* pContext, 
 
 static cell_t discord_RegisterGlobalSlashCommandWithOptions(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2352,73 +2253,9 @@ static cell_t discord_RegisterGlobalSlashCommandWithOptions(IPluginContext* pCon
 	return discord->RegisterGlobalSlashCommandWithOptions(name, description, permissions, options) ? 1 : 0;
 }
 
-bool DiscordClient::DeleteGuildCommand(dpp::snowflake guild_id, dpp::snowflake command_id)
-{
-	if (!m_isRunning) {
-		return false;
-	}
-
-	try {
-		m_cluster->guild_command_delete(command_id, guild_id);
-		return true;
-	}
-	catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed to delete guild command: %s", e.what());
-		return false;
-	}
-}
-
-bool DiscordClient::DeleteGlobalCommand(dpp::snowflake command_id)
-{
-	if (!m_isRunning) {
-		return false;
-	}
-
-	try {
-		m_cluster->global_command_delete(command_id);
-		return true;
-	}
-	catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed to delete global command: %s", e.what());
-		return false;
-	}
-}
-
-bool DiscordClient::BulkDeleteGuildCommands(dpp::snowflake guild_id)
-{
-	if (!m_isRunning) {
-		return false;
-	}
-
-	try {
-		m_cluster->guild_bulk_command_delete(guild_id);
-		return true;
-	}
-	catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed to bulk delete guild commands: %s", e.what());
-		return false;
-	}
-}
-
-bool DiscordClient::BulkDeleteGlobalCommands()
-{
-	if (!m_isRunning) {
-		return false;
-	}
-
-	try {
-		m_cluster->global_bulk_command_delete();
-		return true;
-	}
-	catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed to bulk delete global commands: %s", e.what());
-		return false;
-	}
-}
-
 static cell_t discord_DeleteGuildCommand(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2442,7 +2279,7 @@ static cell_t discord_DeleteGuildCommand(IPluginContext* pContext, const cell_t*
 
 static cell_t discord_DeleteGlobalCommand(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2462,7 +2299,7 @@ static cell_t discord_DeleteGlobalCommand(IPluginContext* pContext, const cell_t
 
 static cell_t discord_BulkDeleteGuildCommands(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}
@@ -2482,7 +2319,7 @@ static cell_t discord_BulkDeleteGuildCommands(IPluginContext* pContext, const ce
 
 static cell_t discord_BulkDeleteGlobalCommands(IPluginContext* pContext, const cell_t* params)
 {
-	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[1]);
 	if (!discord) {
 		return 0;
 	}

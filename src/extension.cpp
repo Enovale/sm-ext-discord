@@ -5,15 +5,14 @@
 DiscordExtension g_DiscordExt;
 SMEXT_LINK(&g_DiscordExt);
 
-HandleType_t g_DiscordHandle, g_DiscordUserHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle, g_DiscordAutocompleteInteractionHandle;
-DiscordHandler g_DiscordHandler;
-DiscordUserHandler g_DiscordUserHandler;
-DiscordMessageHandler g_DiscordMessageHandler;
-DiscordChannelHandler g_DiscordChannelHandler;
-DiscordWebhookHandler g_DiscordWebhookHandler;
-DiscordEmbedHandler g_DiscordEmbedHandler;
-DiscordInteractionHandler g_DiscordInteractionHandler;
-DiscordAutocompleteInteractionHandler g_DiscordAutocompleteInteractionHandler;
+DiscordObjectHandler<DiscordClient> g_DiscordHandler;
+DiscordObjectHandler<DiscordUser> g_DiscordUserHandler;
+DiscordObjectHandler<DiscordMessage> g_DiscordMessageHandler;
+DiscordObjectHandler<DiscordChannel> g_DiscordChannelHandler;
+DiscordObjectHandler<DiscordWebhook> g_DiscordWebhookHandler;
+DiscordObjectHandler<DiscordEmbed> g_DiscordEmbedHandler;
+DiscordObjectHandler<DiscordInteraction> g_DiscordInteractionHandler;
+DiscordObjectHandler<DiscordAutocompleteInteraction> g_DiscordAutocompleteInteractionHandler;
 
 IForward* g_pForwardReady = nullptr;
 IForward* g_pForwardMessage = nullptr;
@@ -41,14 +40,14 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	handlesys->InitAccessDefaults(nullptr, &haDefaults);
 	haDefaults.access[HandleAccess_Delete] = 0;
 
-	g_DiscordHandle = handlesys->CreateType("Discord", &g_DiscordHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordUserHandle = handlesys->CreateType("DiscordUser", &g_DiscordUserHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordMessageHandle = handlesys->CreateType("DiscordMessage", &g_DiscordMessageHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordChannelHandle = handlesys->CreateType("DiscordChannel", &g_DiscordChannelHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordWebhookHandle = handlesys->CreateType("DiscordWebhook", &g_DiscordWebhookHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordEmbedHandle = handlesys->CreateType("DiscordEmbed", &g_DiscordEmbedHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordInteractionHandle = handlesys->CreateType("DiscordInteraction", &g_DiscordInteractionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordAutocompleteInteractionHandle = handlesys->CreateType("DiscordAutocompleteInteraction", &g_DiscordAutocompleteInteractionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordHandler.HandleType = handlesys->CreateType("Discord", &g_DiscordHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordUserHandler.HandleType = handlesys->CreateType("DiscordUser", &g_DiscordUserHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordMessageHandler.HandleType = handlesys->CreateType("DiscordMessage", &g_DiscordMessageHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordChannelHandler.HandleType = handlesys->CreateType("DiscordChannel", &g_DiscordChannelHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordWebhookHandler.HandleType = handlesys->CreateType("DiscordWebhook", &g_DiscordWebhookHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordEmbedHandler.HandleType = handlesys->CreateType("DiscordEmbed", &g_DiscordEmbedHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordInteractionHandler.HandleType = handlesys->CreateType("DiscordInteraction", &g_DiscordInteractionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordAutocompleteInteractionHandler.HandleType = handlesys->CreateType("DiscordAutocompleteInteraction", &g_DiscordAutocompleteInteractionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 
 	g_pForwardReady = forwards->CreateForward("Discord_OnReady", ET_Ignore, 1, nullptr, Param_Cell);
 	g_pForwardMessage = forwards->CreateForward("Discord_OnMessage", ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
@@ -69,14 +68,14 @@ void DiscordExtension::SDK_OnUnload()
 	forwards->ReleaseForward(g_pForwardSlashCommand);
 	forwards->ReleaseForward(g_pForwardAutocomplete);
 
-	handlesys->RemoveType(g_DiscordHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordUserHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordMessageHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordChannelHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordWebhookHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordEmbedHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordInteractionHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordAutocompleteInteractionHandle, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordUserHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordMessageHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordChannelHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordWebhookHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordEmbedHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordInteractionHandler.HandleType, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordAutocompleteInteractionHandler.HandleType, myself->GetIdentity());
 
 	smutils->RemoveGameFrameHook(&OnGameFrame);
 }
@@ -86,46 +85,4 @@ void DiscordHandler::OnHandleDestroy(HandleType_t type, void* object)
 	DiscordClient* discord = (DiscordClient*)object;
 	discord->Stop();
 	delete discord;
-}
-
-void DiscordUserHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordUser* user = (DiscordUser*)object;
-	delete user;
-}
-
-void DiscordMessageHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordMessage* message = (DiscordMessage*)object;
-	delete message;
-}
-
-void DiscordChannelHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordChannel* channel = (DiscordChannel*)object;
-	delete channel;
-}
-
-void DiscordWebhookHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordWebhook* webhook = (DiscordWebhook*)object;
-	delete webhook;
-}
-
-void DiscordEmbedHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordEmbed* embed = (DiscordEmbed*)object;
-	delete embed;
-}
-
-void DiscordInteractionHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordInteraction* interaction = (DiscordInteraction*)object;
-	delete interaction;
-}
-
-void DiscordAutocompleteInteractionHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordAutocompleteInteraction* interaction = (DiscordAutocompleteInteraction*)object;
-	delete interaction;
 }

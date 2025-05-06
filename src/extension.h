@@ -22,46 +22,41 @@ public:
 	void OnHandleDestroy(HandleType_t type, void* object);
 };
 
-class DiscordUserHandler : public IHandleTypeDispatch
+template <class T = DiscordObject> class DiscordObjectHandler : public IHandleTypeDispatch
 {
 public:
-	void OnHandleDestroy(HandleType_t type, void* object);
-};
+	HandleType_t HandleType;
 
-class DiscordMessageHandler : public IHandleTypeDispatch
-{
-public:
-	void OnHandleDestroy(HandleType_t type, void* object);
-};
+	Handle_t CreateHandle(T* object, const HandleSecurity* sec, HandleError* err)
+	{
+		Handle_t handle = handlesys->CreateHandleEx(HandleType, object, sec, nullptr, err);
 
-class DiscordChannelHandler : public IHandleTypeDispatch
-{
-public:
-	void OnHandleDestroy(HandleType_t type, void* object);
-};
+		return handle;
+	}
 
-class DiscordWebhookHandler : public IHandleTypeDispatch
-{
-public:
-	void OnHandleDestroy(HandleType_t type, void* object);
-};
+	T* ReadHandle(Handle_t handle, const HandleSecurity* sec, HandleError* err)
+	{
+		T* obj;
+		if ((*err = handlesys->ReadHandle(handle, HandleType, sec, (void**)&obj)) != HandleError_None)
+		{
+			return nullptr;
+		}
 
-class DiscordEmbedHandler : public IHandleTypeDispatch
-{
-public:
-	void OnHandleDestroy(HandleType_t type, void* object);
-};
+		return obj;
+	}
 
-class DiscordInteractionHandler : public IHandleTypeDispatch
-{
-public:
-	void OnHandleDestroy(HandleType_t type, void* object);
-};
+	T* ReadHandle(Handle_t handle)
+	{
+		HandleError err;
+		HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
+		return ReadHandle(handle, &sec, &err);
+	}
 
-class DiscordAutocompleteInteractionHandler : public IHandleTypeDispatch
-{
-public:
-	void OnHandleDestroy(HandleType_t type, void* object);
+	void OnHandleDestroy(HandleType_t type, void* object)
+	{
+		T* obj = (T*)object;
+		delete obj;
+	}
 };
 
 extern DiscordExtension g_DiscordExt;
@@ -73,15 +68,14 @@ extern IForward* g_pForwardError;
 extern IForward* g_pForwardSlashCommand;
 extern IForward* g_pForwardAutocomplete;
 
-extern HandleType_t g_DiscordHandle, g_DiscordUserHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle, g_DiscordAutocompleteInteractionHandle;
-extern DiscordHandler g_DiscordHandler;
-extern DiscordUserHandler g_DiscordUserHandler;
-extern DiscordMessageHandler g_DiscordMessageHandler;
-extern DiscordChannelHandler g_DiscordChannelHandler;
-extern DiscordWebhookHandler g_DiscordWebhookHandler;
-extern DiscordEmbedHandler g_DiscordEmbedHandler;
-extern DiscordInteractionHandler g_DiscordInteractionHandler;
-extern DiscordAutocompleteInteractionHandler g_DiscordAutocompleteInteractionHandler;
+extern DiscordObjectHandler<DiscordClient> g_DiscordHandler;
+extern DiscordObjectHandler<DiscordUser> g_DiscordUserHandler;
+extern DiscordObjectHandler<DiscordMessage> g_DiscordMessageHandler;
+extern DiscordObjectHandler<DiscordChannel> g_DiscordChannelHandler;
+extern DiscordObjectHandler<DiscordWebhook> g_DiscordWebhookHandler;
+extern DiscordObjectHandler<DiscordEmbed> g_DiscordEmbedHandler;
+extern DiscordObjectHandler<DiscordInteraction> g_DiscordInteractionHandler;
+extern DiscordObjectHandler<DiscordAutocompleteInteraction> g_DiscordAutocompleteInteractionHandler;
 
 extern const sp_nativeinfo_t discord_natives[];
 
