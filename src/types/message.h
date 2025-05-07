@@ -1,137 +1,36 @@
 #ifndef _INCLUDE_MESSAGE_H
 #define _INCLUDE_MESSAGE_H
 
-#include "extension.h"
+#include "object_handler.h"
+#include "user.h"
+#include "dpp/dpp.h"
 
-static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
+class DiscordMessage : public DiscordObject
 {
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
+private:
+	dpp::message m_message;
 
-	pContext->StringToLocal(params[2], params[3], message->GetContent());
-	return 1;
-}
+public:
+	DiscordMessage(const dpp::message& msg) : m_message(msg) {}
 
-static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
+	DiscordUser* GetAuthor() const { return new DiscordUser(m_message.author); }
+	const char* GetContent() const { return m_message.content.c_str(); }
+	std::string GetMessageId() const { return std::to_string(m_message.id); }
+	std::string GetChannelId() const { return std::to_string(m_message.channel_id); }
+	std::string GetGuildId() const { return std::to_string(m_message.guild_id); }
+	std::string GetAuthorId() const { return std::to_string(m_message.author.id); }
+	const char* GetAuthorName() const { return m_message.author.username.c_str(); }
+	const char* GetAuthorDisplayName() const { return m_message.author.global_name.c_str(); }
+	std::string GetAuthorNickname() const { return m_message.member.get_nickname(); }
+	const uint16_t GetAuthorDiscriminator() const { return m_message.author.discriminator; }
+	bool IsPinned() const { return m_message.pinned; }
+	bool IsTTS() const { return m_message.tts; }
+	bool IsMentionEveryone() const { return m_message.mention_everyone; }
+	bool IsBot() const { return m_message.author.is_bot(); }
+};
 
-	pContext->StringToLocal(params[2], params[3], message->GetMessageId().c_str());
-	return 1;
-}
+inline DiscordObjectHandler<DiscordMessage> g_DiscordMessageHandler;
 
-static cell_t message_GetChannelId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], message->GetChannelId().c_str());
-	return 1;
-}
-
-static cell_t message_GetGuildId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], message->GetGuildId().c_str());
-	return 1;
-}
-
-static cell_t message_GetAuthor(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	DiscordUser* pDiscordUser = message->GetAuthor();
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
-
-	if (handle == BAD_HANDLE)
-	{
-		delete pDiscordUser;
-		pContext->ReportError("Could not create user handle (error %d)", err);
-		return BAD_HANDLE;
-	}
-
-	return handle;
-}
-
-static cell_t message_GetAuthorId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorId().c_str());
-	return 1;
-}
-
-static cell_t message_GetAuthorName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorName());
-	return 1;
-}
-
-static cell_t message_GetAuthorDisplayName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorDisplayName());
-	return 1;
-}
-
-static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname().c_str());
-	return 1;
-}
-
-static cell_t message_GetAuthorDiscriminator(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	return message->GetAuthorDiscriminator();
-}
-
-static cell_t message_IsBot(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = g_DiscordMessageHandler.ReadHandle(params[1]);
-	if (!message) {
-		return 0;
-	}
-
-	return message->IsBot() ? 1 : 0;
-}
+extern const sp_nativeinfo_t message_natives[];
 
 #endif //_INCLUDE_MESSAGE_H

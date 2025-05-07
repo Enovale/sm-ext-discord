@@ -1,70 +1,32 @@
 #ifndef _INCLUDE_USER_H
 #define _INCLUDE_USER_H
 
-#include "extension.h"
+#include "object_handler.h"
+#include "dpp/dpp.h"
 
-static cell_t user_GetId(IPluginContext* pContext, const cell_t* params)
+class DiscordUser : public DiscordObject
 {
-    DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
-    if (!user) {
-        return 0;
-    }
+private:
+    dpp::user m_user;
 
-    pContext->StringToLocal(params[2], params[3], user->GetId().c_str());
-    return 1;
-}
+public:
+    DiscordUser(const dpp::user& user) : m_user(user) {}
 
-static cell_t user_GetUsername(IPluginContext* pContext, const cell_t* params)
-{
-    DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
-    if (!user) {
-        return 0;
-    }
+    std::string GetId() const { return std::to_string(m_user.id); }
 
-    pContext->StringToLocal(params[2], params[3], user->GetUsername());
-    return 1;
-}
+    const char* GetUsername() const { return m_user.username.c_str(); }
 
-static cell_t user_GetDiscriminator(IPluginContext* pContext, const cell_t* params)
-{
-    DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
-    if (!user) {
-        return 0;
-    }
+    const uint16_t GetDiscriminator() const { return m_user.discriminator; }
 
-    return user->GetDiscriminator();
-}
+    const char* GetGlobalName() const { return m_user.global_name.c_str(); }
 
-static cell_t user_GetGlobalName(IPluginContext* pContext, const cell_t* params)
-{
-    DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
-    if (!user) {
-        return 0;
-    }
+    std::string GetAvatarUrl(bool prefer_animated_avatars) const { return m_user.get_avatar_url(0, dpp::i_png, prefer_animated_avatars); }
 
-    pContext->StringToLocal(params[2], params[3], user->GetGlobalName());
-    return 1;
-}
+    bool IsBot() const { return m_user.is_bot(); }
+};
 
-static cell_t user_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
-{
-    DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
-    if (!user) {
-        return 0;
-    }
+inline DiscordObjectHandler<DiscordUser> g_DiscordUserHandler;
 
-    pContext->StringToLocal(params[3], params[4], user->GetAvatarUrl(params[2] ? true : false).c_str());
-    return 1;
-}
-
-static cell_t user_IsBot(IPluginContext* pContext, const cell_t* params)
-{
-    DiscordUser* user = g_DiscordUserHandler.ReadHandle(params[1]);
-    if (!user) {
-        return 0;
-    }
-
-    return user->IsBot() ? 1 : 0;
-}
+extern const sp_nativeinfo_t user_natives[];
 
 #endif //_INCLUDE_USER_H

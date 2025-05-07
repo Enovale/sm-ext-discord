@@ -1,144 +1,35 @@
 #ifndef _INCLUDE_WEBHOOK_H
 #define _INCLUDE_WEBHOOK_H
 
-#include "extension.h"
+#include "object_handler.h"
+#include "user.h"
+#include "dpp/dpp.h"
 
-static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* params)
+class DiscordWebhook : public DiscordObject
 {
-	char* webhook_url;
-	pContext->LocalToString(params[1], &webhook_url);
+public:
+	dpp::webhook m_webhook;
+	DiscordWebhook(const dpp::webhook& wbhk) : m_webhook(wbhk) {}
 
-	dpp::webhook webhook;
-	try
-	{
-    	webhook = dpp::webhook(webhook_url);
-	}
-	catch (const std::exception& e)
-	{
-		pContext->ReportError("Webhook url invalid: %s", e.what());
-		return BAD_HANDLE;
-	}
+	std::string GetId() const { return std::to_string(m_webhook.id); }
 
-	DiscordWebhook* pDiscordWebhook = new DiscordWebhook(webhook);
+	DiscordUser* GetUser() const { return new DiscordUser(m_webhook.user_obj); }
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = g_DiscordWebhookHandler.CreateHandle(pDiscordWebhook, &sec, &err);
+	const char* GetName() const { return m_webhook.name.c_str(); }
 
-	if (handle == BAD_HANDLE)
-	{
-		delete pDiscordWebhook;
-		pContext->ReportError("Could not create webhook handle (error %d)", err);
-		return BAD_HANDLE;
-	}
+	void SetName(const char* value) { m_webhook.name = value; }
 
-	return handle;
-}
+	const char* GetAvatarUrl() const { return m_webhook.avatar_url.c_str(); }
 
-static cell_t webhook_GetId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
+	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
 
-	pContext->StringToLocal(params[2], params[3], webhook->GetId().c_str());
-	return 1;
-}
+	std::string GetAvatarData() const { return m_webhook.avatar.to_string(); }
 
-static cell_t webhook_GetUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
+	void SetAvatarData(const char* value) { m_webhook.avatar = dpp::utility::iconhash(value); }
+};
 
-	DiscordUser* pDiscordUser = webhook->GetUser();
+inline DiscordObjectHandler<DiscordWebhook> g_DiscordWebhookHandler;
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
-
-	if (handle == BAD_HANDLE)
-	{
-		delete pDiscordUser;
-		pContext->ReportError("Could not create user handle (error %d)", err);
-		return BAD_HANDLE;
-	}
-
-	return handle;
-}
-
-static cell_t webhook_GetName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], webhook->GetName());
-	return 1;
-}
-
-static cell_t webhook_SetName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-	webhook->SetName(name);
-	return 1;
-}
-
-static cell_t webhook_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarUrl());
-	return 1;
-}
-
-static cell_t webhook_SetAvatarUrl(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
-
-	char* avatar_url;
-	pContext->LocalToString(params[2], &avatar_url);
-	webhook->SetAvatarUrl(avatar_url);
-	return 1;
-}
-
-static cell_t webhook_GetAvatarData(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarData().c_str());
-	return 1;
-}
-
-static cell_t webhook_SetAvatarData(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordWebhook* webhook = g_DiscordWebhookHandler.ReadHandle(params[1]);
-	if (!webhook) {
-		return 0;
-	}
-
-	char* avatar_data;
-	pContext->LocalToString(params[2], &avatar_data);
-	webhook->SetAvatarData(avatar_data);
-	return 1;
-}
+extern const sp_nativeinfo_t webhook_natives[];
 
 #endif //_INCLUDE_WEBHOOK_H
