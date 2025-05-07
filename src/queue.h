@@ -1,5 +1,3 @@
-#include "extension.h"
-
 /**
  * @brief A thread-safe queue implementation.
  * 

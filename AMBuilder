@@ -1,5 +1,6 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
+import glob
 
 if builder.host.platform == 'linux':
   dpp = builder.Build('third_party/DPP/src/dpp/AMBuilder')
@@ -13,9 +14,12 @@ for cxx in builder.targets:
     'src/discord.cpp',
     os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp'),
   ]
+  
+  binary.sources += glob.glob(os.path.join(builder.sourcePath, f'src/types/*.cpp'), recursive=False)
 
   binary.compiler.includes += [
     os.path.join(builder.sourcePath, 'src'),
+    os.path.join(builder.sourcePath, 'src', 'types'),
     os.path.join(builder.sourcePath, 'third_party', 'DPP', 'include'),
   ]
 

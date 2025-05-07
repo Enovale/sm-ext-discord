@@ -1,197 +1,64 @@
 #ifndef _INCLUDE_AUTOCOMPLETE_INTERACTION_H
 #define _INCLUDE_AUTOCOMPLETE_INTERACTION_H
 
-#include "extension.h"
+#include "discord.h"
+#include "object_handler.h"
+#include "user.h"
+#include "dpp/dpp.h"
 
-static cell_t autocomplete_GetCommandName(IPluginContext* pContext, const cell_t* params)
+class DiscordAutocompleteInteraction : public DiscordObject
 {
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
+public:
+	dpp::interaction_response m_response;
+	std::string m_commandName;
+	dpp::interaction m_command;
+	dpp::autocomplete_t m_autocomplete;
 
-	const char* commandName = interaction->GetCommandName();
-	pContext->StringToLocal(params[2], params[3], commandName);
-	return 1;
-}
-
-static cell_t autocomplete_GetGuildId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string guildId = interaction->GetGuildId();
-	pContext->StringToLocal(params[2], params[3], guildId.c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetChannelId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string channelId = interaction->GetChannelId();
-	pContext->StringToLocal(params[2], params[3], channelId.c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	DiscordUser* pDiscordUser = interaction->GetUser();
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
-
-	if (handle == BAD_HANDLE)
+	DiscordAutocompleteInteraction(const dpp::autocomplete_t& autocomplete) :
+		m_response(dpp::ir_autocomplete_reply),
+		m_commandName(autocomplete.command.get_command_name()),
+		m_command(autocomplete.command),
+		m_autocomplete(autocomplete)
 	{
-		delete pDiscordUser;
-		pContext->ReportError("Could not create user handle (error %d)", err);
-		return BAD_HANDLE;
 	}
 
-	return handle;
-}
+	const char* GetCommandName() const { return m_commandName.c_str(); }
+	std::string GetGuildId() const { return std::to_string(m_command.guild_id); }
+	std::string GetChannelId() const { return std::to_string(m_command.channel_id); }
+	DiscordUser* GetUser() const { return new DiscordUser(m_command.usr); }
+	std::string GetUserNickname() const { return m_command.member.get_nickname(); }
 
-static cell_t autocomplete_GetUserNickname(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	std::string value = interaction->GetOptionValue(name);
-	pContext->StringToLocal(params[3], params[4], value.c_str());
-	return 1;
-}
-
-static cell_t autocomplete_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	int64_t value = interaction->GetOptionValueInt(name);
-	return value;
-}
-
-static cell_t autocomplete_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	double value = interaction->GetOptionValueDouble(name);
-	return sp_ftoc((float)value);
-}
-
-static cell_t autocomplete_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	return interaction->GetOptionValueBool(name);
-}
-
-static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	dpp::command_value value;
-	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[3]);
-	switch(type) {
-		case dpp::co_string:
-		{
-			char* str_value;
-			pContext->LocalToString(params[4], &str_value);
-			value = std::string(str_value);
-			break;
+	dpp::command_option GetOption(const char* name) const {
+		for (auto & opt : m_autocomplete.options) {
+			if (opt.name == name) return opt;
 		}
-		case dpp::co_number:
-			value = sp_ctof(params[4]);
-			break;
-		default:
-			value = (int64_t)params[4];
-			break;
+
+		throw std::runtime_error("Option not found");
 	}
 
-	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, value));
-	return 1;
-}
-
-static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
+	std::string GetOptionValue(const char* name) const {
+		return std::get<std::string>(GetOption(name).value);
 	}
 
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	char* str_value;
-	pContext->LocalToString(params[4], &str_value);
-
-	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
-	return 1;
-}
-
-static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = g_DiscordAutocompleteInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
+	int64_t GetOptionValueInt(const char* name) const {
+		return std::get<int64_t>(GetOption(name).value);
 	}
 
-	DiscordClient* discord = g_DiscordHandler.ReadHandle(params[2]);
-	if (!discord) {
-		return 0;
+	double GetOptionValueDouble(const char* name) const {
+		return std::get<double>(GetOption(name).value);
 	}
 
-	discord->CreateAutocompleteResponse(interaction->m_command.id, interaction->m_command.token, interaction->m_response);
-	return 1;
-}
+	bool GetOptionValueBool(const char* name) const {
+		return std::get<bool>(GetOption(name).value);
+	}
+
+	void AddAutocompleteOption(dpp::command_option_choice choice) {
+		m_response.add_autocomplete_choice(choice);
+	}
+};
+
+inline DiscordObjectHandler<DiscordAutocompleteInteraction> g_DiscordAutocompleteInteractionHandler;
+
+extern const sp_nativeinfo_t autocomplete_natives[];
 
 #endif //_INCLUDE_AUTOCOMPLETE_INTERACTION_H

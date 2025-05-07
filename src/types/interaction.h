@@ -1,259 +1,100 @@
 #ifndef _INCLUDE_INTERACTION_H
 #define _INCLUDE_INTERACTION_H
 
-#include "extension.h"
+#include "embed.h"
+#include "object_handler.h"
+#include "user.h"
+#include "dpp/dpp.h"
 
-static cell_t interaction_CreateResponse(IPluginContext* pContext, const cell_t* params)
+class DiscordInteraction : public DiscordObject
 {
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
+private:
+	dpp::slashcommand_t m_interaction;
+	std::string m_commandName;
 
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	interaction->CreateResponse(content);
-	return 1;
-}
-
-static cell_t interaction_CreateResponseEmbed(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[3]);
-
-	interaction->CreateResponseEmbed(content, embed);
-	return 1;
-}
-
-static cell_t interaction_GetOptionValue(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	std::string value;
-	if (!interaction->GetOptionValue(name, value)) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[3], params[4], value.c_str());
-	return 1;
-}
-
-// TODO: process int64_t
-static cell_t interaction_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	int64_t value;
-	if (!interaction->GetOptionValueInt(name, value)) {
-		return 0;
-	}
-
-	return value;
-}
-
-static cell_t interaction_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	double value;
-	if (!interaction->GetOptionValueDouble(name, value)) {
-		return 0;
-	}
-
-	return sp_ftoc((float)value);
-}
-
-static cell_t interaction_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	bool value;
-	if (!interaction->GetOptionValueBool(name, value)) {
-		return 0;
-	}
-
-	return value ? 1 : 0;
-}
-
-static cell_t interaction_DeferReply(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	interaction->DeferReply(params[2] ? true : false);
-	return 1;
-}
-
-static cell_t interaction_EditResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	interaction->EditResponse(content);
-	return 1;
-}
-
-static cell_t interaction_CreateEphemeralResponse(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	interaction->CreateEphemeralResponse(content);
-	return 1;
-}
-
-static cell_t interaction_CreateEphemeralResponseEmbed(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	char* content;
-	pContext->LocalToString(params[2], &content);
-
-	DiscordEmbed* embed = g_DiscordEmbedHandler.ReadHandle(params[3]);
-
-	interaction->CreateEphemeralResponseEmbed(content, embed);
-	return 1;
-}
-
-static cell_t interaction_GetCommandName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	const char* commandName = interaction->GetCommandName();
-	pContext->StringToLocal(params[2], params[3], commandName);
-	return 1;
-}
-
-static cell_t interaction_GetGuildId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string guildId = interaction->GetGuildId();
-	pContext->StringToLocal(params[2], params[3], guildId.c_str());
-	return 1;
-}
-
-static cell_t interaction_GetChannelId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	std::string channelId = interaction->GetChannelId();
-	pContext->StringToLocal(params[2], params[3], channelId.c_str());
-	return 1;
-}
-
-static cell_t interaction_GetUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
-	}
-
-	DiscordUser* pDiscordUser = interaction->GetUser();
-
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	Handle_t handle = g_DiscordUserHandler.CreateHandle(pDiscordUser, &sec, &err);
-
-	if (handle == BAD_HANDLE)
+public:
+	DiscordInteraction(const dpp::slashcommand_t& interaction) :
+		m_interaction(interaction),
+		m_commandName(interaction.command.get_command_name())
 	{
-		delete pDiscordUser;
-		pContext->ReportError("Could not create user handle (error %d)", err);
-		return BAD_HANDLE;
 	}
 
-	return handle;
-}
+	const char* GetCommandName() const { return m_commandName.c_str(); }
+	std::string GetGuildId() const { return std::to_string(m_interaction.command.guild_id); }
+	std::string GetChannelId() const { return std::to_string(m_interaction.command.channel_id); }
+	DiscordUser* GetUser() const { return new DiscordUser(m_interaction.command.usr); }
+	std::string GetUserId() const { return std::to_string(m_interaction.command.usr.id); }
+	const char* GetUserName() const { return m_interaction.command.usr.username.c_str(); }
+	std::string GetUserNickname() const { return m_interaction.command.member.get_nickname(); }
 
-static cell_t interaction_GetUserId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
+	bool GetOptionValue(const char* name, std::string& value) const {
+		auto param = m_interaction.get_parameter(name);
+		if (param.index() == 0) return false;
+		value = std::get<std::string>(param);
+		return true;
 	}
 
-	std::string userId = interaction->GetUserId();
-	pContext->StringToLocal(params[2], params[3], userId.c_str());
-	return 1;
-}
-
-static cell_t interaction_GetUserName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
+	bool GetOptionValueInt(const char* name, int64_t& value) const {
+		auto param = m_interaction.get_parameter(name);
+		if (param.index() == 0) return false;
+		value = std::get<int64_t>(param);
+		return true;
 	}
 
-	const char* userName = interaction->GetUserName();
-	pContext->StringToLocal(params[2], params[3], userName);
-	return 1;
-}
-
-static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordInteraction* interaction = g_DiscordInteractionHandler.ReadHandle(params[1]);
-	if (!interaction) {
-		return 0;
+	bool GetOptionValueDouble(const char* name, double& value) const {
+		auto param = m_interaction.get_parameter(name);
+		if (param.index() == 0) return false;
+		value = std::get<double>(param);
+		return true;
 	}
 
-	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
-	return 1;
-}
+	bool GetOptionValueBool(const char* name, bool& value) const {
+		auto param = m_interaction.get_parameter(name);
+		if (param.index() == 0) return false;
+		value = std::get<bool>(param);
+		return true;
+	}
+
+	void CreateResponse(const char* content) const {
+		m_interaction.reply(dpp::message(content));
+	}
+
+	void CreateResponseEmbed(const char* content, const DiscordEmbed* embed) const {
+		dpp::message msg(content);
+		msg.add_embed(embed->GetEmbed());
+		m_interaction.reply(msg);
+	}
+
+	void DeferReply(bool ephemeral = false) const {
+		m_interaction.thinking(ephemeral);
+	}
+
+	void EditResponse(const char* content) const {
+		m_interaction.edit_response(dpp::message(content));
+	}
+
+	void EditResponseEmbed(const char* content, const DiscordEmbed* embed) const {
+		dpp::message msg(content);
+		msg.add_embed(embed->GetEmbed());
+		m_interaction.edit_response(msg);
+	}
+
+	void CreateEphemeralResponse(const char* content) const {
+		dpp::message msg(content);
+		msg.set_flags(dpp::m_ephemeral);
+		m_interaction.reply(msg);
+	}
+
+	void CreateEphemeralResponseEmbed(const char* content, const DiscordEmbed* embed) const {
+		dpp::message msg(content);
+		msg.set_flags(dpp::m_ephemeral);
+		msg.add_embed(embed->GetEmbed());
+		m_interaction.reply(msg);
+	}
+};
+
+inline DiscordObjectHandler<DiscordInteraction> g_DiscordInteractionHandler;
+
+extern const sp_nativeinfo_t interaction_natives[];
 
 #endif //_INCLUDE_INTERACTION_H

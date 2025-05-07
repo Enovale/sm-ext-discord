@@ -1,18 +1,16 @@
 #include "extension.h"
+#include "types/webhook.h"
+#include "types/channel.h"
+#include "types/embed.h"
+#include "types/message.h"
+#include "types/user.h"
+#include "types/interaction.h"
+#include "types/autocomplete_interaction.h"
 
 #define MAX_PROCESS 10
 
 DiscordExtension g_DiscordExt;
 SMEXT_LINK(&g_DiscordExt);
-
-DiscordObjectHandler<DiscordClient> g_DiscordHandler;
-DiscordObjectHandler<DiscordUser> g_DiscordUserHandler;
-DiscordObjectHandler<DiscordMessage> g_DiscordMessageHandler;
-DiscordObjectHandler<DiscordChannel> g_DiscordChannelHandler;
-DiscordObjectHandler<DiscordWebhook> g_DiscordWebhookHandler;
-DiscordObjectHandler<DiscordEmbed> g_DiscordEmbedHandler;
-DiscordObjectHandler<DiscordInteraction> g_DiscordInteractionHandler;
-DiscordObjectHandler<DiscordAutocompleteInteraction> g_DiscordAutocompleteInteractionHandler;
 
 IForward* g_pForwardReady = nullptr;
 IForward* g_pForwardMessage = nullptr;
@@ -34,6 +32,13 @@ static void OnGameFrame(bool simulating) {
 bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	sharesys->AddNatives(myself, discord_natives);
+	sharesys->AddNatives(myself, channel_natives);
+	sharesys->AddNatives(myself, user_natives);
+	sharesys->AddNatives(myself, interaction_natives);
+	sharesys->AddNatives(myself, message_natives);
+	sharesys->AddNatives(myself, autocomplete_natives);
+	sharesys->AddNatives(myself, embed_natives);
+	sharesys->AddNatives(myself, webhook_natives);
 	sharesys->RegisterLibrary(myself, "discord");
 
 	HandleAccess haDefaults;

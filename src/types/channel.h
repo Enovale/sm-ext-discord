@@ -1,17 +1,22 @@
 #ifndef _INCLUDE_CHANNEL_H
 #define _INCLUDE_CHANNEL_H
 
-#include "extension.h"
+#include "object_handler.h"
+#include "dpp/dpp.h"
 
-static cell_t channel_GetName(IPluginContext* pContext, const cell_t* params)
+class DiscordChannel : public DiscordObject
 {
-    DiscordChannel* channel = g_DiscordChannelHandler.ReadHandle(params[1]);
-    if (!channel) {
-        return 0;
-    }
+private:
+    dpp::channel m_channel;
 
-    pContext->StringToLocal(params[2], params[3], channel->GetName());
-    return 1;
-}
+public:
+    DiscordChannel(const dpp::channel& chnl) : m_channel(chnl) {}
+
+    const char* GetName() const { return m_channel.name.c_str(); }
+};
+
+inline DiscordObjectHandler<DiscordChannel> g_DiscordChannelHandler;
+
+extern const sp_nativeinfo_t channel_natives[];
 
 #endif //_INCLUDE_CHANNEL_H
