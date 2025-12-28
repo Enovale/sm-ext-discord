@@ -1,0 +1,187 @@
+# vim: sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os
+
+builder.SetBuildFolder('DPP')
+
+rvalue = {}
+for cxx in builder.targets:
+  binary = Extension.StaticLibrary(builder, cxx, 'DPP')
+
+  binary.compiler.includes += [
+    os.path.join(builder.sourcePath, 'third_party', 'DPP', 'include'),
+    os.path.join(builder.sourcePath, 'third_party', 'zlib'),
+  ]
+  if binary.compiler.target.platform == 'windows':
+    binary.compiler.includes += [
+      os.path.join(builder.sourcePath, 'third_party', 'openssl', 'include'),
+    ]
+
+  binary.compiler.defines += ['DPP_STATIC']
+
+  # Platform-specific socket engine
+  if binary.compiler.target.platform == 'linux':
+    binary.sources += ['DPP/src/dpp/socketengines/epoll.cpp']
+  elif binary.compiler.target.platform == 'windows':
+    binary.sources += ['DPP/src/dpp/socketengines/poll.cpp']
+
+  # Core sources
+  binary.sources += [
+    'DPP/src/dpp/application.cpp',
+    'DPP/src/dpp/auditlog.cpp',
+    'DPP/src/dpp/automod.cpp',
+    'DPP/src/dpp/ban.cpp',
+    'DPP/src/dpp/bignum.cpp',
+    'DPP/src/dpp/cache.cpp',
+    'DPP/src/dpp/channel.cpp',
+    'DPP/src/dpp/cluster.cpp',
+    'DPP/src/dpp/commandhandler.cpp',
+    'DPP/src/dpp/discordclient.cpp',
+    'DPP/src/dpp/discordevents.cpp',
+    'DPP/src/dpp/discordvoiceclient.cpp',
+    'DPP/src/dpp/discord_webhook_server.cpp',
+    'DPP/src/dpp/dispatcher.cpp',
+    'DPP/src/dpp/dns.cpp',
+    'DPP/src/dpp/dtemplate.cpp',
+    'DPP/src/dpp/emoji.cpp',
+    'DPP/src/dpp/entitlement.cpp',
+    'DPP/src/dpp/etf.cpp',
+    'DPP/src/dpp/guild.cpp',
+    'DPP/src/dpp/httpsclient.cpp',
+    'DPP/src/dpp/http_server.cpp',
+    'DPP/src/dpp/http_server_request.cpp',
+    'DPP/src/dpp/integration.cpp',
+    'DPP/src/dpp/invite.cpp',
+    'DPP/src/dpp/message.cpp',
+    'DPP/src/dpp/permissions.cpp',
+    'DPP/src/dpp/presence.cpp',
+    'DPP/src/dpp/prune.cpp',
+    'DPP/src/dpp/queues.cpp',
+    'DPP/src/dpp/role.cpp',
+    'DPP/src/dpp/scheduled_event.cpp',
+    'DPP/src/dpp/signature_verifier.cpp',
+    'DPP/src/dpp/sku.cpp',
+    'DPP/src/dpp/slashcommand.cpp',
+    'DPP/src/dpp/snowflake.cpp',
+    'DPP/src/dpp/socket.cpp',
+    'DPP/src/dpp/socketengine.cpp',
+    'DPP/src/dpp/ssl_context.cpp',
+    'DPP/src/dpp/sslconnection.cpp',
+    'DPP/src/dpp/stage_instance.cpp',
+    'DPP/src/dpp/thread.cpp',
+    'DPP/src/dpp/thread_pool.cpp',
+    'DPP/src/dpp/user.cpp',
+    'DPP/src/dpp/utility.cpp',
+    'DPP/src/dpp/voiceregion.cpp',
+    'DPP/src/dpp/voicestate.cpp',
+    'DPP/src/dpp/webhook.cpp',
+    'DPP/src/dpp/wsclient.cpp',
+    'DPP/src/dpp/zlibcontext.cpp',
+  ]
+
+  # Cluster API sources
+  binary.sources += [
+    'DPP/src/dpp/cluster/appcommand.cpp',
+    'DPP/src/dpp/cluster/automod.cpp',
+    'DPP/src/dpp/cluster/channel.cpp',
+    'DPP/src/dpp/cluster/confirmation.cpp',
+    'DPP/src/dpp/cluster/dm.cpp',
+    'DPP/src/dpp/cluster/emoji.cpp',
+    'DPP/src/dpp/cluster/entitlement.cpp',
+    'DPP/src/dpp/cluster/gateway.cpp',
+    'DPP/src/dpp/cluster/guild.cpp',
+    'DPP/src/dpp/cluster/guild_member.cpp',
+    'DPP/src/dpp/cluster/invite.cpp',
+    'DPP/src/dpp/cluster/json_interface.cpp',
+    'DPP/src/dpp/cluster/message.cpp',
+    'DPP/src/dpp/cluster/role.cpp',
+    'DPP/src/dpp/cluster/scheduled_event.cpp',
+    'DPP/src/dpp/cluster/sku.cpp',
+    'DPP/src/dpp/cluster/stage_instance.cpp',
+    'DPP/src/dpp/cluster/sticker.cpp',
+    'DPP/src/dpp/cluster/template.cpp',
+    'DPP/src/dpp/cluster/thread.cpp',
+    'DPP/src/dpp/cluster/timer.cpp',
+    'DPP/src/dpp/cluster/user.cpp',
+    #'DPP/src/dpp/cluster/voice.cpp',
+    'DPP/src/dpp/cluster/webhook.cpp',
+  ]
+
+  # Event handlers
+  binary.sources += [
+    'DPP/src/dpp/events/automod_rule_create.cpp',
+    'DPP/src/dpp/events/automod_rule_delete.cpp',
+    'DPP/src/dpp/events/automod_rule_execute.cpp',
+    'DPP/src/dpp/events/automod_rule_update.cpp',
+    'DPP/src/dpp/events/channel_create.cpp',
+    'DPP/src/dpp/events/channel_delete.cpp',
+    'DPP/src/dpp/events/channel_pins_update.cpp',
+    'DPP/src/dpp/events/channel_update.cpp',
+    'DPP/src/dpp/events/entitlement_create.cpp',
+    'DPP/src/dpp/events/entitlement_delete.cpp',
+    'DPP/src/dpp/events/entitlement_update.cpp',
+    'DPP/src/dpp/events/guild_audit_log_entry_create.cpp',
+    'DPP/src/dpp/events/guild_ban_add.cpp',
+    'DPP/src/dpp/events/guild_ban_remove.cpp',
+    'DPP/src/dpp/events/guild_create.cpp',
+    'DPP/src/dpp/events/guild_delete.cpp',
+    'DPP/src/dpp/events/guild_emojis_update.cpp',
+    'DPP/src/dpp/events/guild_integrations_update.cpp',
+    'DPP/src/dpp/events/guild_join_request_delete.cpp',
+    'DPP/src/dpp/events/guild_member_add.cpp',
+    'DPP/src/dpp/events/guild_member_remove.cpp',
+    'DPP/src/dpp/events/guild_member_update.cpp',
+    'DPP/src/dpp/events/guild_members_chunk.cpp',
+    'DPP/src/dpp/events/guild_role_create.cpp',
+    'DPP/src/dpp/events/guild_role_delete.cpp',
+    'DPP/src/dpp/events/guild_role_update.cpp',
+    'DPP/src/dpp/events/guild_scheduled_event_create.cpp',
+    'DPP/src/dpp/events/guild_scheduled_event_delete.cpp',
+    'DPP/src/dpp/events/guild_scheduled_event_update.cpp',
+    'DPP/src/dpp/events/guild_scheduled_event_user_add.cpp',
+    'DPP/src/dpp/events/guild_scheduled_event_user_remove.cpp',
+    'DPP/src/dpp/events/guild_stickers_update.cpp',
+    'DPP/src/dpp/events/guild_update.cpp',
+    'DPP/src/dpp/events/integration_create.cpp',
+    'DPP/src/dpp/events/integration_delete.cpp',
+    'DPP/src/dpp/events/integration_update.cpp',
+    'DPP/src/dpp/events/interaction_create.cpp',
+    'DPP/src/dpp/events/invite_create.cpp',
+    'DPP/src/dpp/events/invite_delete.cpp',
+    'DPP/src/dpp/events/logger.cpp',
+    'DPP/src/dpp/events/message_create.cpp',
+    'DPP/src/dpp/events/message_delete.cpp',
+    'DPP/src/dpp/events/message_delete_bulk.cpp',
+    'DPP/src/dpp/events/message_poll_vote_add.cpp',
+    'DPP/src/dpp/events/message_poll_vote_remove.cpp',
+    'DPP/src/dpp/events/message_reaction_add.cpp',
+    'DPP/src/dpp/events/message_reaction_remove.cpp',
+    'DPP/src/dpp/events/message_reaction_remove_all.cpp',
+    'DPP/src/dpp/events/message_reaction_remove_emoji.cpp',
+    'DPP/src/dpp/events/message_update.cpp',
+    'DPP/src/dpp/events/presence_update.cpp',
+    'DPP/src/dpp/events/ready.cpp',
+    'DPP/src/dpp/events/resumed.cpp',
+    'DPP/src/dpp/events/stage_instance_create.cpp',
+    'DPP/src/dpp/events/stage_instance_delete.cpp',
+    'DPP/src/dpp/events/stage_instance_update.cpp',
+    'DPP/src/dpp/events/thread_create.cpp',
+    'DPP/src/dpp/events/thread_delete.cpp',
+    'DPP/src/dpp/events/thread_list_sync.cpp',
+    'DPP/src/dpp/events/thread_member_update.cpp',
+    'DPP/src/dpp/events/thread_members_update.cpp',
+    'DPP/src/dpp/events/thread_update.cpp',
+    'DPP/src/dpp/events/typing_start.cpp',
+    'DPP/src/dpp/events/user_update.cpp',
+    'DPP/src/dpp/events/voice_channel_effect.cpp',
+    'DPP/src/dpp/events/voice_channel_effect_send.cpp',
+    'DPP/src/dpp/events/voice_server_update.cpp',
+    'DPP/src/dpp/events/voice_state_update.cpp',
+    'DPP/src/dpp/events/webhooks_update.cpp',
+  ]
+
+  # Voice stub (no full voice support)
+  binary.sources += [
+    'DPP/src/dpp/voice/stub/stubs.cpp',
+  ]
+
+  rvalue[binary.compiler.target.arch] = builder.Add(binary)
