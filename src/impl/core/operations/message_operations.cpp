@@ -73,6 +73,11 @@ void MessageOperations::EditEmbed(dpp::snowflake channel_id, dpp::snowflake mess
 	m_cluster->message_edit(msg, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to edit message with embed"); });
 }
 
+void MessageOperations::EditMessage(const DiscordMessage* message, Callback callback) {
+	if (!IsValid() || !message) return;
+	m_cluster->message_edit(message->GetDPPMessage(), callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to edit message"); });
+}
+
 void MessageOperations::Delete(dpp::snowflake channel_id, dpp::snowflake message_id, Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->message_delete(message_id, channel_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to delete message"); });
@@ -115,4 +120,19 @@ void MessageOperations::RemoveAllReactions(dpp::snowflake channel_id, dpp::snowf
 void MessageOperations::Crosspost(dpp::snowflake channel_id, dpp::snowflake message_id, Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->message_crosspost(channel_id, message_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to crosspost message"); });
+}
+
+void MessageOperations::SendDPPMessage(const dpp::message& message, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->message_create(message, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to send message"); });
+}
+
+void MessageOperations::EndPoll(const dpp::message& message, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->poll_end(message, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to end poll"); });
+}
+
+void MessageOperations::GetPollAnswerVoters(const dpp::message& message, uint32_t answer_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->poll_get_answer_voters(message, answer_id, 0, 100, callback);
 }

@@ -21,23 +21,28 @@
 #include "entities/discord_sticker.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
+#include "core/callback_helpers.h"
 
-void DiscordSticker::Delete() {
+void DiscordSticker::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client || m_sticker.guild_id == 0) return;
-	m_client->GetCluster()->guild_sticker_delete(m_sticker.guild_id, m_sticker.id,
-		[id = m_sticker.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to delete sticker %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Stickers().Delete(m_sticker.guild_id, m_sticker.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
 		});
+	} else {
+		m_client->Stickers().Delete(m_sticker.guild_id, m_sticker.id);
+	}
 }
 
-void DiscordSticker::Edit(const char* name, const char* description, const char* tags) {
+void DiscordSticker::Edit(const char* name, const char* description, const char* tags, IPluginFunction* callback, cell_t data) {
 	if (!m_client || m_sticker.guild_id == 0) return;
-	dpp::sticker edited = m_sticker;
-	if (name) edited.name = name;
-	if (description) edited.description = description;
-	if (tags) edited.tags = tags;
-	m_client->GetCluster()->guild_sticker_modify(edited,
-		[id = m_sticker.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to edit sticker %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Stickers().Modify(m_sticker.guild_id, m_sticker.id, name, description, tags, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordSticker>(client_handle, client, callback, data, cb);
 		});
+	} else {
+		m_client->Stickers().Modify(m_sticker.guild_id, m_sticker.id, name, description, tags);
+	}
 }

@@ -59,17 +59,14 @@ public:
 
 	DiscordUser* GetAuthor() const {
 		if (!m_client) return nullptr;
-		if (m_message.guild_id != 0 && m_message.member.user_id != 0) {
-			return new DiscordUser(m_message.author, m_message.member, m_client);
-		}
 		return new DiscordUser(m_message.author, m_client);
 	}
 	const char* GetContent() const { return m_message.content.c_str(); }
-	const size_t GetContentLength() const { return m_message.content.length(); }
+	size_t GetContentLength() const { return m_message.content.length(); }
 	std::string GetMessageId() const { return m_message.id.str(); }
 	std::string GetChannelId() const { return m_message.channel_id.str(); }
 	std::string GetGuildId() const { return m_message.guild_id.str(); }
-	std::string GetAuthorNickname() const { return m_message.member.get_nickname(); }
+	std::string GetAuthorNickName() const { return m_message.member.get_nickname(); }
 	dpp::message_type GetType() const { return m_message.type; }
 	bool IsPinned() const { return m_message.pinned; }
 	bool IsTTS() const { return m_message.tts; }
@@ -134,16 +131,27 @@ public:
 		if (index >= m_message.mention_roles.size()) return "";
 		return m_message.mention_roles[index].str();
 	}
+	std::string GetMentionedChannelId(size_t index) const {
+		if (index >= m_message.mention_channels.size()) return "";
+		return m_message.mention_channels[index].id.str();
+	}
+
+	// Array accessors
+	const std::vector<std::pair<dpp::user, dpp::guild_member>>& GetMentionedUsers() const { return m_message.mentions; }
+	const std::vector<dpp::snowflake>& GetMentionedRoles() const { return m_message.mention_roles; }
+	const std::vector<dpp::channel>& GetMentionedChannels() const { return m_message.mention_channels; }
 
 	// Message actions
 	void Reply(const char* content, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void ReplyEmbed(const char* content, const class DiscordEmbed* embed, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void ReplyFromObject(const DiscordMessage* reply_message, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Crosspost();
 	void CreateThread(const char* name, int auto_archive_duration = 60, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Message management methods
 	void Edit(const char* new_content, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void EditEmbed(const char* new_content, const class DiscordEmbed* embed, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void EditFromObject(IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Delete(IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Pin(IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Unpin(IPluginFunction* callback = nullptr, cell_t data = 0);

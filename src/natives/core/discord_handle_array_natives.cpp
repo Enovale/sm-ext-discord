@@ -37,14 +37,6 @@ static cell_t handle_array_GetAt(IPluginContext* pContext, const cell_t* params)
 	return static_cast<cell_t>(arr->GetAt(static_cast<size_t>(params[2])));
 }
 
-static cell_t handle_array_GetStringCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordHandleArray* arr = Handles.GetPointer<DiscordHandleArray>(pContext, params[1]);
-	if (!arr) return 0;
-
-	return static_cast<cell_t>(arr->GetStringCount());
-}
-
 static cell_t handle_array_GetStringAt(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordHandleArray* arr = Handles.GetPointer<DiscordHandleArray>(pContext, params[1]);
@@ -58,7 +50,6 @@ static cell_t handle_array_GetStringAt(IPluginContext* pContext, const cell_t* p
 extern const sp_nativeinfo_t discord_handle_array_natives[] = {
 	{"DiscordHandleArray.Length.get", handle_array_GetLength},
 	{"DiscordHandleArray.GetAt", handle_array_GetAt},
-	{"DiscordHandleArray.StringCount.get", handle_array_GetStringCount},
 	{"DiscordHandleArray.GetStringAt", handle_array_GetStringAt},
 	{nullptr, nullptr}
 };

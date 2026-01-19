@@ -40,6 +40,7 @@ methodmap DiscordChannel < Handle
    *                    - If bot is currently online: cache is up-to-date
    *                    - If bot was online but disconnected: cache remains at last-known state
    *
+   * @note              Caller is responsible for closing the returned handle
    * @error             Invalid channel ID format
    */
   public static native DiscordChannel FindChannel(Discord discord, const char[] channel_id);
@@ -95,6 +96,8 @@ methodmap DiscordChannel < Handle
 
   /**
    * Gets or sets the position of the channel
+   *
+   * @note  Must call Modify() after to sync changes to Discord
    */
   property int Position {
     public native get();
@@ -103,6 +106,8 @@ methodmap DiscordChannel < Handle
 
   /**
    * Gets or sets whether the channel is NSFW
+   *
+   * @note  Must call Modify() after to sync changes to Discord
    */
   property bool IsNSFW {
     public native get();
@@ -174,6 +179,8 @@ methodmap DiscordChannel < Handle
 
   /**
    * Gets or sets the bitrate of the voice channel (voice channels only)
+   *
+   * @note  Must call Modify() after to sync changes to Discord
    */
   property int Bitrate {
     public native get();
@@ -182,6 +189,8 @@ methodmap DiscordChannel < Handle
 
   /**
    * Gets or sets the user limit of the voice channel (voice channels only)
+   *
+   * @note  Must call Modify() after to sync changes to Discord
    */
   property int UserLimit {
     public native get();
@@ -190,6 +199,8 @@ methodmap DiscordChannel < Handle
 
   /**
    * Gets or sets the rate limit per user (slowmode) in seconds
+   *
+   * @note  Must call Modify() after to sync changes to Discord
    */
   property int RateLimitPerUser {
     public native get();
@@ -215,6 +226,8 @@ methodmap DiscordChannel < Handle
   /**
    * Sets the name of the channel
    *
+   * @note  Must call Modify() after to sync changes to Discord
+   *
    * @param name      New channel name
    */
   public native void SetName(const char[] name);
@@ -222,7 +235,7 @@ methodmap DiscordChannel < Handle
   /**
    * Gets the channel flags
    */
-  property ChannelFlags Flags {
+  property DiscordChannelFlags Flags {
     public native get();
   }
 
@@ -250,6 +263,14 @@ methodmap DiscordChannel < Handle
   }
 
   /**
+   * Gets the last pin timestamp as a 64-bit timestamp string
+   *
+   * @param buffer      Buffer to store the timestamp
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetLastPinTimestamp(char[] buffer, int maxlength);
+
+  /**
    * Gets the default thread rate limit per user
    */
   property int DefaultThreadRateLimitPerUser {
@@ -259,21 +280,21 @@ methodmap DiscordChannel < Handle
   /**
    * Gets the default auto archive duration for threads
    */
-  property AutoArchiveDuration DefaultAutoArchiveDuration {
+  property DiscordAutoArchiveDuration DefaultAutoArchiveDuration {
     public native get();
   }
 
   /**
    * Gets the default forum sort order
    */
-  property ForumSortOrder DefaultSortOrder {
+  property DiscordForumSortOrder DefaultSortOrder {
     public native get();
   }
 
   /**
    * Gets the forum layout type
    */
-  property ForumLayoutType ForumLayout {
+  property DiscordForumLayoutType ForumLayout {
     public native get();
   }
 
@@ -365,6 +386,8 @@ methodmap DiscordChannel < Handle
 
   /**
    * Sets the topic of the channel
+   *
+   * @note  Must call Modify() after to sync changes to Discord
    */
   public native void SetTopic(const char[] topic);
 
@@ -379,6 +402,8 @@ methodmap DiscordChannel < Handle
   /**
    * Sets the RTC region for voice channels
    *
+   * @note              Must call Modify() after to sync changes to Discord
+   *
    * @param region      RTC region to set
    * @return            True on success, false on failure
    */
@@ -391,8 +416,10 @@ methodmap DiscordChannel < Handle
    * @param type        Type of the target (user or role)
    * @param allowed     Allowed permissions as string
    * @param denied      Denied permissions as string
+   * @param callback    Optional callback to receive the updated channel
+   * @param data        Optional data to pass to callback
    */
-  public native void AddPermissionOverwrite(const char[] target_id, OverwriteType type, const char[] allowed, const char[] denied);
+  public native void AddPermissionOverwrite(const char[] target_id, DiscordOverwriteType type, const char[] allowed, const char[] denied, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Sets permission overwrite for a user or role (replaces existing)
@@ -401,16 +428,32 @@ methodmap DiscordChannel < Handle
    * @param type        Type of the target (user or role)
    * @param allowed     Allowed permissions as string
    * @param denied      Denied permissions as string
+   * @param callback    Optional callback to receive the updated channel
+   * @param data        Optional data to pass to callback
    */
-  public native void SetPermissionOverwrite(const char[] target_id, OverwriteType type, const char[] allowed, const char[] denied);
+  public native void SetPermissionOverwrite(const char[] target_id, DiscordOverwriteType type, const char[] allowed, const char[] denied, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Removes permission overwrite for a user or role
    *
    * @param target_id   Target ID to remove permission overwrite for
    * @param type        Type of the target (user or role)
+   * @param callback    Optional callback to receive the updated channel
+   * @param data        Optional data to pass to callback
    */
-  public native void RemovePermissionOverwrite(const char[] target_id, OverwriteType type);
+  public native void RemovePermissionOverwrite(const char[] target_id, DiscordOverwriteType type, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Edits permission overwrites for a user or role in this channel
+   *
+   * @param overwrite_id  ID of the user or role to edit permissions for
+   * @param allow         Permissions to allow (bitfield)
+   * @param deny          Permissions to deny (bitfield)
+   * @param is_member     True if overwrite_id is a user, false if it's a role
+   * @param callback      Optional callback to receive confirmation
+   * @param data          Optional data to pass to callback
+   */
+  public native void EditPermissions(const char[] overwrite_id, int allow, int deny, bool is_member, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Gets user permissions in this channel
@@ -528,7 +571,7 @@ methodmap DiscordChannel < Handle
    * @param index     Index of the permission overwrite
    * @return          Type of the permission overwrite
    */
-  public native OverwriteType GetPermissionOverwriteType(int index);
+  public native DiscordOverwriteType GetPermissionOverwriteType(int index);
 
   /**
    * Gets the number of available tags (forum channels)
@@ -618,7 +661,7 @@ methodmap DiscordChannel < Handle
    * @param callback          Optional callback to receive the created thread
    * @param data              Optional data to pass to callback
    */
-  public native void CreateForumThread(const char[] name, const char[] message, const char[][] tag_ids = {}, int tag_count = 0, AutoArchiveDuration auto_archive = AutoArchive_1Day, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void CreateForumThread(const char[] name, const char[] message, const char[][] tag_ids = {}, int tag_count = 0, DiscordAutoArchiveDuration auto_archive = AutoArchive_1Day, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Creates a new thread in this forum channel with embed
@@ -633,14 +676,25 @@ methodmap DiscordChannel < Handle
    * @param callback          Optional callback to receive the created thread
    * @param data              Optional data to pass to callback
    */
-  public native void CreateForumThreadEmbed(const char[] name, const char[] message, DiscordEmbed embed, const char[][] tag_ids = {}, int tag_count = 0, AutoArchiveDuration auto_archive = AutoArchive_1Day, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void CreateForumThreadEmbed(const char[] name, const char[] message, DiscordEmbed embed, const char[][] tag_ids = {}, int tag_count = 0, DiscordAutoArchiveDuration auto_archive = AutoArchive_1Day, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Sets the parent category of the channel
    *
+   * @note            Must call Modify() after to sync changes to Discord 
+   *
    * @param parent_id Parent category ID
    */
   public native void SetParent(const char[] parent_id);
+
+  /**
+   * Applies all pending channel modifications to Discord
+   *
+   * @param callback  Optional callback to receive the updated channel
+   * @param data      Optional data to pass to callback
+   * @note            Call this after using Set methods to commit changes
+   */
+  public native void Modify(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Creates a new thread in this channel (not forum)
@@ -653,7 +707,49 @@ methodmap DiscordChannel < Handle
    * @param callback          Optional callback to receive the created thread
    * @param data              Optional data to pass to callback
    */
-  public native void CreateThread(const char[] name, DiscordChannelType type = ChannelType_PublicThread, AutoArchiveDuration auto_archive = AutoArchive_1Day, bool invitable = true, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void CreateThread(const char[] name, DiscordChannelType type = ChannelType_PublicThread, DiscordAutoArchiveDuration auto_archive = AutoArchive_1Day, bool invitable = true, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Creates a thread from an existing message
+   *
+   * @param message_id        Message ID to create thread from
+   * @param name              Thread name (1-100 characters)
+   * @param auto_archive      Auto-archive duration
+   * @param rate_limit        Rate limit per user in seconds (0-21600)
+   * @param callback          Optional callback to receive the created thread
+   * @param data              Optional data to pass to callback
+   * @note                    Result contains: "thread" (DiscordChannel handle)
+   */
+  public native void CreateThreadWithMessage(const char[] message_id, const char[] name, DiscordAutoArchiveDuration auto_archive = AutoArchive_1Day, int rate_limit = 0, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Joins this thread
+   *
+   * @param callback          Optional callback to receive confirmation
+   * @param data              Optional data to pass to callback
+   */
+  public native void JoinThread(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Leaves this thread
+   *
+   * @param callback          Optional callback to receive confirmation
+   * @param data              Optional data to pass to callback
+   */
+  public native void LeaveThread(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Modifies this thread
+   *
+   * @param name              New thread name (empty string to keep current)
+   * @param auto_archive      Auto-archive duration (0 to keep current)
+   * @param rate_limit        Rate limit per user in seconds (0 to keep current)
+   * @param archived          Whether the thread is archived
+   * @param locked            Whether the thread is locked
+   * @param callback          Optional callback to receive confirmation
+   * @param data              Optional data to pass to callback
+   */
+  public native void ModifyThread(const char[] name = "", int auto_archive = 0, int rate_limit = 0, bool archived = false, bool locked = false, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Adds a user to this thread

@@ -27,29 +27,9 @@ static cell_t slashcommand_CreateSlashCommand(IPluginContext* pContext, const ce
 	if (!discord) return 0;
 
 	DiscordSlashCommand* command = new DiscordSlashCommand(discord);
-
-	if (params[0] >= 2 && params[2] != 0) {
-		char* commandId;
-		pContext->LocalToString(params[2], &commandId);
-
-		dpp::snowflake cmd_id;
-		if (!ParseSnowflake(pContext, commandId, cmd_id)) {
-			delete command;
-			return 0;
-		}
-		command->SetCommandId(cmd_id);
-
-		if (params[0] >= 3 && params[3] != 0) {
-			char* guildId;
-			pContext->LocalToString(params[3], &guildId);
-			dpp::snowflake guild_id;
-			if (ParseSnowflake(guildId, guild_id)) {
-				command->SetGuildId(guild_id);
-			}
-		}
-	}
-
-	return Handles.Create(pContext, command, HandleId::DiscordSlashCommand);
+	Handle_t handle = Handles.Create(pContext, command, HandleId::DiscordSlashCommand);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t slashcommand_FromGlobalCommand(IPluginContext* pContext, const cell_t* params)
@@ -69,7 +49,9 @@ static cell_t slashcommand_FromGlobalCommand(IPluginContext* pContext, const cel
 	}
 	command->SetCommandId(cmd_id);
 
-	return Handles.Create(pContext, command, HandleId::DiscordSlashCommand);
+	Handle_t handle = Handles.Create(pContext, command, HandleId::DiscordSlashCommand);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t slashcommand_FromGuildCommand(IPluginContext* pContext, const cell_t* params)
@@ -92,7 +74,9 @@ static cell_t slashcommand_FromGuildCommand(IPluginContext* pContext, const cell
 	command->SetCommandId(cmd_id);
 	command->SetGuildId(guild_id);
 
-	return Handles.Create(pContext, command, HandleId::DiscordSlashCommand);
+	Handle_t handle = Handles.Create(pContext, command, HandleId::DiscordSlashCommand);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t slashcommand_SetName(IPluginContext* pContext, const cell_t* params)
@@ -246,7 +230,11 @@ static cell_t slashcommand_RegisterToGuild(IPluginContext* pContext, const cell_
 
 	dpp::snowflake guild;
 	if (!ParseSnowflake(pContext, guildId, guild)) return 0;
-	command->RegisterToGuild(guild);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	command->RegisterToGuild(guild, callback, data);
 	return 1;
 }
 
@@ -255,7 +243,10 @@ static cell_t slashcommand_RegisterGlobally(IPluginContext* pContext, const cell
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	command->RegisterGlobally();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	command->RegisterGlobally(callback, data);
 	return 1;
 }
 
@@ -264,14 +255,18 @@ static cell_t slashcommand_Update(IPluginContext* pContext, const cell_t* params
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
+	char* guildId;
+	pContext->LocalToString(params[2], &guildId);
+
 	dpp::snowflake guild_id = 0;
-	if (params[2] != 0) {
-		char* guildId;
-		pContext->LocalToString(params[2], &guildId);
+	if (guildId[0] != '\0') {
 		if (!ParseSnowflake(pContext, guildId, guild_id)) return 0;
 	}
 
-	return command->Update(guild_id);
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	return command->Update(guild_id, callback, data);
 }
 
 static cell_t slashcommand_Delete(IPluginContext* pContext, const cell_t* params)
@@ -279,14 +274,18 @@ static cell_t slashcommand_Delete(IPluginContext* pContext, const cell_t* params
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
+	char* guildId;
+	pContext->LocalToString(params[2], &guildId);
+
 	dpp::snowflake guild_id = 0;
-	if (params[2] != 0) {
-		char* guildId;
-		pContext->LocalToString(params[2], &guildId);
+	if (guildId[0] != '\0') {
 		if (!ParseSnowflake(pContext, guildId, guild_id)) return 0;
 	}
 
-	command->Delete(guild_id);
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	command->Delete(guild_id, callback, data);
 	return 1;
 }
 
@@ -358,7 +357,7 @@ static cell_t slashcommand_GetPermissionOverride(IPluginContext* pContext, const
 	}
 
 	char targetStr[32];
-	snprintf(targetStr, sizeof(targetStr), "%" PRIu64, static_cast<unsigned long long>(target_id));
+	FormatInt64(static_cast<int64_t>(target_id), targetStr, sizeof(targetStr));
 	pContext->StringToLocal(params[3], params[4], targetStr);
 
 	cell_t* typePtr;
@@ -382,7 +381,11 @@ static cell_t slashcommand_ApplyPermissionOverrides(IPluginContext* pContext, co
 
 	dpp::snowflake guild_id;
 	if (!ParseSnowflake(pContext, guildId, guild_id)) return 0;
-	return command->ApplyPermissionOverrides(guild_id);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	return command->ApplyPermissionOverrides(guild_id, callback, data);
 }
 
 static cell_t slashcommand_SetContextMenuType(IPluginContext* pContext, const cell_t* params)
@@ -451,12 +454,9 @@ static cell_t slashcommand_AddLocalization(IPluginContext* pContext, const cell_
 
 	pContext->LocalToString(params[2], &language);
 	pContext->LocalToString(params[3], &name);
+	pContext->LocalToString(params[4], &description);
 
-	if (params[0] >= 4) {
-		pContext->LocalToString(params[4], &description);
-	}
-
-	command->AddLocalization(language, name, description);
+	command->AddLocalization(language, name, description && description[0] ? description : nullptr);
 	return 1;
 }
 
@@ -581,7 +581,10 @@ static cell_t slashcommand_BulkDeleteGlobalCommands(IPluginContext* pContext, co
 	DiscordClient* discord = Handles.GetPointer<DiscordClient>(pContext, params[1]);
 	if (!discord) return 0;
 
-	discord->Commands().BulkDeleteGlobal();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	DiscordSlashCommand::BulkDeleteGlobal(discord, callback, data);
 	return 1;
 }
 

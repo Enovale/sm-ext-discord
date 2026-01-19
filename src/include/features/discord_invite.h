@@ -40,7 +40,7 @@ public:
 	std::string GetTargetUserId() const { return m_invite.target_user_id.str(); }
 
 	// Inviter information
-	const char* GetInviterUsername() const { return m_invite.inviter.username.c_str(); }
+	const char* GetInviterUserName() const { return m_invite.inviter.username.c_str(); }
 	std::string GetInviterAvatarUrl() const { return m_invite.inviter.get_avatar_url(); }
 	bool GetInviterIsBot() const { return m_invite.inviter.is_bot(); }
 

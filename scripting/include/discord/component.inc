@@ -9,15 +9,15 @@ methodmap DiscordComponent < Handle
   /**
    * Component type
    */
-  property ComponentType Type {
-    public native set(ComponentType type);
+  property DiscordComponentType Type {
+    public native set(DiscordComponentType type);
   }
 
   /**
    * Button style
    */
-  property ComponentStyle Style {
-    public native set(ComponentStyle style);
+  property DiscordComponentStyle Style {
+    public native set(DiscordComponentStyle style);
   }
 
   /**
@@ -51,8 +51,8 @@ methodmap DiscordComponent < Handle
   /**
    * Separator spacing (V2 components)
    */
-  property SeparatorSpacing Spacing {
-    public native set(SeparatorSpacing spacing);
+  property DiscordSeparatorSpacing Spacing {
+    public native set(DiscordSeparatorSpacing spacing);
   }
 
   /**
@@ -72,8 +72,8 @@ methodmap DiscordComponent < Handle
   /**
    * Text input style
    */
-  property TextStyleType TextStyle {
-    public native set(TextStyleType text_style);
+  property DiscordTextStyleType TextStyle {
+    public native set(DiscordTextStyleType text_style);
   }
 
   /**
@@ -229,5 +229,5 @@ methodmap DiscordComponent < Handle
    * @param id     Entity ID (user/role/channel)
    * @param type   Entity type
    */
-  public native void AddDefaultValue(const char[] id, ComponentDefaultValueType type);
+  public native void AddDefaultValue(const char[] id, DiscordComponentDefaultValueType type);
 }

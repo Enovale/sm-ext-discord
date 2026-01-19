@@ -50,3 +50,8 @@ void InviteOperations::Delete(const char* code, const char* reason, Callback cal
 	if (!IsValid() || !code) return;
 	m_cluster->invite_delete(code, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to delete invite"); });
 }
+
+void InviteOperations::Get(const char* code, Callback callback) {
+	if (!IsValid() || !code) return;
+	m_cluster->invite_get(code, callback);
+}

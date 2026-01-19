@@ -339,9 +339,7 @@ void EventHandler::OnReady(const dpp::ready_t& event) {
 	ev->SetInt("guild_count", event.guild_count);
 
 	DiscordHandleArray* guild_ids = new DiscordHandleArray(false);
-	for (const auto& guild : event.guilds) {
-		guild_ids->AddString(guild.str());
-	}
+	guild_ids->AddStrings(event.guilds);
 	Handle_t guild_ids_handle = Handles.CreateCallback(guild_ids, HandleId::DiscordHandleArray);
 	ev->SetHandle("guild_ids", guild_ids_handle);
 
@@ -606,9 +604,7 @@ void EventHandler::OnMessageDeleteBulk(const dpp::message_delete_bulk_t& event) 
 	ev->SetString("guild_id", event.deleting_guild.id.str());
 
 	DiscordHandleArray* message_ids = new DiscordHandleArray(false);
-	for (const auto& id : event.deleted) {
-		message_ids->AddString(id.str());
-	}
+	message_ids->AddStrings(event.deleted);
 	Handle_t message_ids_handle = Handles.CreateCallback(message_ids, HandleId::DiscordHandleArray);
 	ev->SetHandle("message_ids", message_ids_handle);
 
@@ -723,7 +719,7 @@ void EventHandler::OnThreadMembersUpdate(const dpp::thread_members_update_t& eve
 	ev->SetString("guild_id", event.updating_guild ? event.updating_guild->id.str() : "");
 	ev->SetInt("member_count", event.member_count);
 
-	DiscordHandleArray* added_members = new DiscordHandleArray(false);
+	DiscordHandleArray* added_members = new DiscordHandleArray();
 	for (const auto& member : event.added) {
 		DiscordThreadMember* threadMember = new DiscordThreadMember(member);
 		Handle_t h = Handles.CreateCallback(threadMember, HandleId::DiscordThreadMember);
@@ -733,9 +729,7 @@ void EventHandler::OnThreadMembersUpdate(const dpp::thread_members_update_t& eve
 	ev->SetHandle("added_members", added_handle);
 
 	DiscordHandleArray* removed_user_ids = new DiscordHandleArray(false);
-	for (const auto& id : event.removed_ids) {
-		removed_user_ids->AddString(id.str());
-	}
+	removed_user_ids->AddStrings(event.removed_ids);
 	Handle_t removed_handle = Handles.CreateCallback(removed_user_ids, HandleId::DiscordHandleArray);
 	ev->SetHandle("removed_user_ids", removed_handle);
 
@@ -801,14 +795,10 @@ void EventHandler::OnGuildEmojisUpdate(const dpp::guild_emojis_update_t& event) 
 	ev->SetString("guild_id", event.updating_guild.id.str());
 	ev->SetInt("emoji_count", event.emojis.size());
 
-	DiscordHandleArray* emojis = new DiscordHandleArray(true);
-	for (const auto& emoji : event.emojis) {
-		DiscordEmoji* emojiObj = new DiscordEmoji(emoji, event.updating_guild.id, m_client);
-		Handle_t emojiHandle = Handles.CreateCallback(emojiObj, HandleId::DiscordEmoji);
-		emojis->Add(emojiHandle);
-	}
-	Handle_t emojisHandle = Handles.CreateCallback(emojis, HandleId::DiscordHandleArray);
-	ev->SetHandle("emojis", emojisHandle);
+	DiscordHandleArray* emoji_ids = new DiscordHandleArray(false);
+	emoji_ids->AddStrings(event.emojis);
+	Handle_t emoji_ids_handle = Handles.CreateCallback(emoji_ids, HandleId::DiscordHandleArray);
+	ev->SetHandle("emoji_ids", emoji_ids_handle);
 
 	DispatchEvent(CallbackId::GuildEmojisUpdate, ev);
 }
@@ -818,7 +808,7 @@ void EventHandler::OnGuildStickersUpdate(const dpp::guild_stickers_update_t& eve
 	ev->SetString("guild_id", event.updating_guild.id.str());
 	ev->SetInt("sticker_count", event.stickers.size());
 
-	DiscordHandleArray* stickers = new DiscordHandleArray(true);
+	DiscordHandleArray* stickers = new DiscordHandleArray();
 	for (const auto& sticker : event.stickers) {
 		DiscordSticker* stickerObj = new DiscordSticker(sticker, m_client);
 		Handle_t stickerHandle = Handles.CreateCallback(stickerObj, HandleId::DiscordSticker);

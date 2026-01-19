@@ -79,12 +79,23 @@ methodmap DiscordWebhook < Handle
    * Sets the webhook avatar from a file
    *
    * @note               Must call Modify() after to sync changes to Discord
+   * @note               Mutually exclusive with SetAvatarFromUrl - use one or the other, not both
    *
    * @param filepath     Path to the image file (relative to game directory)
    * @param type         Image type (Image_PNG, Image_JPG, Image_GIF, Image_WEBP)
    * @return             True on success, false on failure
    */
-  public native bool SetAvatar(const char[] filepath, DiscordImageType type = Image_PNG);
+  public native bool SetAvatarFromFile(const char[] filepath, DiscordImageType type = Image_PNG);
+
+  /**
+   * Sets the webhook avatar from a URL
+   *
+   * @note               Must call Modify() after to sync changes to Discord
+   * @note               Mutually exclusive with SetAvatarFromFile - use one or the other, not both
+   *
+   * @param url          URL of the avatar image
+   */
+  public native void SetAvatarFromUrl(const char[] url);
 
   /**
    * Gets the webhook type
@@ -156,6 +167,26 @@ methodmap DiscordWebhook < Handle
    * @param maxlength   Maximum length of the buffer
    */
   public native void GetImageData(char[] buffer, int maxlength);
+
+  /**
+   * Sets the thread ID for forum channel webhooks
+   *
+   * @param thread_id   Thread ID to post to (existing forum thread)
+   * @note              ONLY for forum/media channels
+   * @note              Using on normal channels will cause error 10003
+   * @note              Call this before Execute/ExecuteEmbed/ExecuteFromObject
+   */
+  public native void SetThreadId(const char[] thread_id);
+
+  /**
+   * Sets the thread name for forum channel webhooks
+   *
+   * @param thread_name Thread name to create (new forum post title)
+   * @note              ONLY for forum/media channels
+   * @note              Using on normal channels will cause an error 220003
+   * @note              Call this before Execute/ExecuteEmbed/ExecuteFromObject
+   */
+  public native void SetThreadName(const char[] thread_name);
 
   /**
    * Modifies this webhook

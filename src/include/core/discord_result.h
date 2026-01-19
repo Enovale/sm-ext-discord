@@ -46,6 +46,7 @@ enum class DiscordResultType {
 	Reaction,
 	Ban,
 	ThreadMember,
+	SlashCommand,
 
 	// Lists
 	Messages,
@@ -62,6 +63,7 @@ enum class DiscordResultType {
 	Threads,
 	Voters,
 	ThreadMembers,
+	SlashCommands,
 
 	// Operations (no object returned)
 	Confirmation,
@@ -70,13 +72,25 @@ enum class DiscordResultType {
 	Unpin,
 	Kick,
 	BanOp,
+	Unban,
 	AddRole,
 	RemoveRole,
 	Timeout,
 	Edit,
 	Create,
 	Send,
-	Http
+	Http,
+	VoiceMove,
+	VoiceDisconnect,
+	VoiceMute,
+	VoiceDeaf,
+	ThreadMemberAdd,
+	ThreadMemberRemove,
+	CommandRegister,
+	CommandUpdate,
+	CommandDelete,
+	CommandPermission,
+	CommandBulkDelete
 };
 
 // Result value types (same as EventValue)

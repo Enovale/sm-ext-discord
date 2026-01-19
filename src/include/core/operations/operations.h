@@ -32,7 +32,7 @@
 #include "emoji_operations.h"
 #include "sticker_operations.h"
 #include "scheduled_event_operations.h"
-#include "stage_operations.h"
 #include "voice_operations.h"
 #include "http_operations.h"
 #include "user_operations.h"
+#include "interaction_operations.h"

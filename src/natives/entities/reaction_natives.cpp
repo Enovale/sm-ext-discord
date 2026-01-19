@@ -18,32 +18,8 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "natives/natives_common.h"
+#include "natives/entity_natives_common.h"
 #include "entities/discord_reaction.h"
-
-static cell_t reaction_GetCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return static_cast<cell_t>(react->GetCount());
-}
-
-static cell_t reaction_GetCountBurst(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return static_cast<cell_t>(react->GetCountBurst());
-}
-
-static cell_t reaction_GetCountNormal(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return static_cast<cell_t>(react->GetCountNormal());
-}
 
 static cell_t reaction_GetEmojiId(IPluginContext* pContext, const cell_t* params)
 {
@@ -63,30 +39,6 @@ static cell_t reaction_GetEmojiName(IPluginContext* pContext, const cell_t* para
 	return 1;
 }
 
-static cell_t reaction_GetMe(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return react->GetMe();
-}
-
-static cell_t reaction_GetMeBurst(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return react->GetMeBurst();
-}
-
-static cell_t reaction_IsCustomEmoji(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return react->IsCustomEmoji();
-}
-
 static cell_t reaction_GetEmojiMention(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
@@ -94,14 +46,6 @@ static cell_t reaction_GetEmojiMention(IPluginContext* pContext, const cell_t* p
 
 	pContext->StringToLocal(params[2], params[3], react->GetEmojiMention().c_str());
 	return 1;
-}
-
-static cell_t reaction_GetBurstColorCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordReaction* react = Handles.GetPointer<DiscordReaction>(pContext, params[1]);
-	if (!react) return 0;
-
-	return static_cast<cell_t>(react->GetBurstColorCount());
 }
 
 static cell_t reaction_GetBurstColor(IPluginContext* pContext, const cell_t* params)
@@ -113,16 +57,16 @@ static cell_t reaction_GetBurstColor(IPluginContext* pContext, const cell_t* par
 }
 
 extern const sp_nativeinfo_t reaction_natives[] = {
-	{"DiscordReaction.Count.get", reaction_GetCount},
-	{"DiscordReaction.CountBurst.get", reaction_GetCountBurst},
-	{"DiscordReaction.CountNormal.get", reaction_GetCountNormal},
+	{"DiscordReaction.Count.get", EntityGetInt<DiscordReaction, uint32_t, &DiscordReaction::GetCount>},
+	{"DiscordReaction.CountBurst.get", EntityGetInt<DiscordReaction, uint32_t, &DiscordReaction::GetCountBurst>},
+	{"DiscordReaction.CountNormal.get", EntityGetInt<DiscordReaction, uint32_t, &DiscordReaction::GetCountNormal>},
 	{"DiscordReaction.GetEmojiId", reaction_GetEmojiId},
 	{"DiscordReaction.GetEmojiName", reaction_GetEmojiName},
-	{"DiscordReaction.Me.get", reaction_GetMe},
-	{"DiscordReaction.MeBurst.get", reaction_GetMeBurst},
-	{"DiscordReaction.IsCustomEmoji.get", reaction_IsCustomEmoji},
+	{"DiscordReaction.Me.get", EntityGetBool<DiscordReaction, &DiscordReaction::GetMe>},
+	{"DiscordReaction.MeBurst.get", EntityGetBool<DiscordReaction, &DiscordReaction::GetMeBurst>},
+	{"DiscordReaction.IsCustomEmoji.get", EntityGetBool<DiscordReaction, &DiscordReaction::IsCustomEmoji>},
 	{"DiscordReaction.GetEmojiMention", reaction_GetEmojiMention},
-	{"DiscordReaction.BurstColorCount.get", reaction_GetBurstColorCount},
+	{"DiscordReaction.BurstColorCount.get", EntityGetInt<DiscordReaction, size_t, &DiscordReaction::GetBurstColorCount>},
 	{"DiscordReaction.GetBurstColor", reaction_GetBurstColor},
 	{nullptr, nullptr}
 };

@@ -24,8 +24,9 @@
 static cell_t embed_CreateEmbed(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = new DiscordEmbed();
-
-	return Handles.Create(pContext, embed, HandleId::DiscordEmbed);
+	Handle_t handle = Handles.Create(pContext, embed, HandleId::DiscordEmbed);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t embed_SetTitle(IPluginContext* pContext, const cell_t* params)
@@ -164,14 +165,11 @@ static cell_t embed_SetProvider(IPluginContext* pContext, const cell_t* params)
 	if (!embed) return 0;
 
 	char* name;
-	char* url = nullptr;
+	char* url;
 	pContext->LocalToString(params[2], &name);
+	pContext->LocalToString(params[3], &url);
 
-	if (params[0] >= 3) {
-		pContext->LocalToString(params[3], &url);
-	}
-
-	embed->SetProvider(name, url ? url : "");
+	embed->SetProvider(name, url && url[0] ? url : "");
 	return 1;
 }
 
@@ -308,6 +306,17 @@ static cell_t embed_GetTimestamp(IPluginContext* pContext, const cell_t* params)
 	if (!embed) return 0;
 
 	return static_cast<cell_t>(embed->GetTimestamp());
+}
+
+static cell_t embed_GetTimestamp64(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = Handles.GetPointer<DiscordEmbed>(pContext, params[1]);
+	if (!embed) return 0;
+
+	char buffer[32];
+	FormatInt64(static_cast<int64_t>(embed->GetTimestamp()), buffer, sizeof(buffer));
+	pContext->StringToLocal(params[2], params[3], buffer);
+	return 1;
 }
 
 static cell_t embed_GetAuthorProxyIconUrl(IPluginContext* pContext, const cell_t* params)
@@ -590,6 +599,7 @@ extern const sp_nativeinfo_t embed_natives[] = {
 	{"DiscordEmbed.GetProviderUrl", embed_GetProviderUrl},
 	{"DiscordEmbed.GetType", embed_GetType},
 	{"DiscordEmbed.Timestamp.get", embed_GetTimestamp},
+	{"DiscordEmbed.GetTimestamp", embed_GetTimestamp64},
 	{"DiscordEmbed.Timestamp.set", embed_SetTimestamp},
 	{"DiscordEmbed.FieldCount.get", embed_GetFieldCount},
 	{"DiscordEmbed.GetFieldName", embed_GetFieldName},

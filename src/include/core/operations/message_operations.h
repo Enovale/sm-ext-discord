@@ -35,8 +35,10 @@ public:
 	void SendEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed, Callback callback = nullptr);
 	void SendObject(const DiscordMessage* message, Callback callback = nullptr);
 	void SendObjectToChannel(dpp::snowflake channel_id, const DiscordMessage* message, Callback callback = nullptr);
+	void SendDPPMessage(const dpp::message& message, Callback callback = nullptr);
 	void Edit(dpp::snowflake channel_id, dpp::snowflake message_id, const char* content, Callback callback = nullptr);
 	void EditEmbed(dpp::snowflake channel_id, dpp::snowflake message_id, const char* content, const DiscordEmbed* embed, Callback callback = nullptr);
+	void EditMessage(const DiscordMessage* message, Callback callback = nullptr);
 	void Delete(dpp::snowflake channel_id, dpp::snowflake message_id, Callback callback = nullptr);
 	void DeleteBulk(dpp::snowflake channel_id, const std::vector<dpp::snowflake>& message_ids, Callback callback = nullptr);
 	void Pin(dpp::snowflake channel_id, dpp::snowflake message_id, Callback callback = nullptr);
@@ -45,4 +47,6 @@ public:
 	void RemoveReaction(dpp::snowflake channel_id, dpp::snowflake message_id, const char* emoji, Callback callback = nullptr);
 	void RemoveAllReactions(dpp::snowflake channel_id, dpp::snowflake message_id, Callback callback = nullptr);
 	void Crosspost(dpp::snowflake channel_id, dpp::snowflake message_id, Callback callback = nullptr);
+	void EndPoll(const dpp::message& message, Callback callback = nullptr);
+	void GetPollAnswerVoters(const dpp::message& message, uint32_t answer_id, Callback callback = nullptr);
 };

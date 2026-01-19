@@ -47,22 +47,22 @@ void WebhookOperations::Create(dpp::snowflake channel_id, const std::string& nam
 	m_cluster->create_webhook(wh, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create webhook"); });
 }
 
-void WebhookOperations::Execute(dpp::webhook wh, const char* message, Callback callback) {
+void WebhookOperations::Execute(dpp::webhook wh, const char* message, dpp::snowflake thread_id, const std::string& thread_name, Callback callback) {
 	if (!IsValid()) return;
 	dpp::message msg(message);
-	m_cluster->execute_webhook(wh, msg, false, 0, "", callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to execute webhook"); });
+	m_cluster->execute_webhook(wh, msg, false, thread_id, thread_name, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to execute webhook"); });
 }
 
-void WebhookOperations::ExecuteEmbed(dpp::webhook wh, const char* message, const DiscordEmbed* embed, Callback callback) {
+void WebhookOperations::ExecuteEmbed(dpp::webhook wh, const char* message, const DiscordEmbed* embed, dpp::snowflake thread_id, const std::string& thread_name, Callback callback) {
 	if (!IsValid()) return;
 	dpp::message msg(message ? message : "");
 	msg.add_embed(embed->GetEmbed());
-	m_cluster->execute_webhook(wh, msg, false, 0, "", callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to execute webhook with embed"); });
+	m_cluster->execute_webhook(wh, msg, false, thread_id, thread_name, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to execute webhook with embed"); });
 }
 
-void WebhookOperations::ExecuteMessage(dpp::webhook wh, const DiscordMessage* message, Callback callback) {
+void WebhookOperations::ExecuteMessage(dpp::webhook wh, const DiscordMessage* message, dpp::snowflake thread_id, const std::string& thread_name, Callback callback) {
 	if (!IsValid() || !message) return;
-	m_cluster->execute_webhook(wh, message->GetDPPMessage(), false, 0, "", callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to execute webhook with message"); });
+	m_cluster->execute_webhook(wh, message->GetDPPMessage(), false, thread_id, thread_name, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to execute webhook with message"); });
 }
 
 void WebhookOperations::Create(const dpp::webhook& wh, Callback callback) {

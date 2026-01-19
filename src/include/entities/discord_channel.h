@@ -148,17 +148,22 @@ public:
 
 	// Thread management
 	void CreateThread(const char* name, uint8_t type = 11, int auto_archive = 1440, bool invitable = true, int rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
-	void ThreadMemberAdd(dpp::snowflake user_id);
-	void ThreadMemberRemove(dpp::snowflake user_id);
-	void SetArchived(bool archived);
-	void SetLocked(bool locked);
+	void CreateThreadWithMessage(dpp::snowflake message_id, const char* name, int auto_archive = 1440, int rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void JoinThread(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void LeaveThread(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void ModifyThread(const char* name, int auto_archive = 0, int rate_limit = 0, bool archived = false, bool locked = false, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void ThreadMemberAdd(dpp::snowflake user_id, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void ThreadMemberRemove(dpp::snowflake user_id, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void SetArchived(bool archived, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void SetLocked(bool locked, IPluginFunction* callback = nullptr, cell_t data = 0);
 	bool GetArchivedThreads(bool is_private, time_t before, uint16_t limit, IPluginFunction* callback, cell_t data = 0);
 	bool GetThreadMembers(IPluginFunction* callback, cell_t data = 0);
 
 	// Permission management
-	void AddPermissionOverwrite(dpp::snowflake target_id, uint8_t type, uint64_t allowed, uint64_t denied);
-	void SetPermissionOverwrite(dpp::snowflake target_id, uint8_t type, uint64_t allowed, uint64_t denied);
-	void RemovePermissionOverwrite(dpp::snowflake target_id, uint8_t type);
+	void AddPermissionOverwrite(dpp::snowflake target_id, uint8_t type, uint64_t allowed, uint64_t denied, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void SetPermissionOverwrite(dpp::snowflake target_id, uint8_t type, uint64_t allowed, uint64_t denied, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void RemovePermissionOverwrite(dpp::snowflake target_id, uint8_t type, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void EditPermissions(dpp::snowflake overwrite_id, uint64_t allow, uint64_t deny, bool is_member, IPluginFunction* callback = nullptr, cell_t data = 0);
 	std::string GetUserPermissions(dpp::snowflake user_id) const;
 
 	// Channel actions
@@ -183,8 +188,9 @@ public:
 	void SetRateLimitPerUser(uint16_t seconds);
 	void SetBitrate(uint16_t bitrate);
 	void SetUserLimit(uint8_t limit);
-	void Delete();
+	void Delete(IPluginFunction* callback = nullptr, cell_t data = 0);
 	void SetParent(dpp::snowflake parent_id);
+	void Modify(IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Internal accessor
 	const dpp::channel& GetDPPChannel() const { return m_channel; }

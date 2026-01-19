@@ -5,7 +5,7 @@ methodmap DiscordRole < Handle
    * Creates a DiscordRole object
    *
    * @param discord     Discord client handle
-   * @param guild_id    Guild ID as string (optional)
+   * @param guild_id    Optional guild ID as string
    * @return            DiscordRole handle or null on failure
    * @note              Call with no parameters to create an empty role template for CreateRoleFromObject
    */
@@ -41,6 +41,7 @@ methodmap DiscordRole < Handle
    *                    - If bot is currently online: cache is up-to-date
    *                    - If bot was online but disconnected: cache remains at last-known state
    *
+   * @note              Caller is responsible for closing the returned handle
    * @error             Invalid guild ID or role ID format
    */
   public static native DiscordRole FindRole(Discord discord, const char[] guild_id, const char[] role_id);
@@ -253,13 +254,19 @@ methodmap DiscordRole < Handle
 
   /**
    * Modifies the role, syncing local changes to Discord
+   *
+   * @param callback  Optional callback to receive the updated role
+   * @param data      Optional data to pass to callback
    */
-  public native void Modify();
+  public native void Modify(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Deletes the role
+   *
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void Delete();
+  public native void Delete(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Adds the role to a user

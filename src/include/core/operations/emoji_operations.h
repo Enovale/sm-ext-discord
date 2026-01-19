@@ -26,6 +26,9 @@ class EmojiOperations : public BaseOperations {
 public:
 	using BaseOperations::BaseOperations;
 
+	void Create(dpp::snowflake guild_id, const char* name, const char* image_path, dpp::image_type type, Callback callback = nullptr);
 	void Modify(dpp::snowflake guild_id, dpp::snowflake emoji_id, const char* name, Callback callback = nullptr);
 	void Delete(dpp::snowflake guild_id, dpp::snowflake emoji_id, Callback callback = nullptr);
+	void Get(dpp::snowflake guild_id, dpp::snowflake emoji_id, Callback callback);
+	void GetAll(dpp::snowflake guild_id, Callback callback);
 };

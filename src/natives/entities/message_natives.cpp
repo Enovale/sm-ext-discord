@@ -46,8 +46,9 @@ static cell_t message_CreateFromId(IPluginContext* pContext, const cell_t* param
 	message_obj.channel_id = channelFlake;
 
 	DiscordMessage* pDiscordMessage = new DiscordMessage(message_obj, discord);
-
-	return Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	Handle_t handle = Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_CreateEmpty(IPluginContext* pContext, const cell_t* params)
@@ -56,8 +57,9 @@ static cell_t message_CreateEmpty(IPluginContext* pContext, const cell_t* params
 	if (!discord) return 0;
 
 	DiscordMessage* pDiscordMessage = new DiscordMessage(discord);
-
-	return Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	Handle_t handle = Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_CreateWithContent(IPluginContext* pContext, const cell_t* params)
@@ -69,8 +71,9 @@ static cell_t message_CreateWithContent(IPluginContext* pContext, const cell_t* 
 	pContext->LocalToString(params[2], &content);
 
 	DiscordMessage* pDiscordMessage = new DiscordMessage(content, discord);
-
-	return Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	Handle_t handle = Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_CreateWithChannel(IPluginContext* pContext, const cell_t* params)
@@ -87,8 +90,9 @@ static cell_t message_CreateWithChannel(IPluginContext* pContext, const cell_t* 
 	dpp::snowflake channelFlake;
 	if (!ParseSnowflake(pContext, channelId, channelFlake)) return 0;
 	DiscordMessage* pDiscordMessage = new DiscordMessage(channelFlake, content, discord);
-
-	return Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	Handle_t handle = Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_CreateWithEmbed(IPluginContext* pContext, const cell_t* params)
@@ -100,8 +104,9 @@ static cell_t message_CreateWithEmbed(IPluginContext* pContext, const cell_t* pa
 	if (!embed) return 0;
 
 	DiscordMessage* pDiscordMessage = new DiscordMessage(embed, discord);
-
-	return Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	Handle_t handle = Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_CreateWithChannelEmbed(IPluginContext* pContext, const cell_t* params)
@@ -118,8 +123,9 @@ static cell_t message_CreateWithChannelEmbed(IPluginContext* pContext, const cel
 	dpp::snowflake channelFlake;
 	if (!ParseSnowflake(pContext, channelId, channelFlake)) return 0;
 	DiscordMessage* pDiscordMessage = new DiscordMessage(channelFlake, embed, discord);
-
-	return Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	Handle_t handle = Handles.Create(pContext, pDiscordMessage, HandleId::DiscordMessage);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_FetchMessage(IPluginContext* pContext, const cell_t* params)
@@ -162,23 +168,6 @@ static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t message_GetContentLength(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetContentLength());
-}
-
-static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	pContext->StringToLocal(params[2], params[3], message->GetMessageId().c_str());
-	return 1;
-}
-
 static cell_t message_GetChannelId(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
@@ -203,12 +192,12 @@ static cell_t message_GetAuthor(IPluginContext* pContext, const cell_t* params)
 	return handle;
 }
 
-static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetAuthorNickName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname().c_str());
+	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickName().c_str());
 	return 1;
 }
 
@@ -220,36 +209,13 @@ static cell_t message_GetType(IPluginContext* pContext, const cell_t* params)
 	return static_cast<cell_t>(message->GetType());
 }
 
-static cell_t message_IsPinned(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	return message->IsPinned();
-}
-
-static cell_t message_IsTTS(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->IsTTS();
-}
-
-static cell_t message_IsMentionEveryone(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->IsMentionEveryone();
-}
-
-static cell_t message_IsBot(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->IsBot();
+	pContext->StringToLocal(params[2], params[3], message->GetMessageId().c_str());
+	return 1;
 }
 
 static cell_t message_Edit(IPluginContext* pContext, const cell_t* params)
@@ -260,8 +226,8 @@ static cell_t message_Edit(IPluginContext* pContext, const cell_t* params)
 	char* content;
 	pContext->LocalToString(params[2], &content);
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	message->Edit(content, callback, data);
 	return 1;
 }
@@ -278,9 +244,21 @@ static cell_t message_EditEmbed(IPluginContext* pContext, const cell_t* params)
 	if (!embed) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
-	cell_t data = params[5];
 
+	cell_t data = params[5];
 	message->EditEmbed(content, embed, callback, data);
+	return 1;
+}
+
+static cell_t message_EditFromObject(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
+	if (!message) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	message->EditFromObject(callback, data);
 	return 1;
 }
 
@@ -290,8 +268,8 @@ static cell_t message_Delete(IPluginContext* pContext, const cell_t* params)
 	if (!message) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	message->Delete(callback, data);
 	return 1;
 }
@@ -302,8 +280,8 @@ static cell_t message_Pin(IPluginContext* pContext, const cell_t* params)
 	if (!message) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	message->Pin(callback, data);
 	return 1;
 }
@@ -314,8 +292,8 @@ static cell_t message_Unpin(IPluginContext* pContext, const cell_t* params)
 	if (!message) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	message->Unpin(callback, data);
 	return 1;
 }
@@ -358,8 +336,8 @@ static cell_t message_Reply(IPluginContext* pContext, const cell_t* params)
 	char* content;
 	pContext->LocalToString(params[2], &content);
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	message->Reply(content, callback, data);
 	return 1;
 }
@@ -376,9 +354,24 @@ static cell_t message_ReplyEmbed(IPluginContext* pContext, const cell_t* params)
 	if (!embed) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
-	cell_t data = params[5];
 
+	cell_t data = params[5];
 	message->ReplyEmbed(content, embed, callback, data);
+	return 1;
+}
+
+static cell_t message_ReplyFromObject(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
+	if (!message) return 0;
+
+	DiscordMessage* reply_message = Handles.GetPointer<DiscordMessage>(pContext, params[2]);
+	if (!reply_message) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	message->ReplyFromObject(reply_message, callback, data);
 	return 1;
 }
 
@@ -400,50 +393,32 @@ static cell_t message_CreateThread(IPluginContext* pContext, const cell_t* param
 
 	int auto_archive_duration = params[3];
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
-	cell_t data = params[5];
 
+	cell_t data = params[5];
 	message->CreateThread(name, auto_archive_duration, callback, data);
 	return 1;
 }
 
-static cell_t message_GetTimestamp(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetTimestamp64(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	return static_cast<cell_t>(message->GetTimestamp());
+	char buffer[32];
+	FormatInt64(static_cast<int64_t>(message->GetTimestamp()), buffer, sizeof(buffer));
+	pContext->StringToLocal(params[2], params[3], buffer);
+	return 1;
 }
 
-static cell_t message_GetEditedTimestamp(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetEditedTimestamp64(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	return static_cast<cell_t>(message->GetEditedTimestamp());
-}
-
-static cell_t message_IsDM(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->IsDM();
-}
-
-static cell_t message_HasRemixAttachment(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->HasRemixAttachment();
-}
-
-static cell_t message_HasReference(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->HasReference();
+	char buffer[32];
+	FormatInt64(static_cast<int64_t>(message->GetEditedTimestamp()), buffer, sizeof(buffer));
+	pContext->StringToLocal(params[2], params[3], buffer);
+	return 1;
 }
 
 static cell_t message_GetReferencedMessageId(IPluginContext* pContext, const cell_t* params)
@@ -476,62 +451,6 @@ static cell_t message_GetReferencedGuildId(IPluginContext* pContext, const cell_
 	return 1;
 }
 
-static cell_t message_GetAttachmentCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetAttachmentCount());
-}
-
-static cell_t message_GetEmbedCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetEmbedCount());
-}
-
-static cell_t message_GetReactionCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetReactionCount());
-}
-
-static cell_t message_GetStickerCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetStickerCount());
-}
-
-static cell_t message_GetMentionedUserCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetMentionedUserCount());
-}
-
-static cell_t message_GetMentionedRoleCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetMentionedRoleCount());
-}
-
-static cell_t message_GetMentionedChannelCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return static_cast<cell_t>(message->GetMentionedChannelCount());
-}
-
 static cell_t message_GetMentionedUserId(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
@@ -550,6 +469,58 @@ static cell_t message_GetMentionedRoleId(IPluginContext* pContext, const cell_t*
 	std::string roleId = message->GetMentionedRoleId(params[2]);
 	pContext->StringToLocal(params[3], params[4], roleId.c_str());
 	return 1;
+}
+
+static cell_t message_GetMentionedChannelId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
+	if (!message) return 0;
+
+	std::string channelId = message->GetMentionedChannelId(params[2]);
+	pContext->StringToLocal(params[3], params[4], channelId.c_str());
+	return 1;
+}
+
+static cell_t message_GetMentionedUserIds(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
+	if (!message) return 0;
+
+	DiscordHandleArray* array = new DiscordHandleArray(false);
+	const auto& mentions = message->GetMentionedUsers();
+	for (const auto& mention : mentions) {
+		array->AddString(mention.first.id.str());
+	}
+
+	return Handles.Create(pContext, array, HandleId::DiscordHandleArray);
+}
+
+static cell_t message_GetMentionedRoleIds(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
+	if (!message) return 0;
+
+	DiscordHandleArray* array = new DiscordHandleArray(false);
+	const auto& roles = message->GetMentionedRoles();
+	for (const auto& role_id : roles) {
+		array->AddString(role_id.str());
+	}
+
+	return Handles.Create(pContext, array, HandleId::DiscordHandleArray);
+}
+
+static cell_t message_GetMentionedChannelIds(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
+	if (!message) return 0;
+
+	DiscordHandleArray* array = new DiscordHandleArray(false);
+	const auto& channels = message->GetMentionedChannels();
+	for (const auto& channel : channels) {
+		array->AddString(channel.id.str());
+	}
+
+	return Handles.Create(pContext, array, HandleId::DiscordHandleArray);
 }
 
 static cell_t message_GetWebhookId(IPluginContext* pContext, const cell_t* params)
@@ -649,18 +620,10 @@ static cell_t message_Send(IPluginContext* pContext, const cell_t* params)
 	if (!message) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	message->Send(callback, data);
 	return 1;
-}
-
-static cell_t message_HasPoll(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
-	if (!message) return 0;
-
-	return message->HasPoll();
 }
 
 static cell_t message_SetPoll(IPluginContext* pContext, const cell_t* params)
@@ -707,7 +670,8 @@ static cell_t message_GetPollAnswerVoters(IPluginContext* pContext, const cell_t
 		return 0;
 	}
 
-	message->GetPollAnswerVoters(answer_id, callback, params[4]);
+	cell_t data = params[4];
+	message->GetPollAnswerVoters(answer_id, callback, data);
 	return 1;
 }
 
@@ -793,7 +757,9 @@ static cell_t message_GetAttachment(IPluginContext* pContext, const cell_t* para
 	DiscordAttachment* attachment = message->GetAttachment(params[2]);
 	if (!attachment) return 0;
 
-	return Handles.Create(pContext, attachment, HandleId::DiscordAttachment);
+	Handle_t handle = Handles.Create(pContext, attachment, HandleId::DiscordAttachment);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t message_GetReaction(IPluginContext* pContext, const cell_t* params)
@@ -804,7 +770,9 @@ static cell_t message_GetReaction(IPluginContext* pContext, const cell_t* params
 	DiscordReaction* reaction = message->GetReaction(params[2]);
 	if (!reaction) return 0;
 
-	return Handles.Create(pContext, reaction, HandleId::DiscordReaction);
+	Handle_t handle = Handles.Create(pContext, reaction, HandleId::DiscordReaction);
+	if (!handle) return 0;
+	return handle;
 }
 
 extern const sp_nativeinfo_t message_natives[] = {
@@ -816,21 +784,22 @@ extern const sp_nativeinfo_t message_natives[] = {
 	{"DiscordMessage.CreateWithChannelEmbed", message_CreateWithChannelEmbed},
 	{"DiscordMessage.FetchMessage", message_FetchMessage},
 	{"DiscordMessage.GetContent", message_GetContent},
-	{"DiscordMessage.ContentLength.get", message_GetContentLength},
+	{"DiscordMessage.ContentLength.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetContentLength>},
 	{"DiscordMessage.GetMessageId", message_GetMessageId},
 	{"DiscordMessage.GetChannelId", message_GetChannelId},
 	{"DiscordMessage.GetGuildId", EntityGetGuildId<DiscordMessage>},
 	{"DiscordMessage.Author.get", message_GetAuthor},
-	{"DiscordMessage.GetAuthorNickname", message_GetAuthorNickname},
+	{"DiscordMessage.GetAuthorNickName", message_GetAuthorNickName},
 	{"DiscordMessage.Type.get", message_GetType},
 	{"DiscordMessage.Type.set", message_SetType},
-	{"DiscordMessage.IsPinned.get", message_IsPinned},
-	{"DiscordMessage.IsTTS.get", message_IsTTS},
+	{"DiscordMessage.IsPinned.get", EntityGetBool<DiscordMessage, &DiscordMessage::IsPinned>},
+	{"DiscordMessage.IsTTS.get", EntityGetBool<DiscordMessage, &DiscordMessage::IsTTS>},
 	{"DiscordMessage.IsTTS.set", message_SetTTS},
-	{"DiscordMessage.IsMentionEveryone.get", message_IsMentionEveryone},
-	{"DiscordMessage.IsBot.get", message_IsBot},
+	{"DiscordMessage.IsMentionEveryone.get", EntityGetBool<DiscordMessage, &DiscordMessage::IsMentionEveryone>},
+	{"DiscordMessage.IsBot.get", EntityGetBool<DiscordMessage, &DiscordMessage::IsBot>},
 	{"DiscordMessage.Edit", message_Edit},
 	{"DiscordMessage.EditEmbed", message_EditEmbed},
+	{"DiscordMessage.EditFromObject", message_EditFromObject},
 	{"DiscordMessage.Delete", message_Delete},
 	{"DiscordMessage.Pin", message_Pin},
 	{"DiscordMessage.Unpin", message_Unpin},
@@ -839,27 +808,34 @@ extern const sp_nativeinfo_t message_natives[] = {
 	{"DiscordMessage.RemoveAllReactions", message_RemoveAllReactions},
 	{"DiscordMessage.Reply", message_Reply},
 	{"DiscordMessage.ReplyEmbed", message_ReplyEmbed},
+	{"DiscordMessage.ReplyFromObject", message_ReplyFromObject},
 	{"DiscordMessage.Crosspost", message_Crosspost},
 	{"DiscordMessage.CreateThread", message_CreateThread},
 	{"DiscordMessage.Flags.get", EntityGetFlags<DiscordMessage>},
 	{"DiscordMessage.Flags.set", message_SetFlags},
-	{"DiscordMessage.Timestamp.get", message_GetTimestamp},
-	{"DiscordMessage.EditedTimestamp.get", message_GetEditedTimestamp},
-	{"DiscordMessage.IsDM.get", message_IsDM},
-	{"DiscordMessage.HasRemixAttachment.get", message_HasRemixAttachment},
-	{"DiscordMessage.HasReference.get", message_HasReference},
+	{"DiscordMessage.Timestamp.get", EntityGetInt<DiscordMessage, time_t, &DiscordMessage::GetTimestamp>},
+	{"DiscordMessage.GetTimestamp", message_GetTimestamp64},
+	{"DiscordMessage.EditedTimestamp.get", EntityGetInt<DiscordMessage, time_t, &DiscordMessage::GetEditedTimestamp>},
+	{"DiscordMessage.GetEditedTimestamp", message_GetEditedTimestamp64},
+	{"DiscordMessage.IsDM.get", EntityGetBool<DiscordMessage, &DiscordMessage::IsDM>},
+	{"DiscordMessage.HasRemixAttachment.get", EntityGetBool<DiscordMessage, &DiscordMessage::HasRemixAttachment>},
+	{"DiscordMessage.HasReference.get", EntityGetBool<DiscordMessage, &DiscordMessage::HasReference>},
 	{"DiscordMessage.GetReferencedMessageId", message_GetReferencedMessageId},
 	{"DiscordMessage.GetReferencedChannelId", message_GetReferencedChannelId},
 	{"DiscordMessage.GetReferencedGuildId", message_GetReferencedGuildId},
-	{"DiscordMessage.AttachmentCount.get", message_GetAttachmentCount},
-	{"DiscordMessage.EmbedCount.get", message_GetEmbedCount},
-	{"DiscordMessage.ReactionCount.get", message_GetReactionCount},
-	{"DiscordMessage.StickerCount.get", message_GetStickerCount},
-	{"DiscordMessage.MentionedUserCount.get", message_GetMentionedUserCount},
-	{"DiscordMessage.MentionedRoleCount.get", message_GetMentionedRoleCount},
-	{"DiscordMessage.MentionedChannelCount.get", message_GetMentionedChannelCount},
+	{"DiscordMessage.AttachmentCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetAttachmentCount>},
+	{"DiscordMessage.EmbedCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetEmbedCount>},
+	{"DiscordMessage.ReactionCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetReactionCount>},
+	{"DiscordMessage.StickerCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetStickerCount>},
+	{"DiscordMessage.MentionedUserCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetMentionedUserCount>},
+	{"DiscordMessage.MentionedRoleCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetMentionedRoleCount>},
+	{"DiscordMessage.MentionedChannelCount.get", EntityGetInt<DiscordMessage, size_t, &DiscordMessage::GetMentionedChannelCount>},
 	{"DiscordMessage.GetMentionedUserId", message_GetMentionedUserId},
 	{"DiscordMessage.GetMentionedRoleId", message_GetMentionedRoleId},
+	{"DiscordMessage.GetMentionedChannelId", message_GetMentionedChannelId},
+	{"DiscordMessage.GetMentionedUserIds", message_GetMentionedUserIds},
+	{"DiscordMessage.GetMentionedRoleIds", message_GetMentionedRoleIds},
+	{"DiscordMessage.GetMentionedChannelIds", message_GetMentionedChannelIds},
 	{"DiscordMessage.GetWebhookId", message_GetWebhookId},
 	{"DiscordMessage.GetNonce", message_GetNonce},
 	{"DiscordMessage.GetUrl", message_GetURL},
@@ -872,7 +848,7 @@ extern const sp_nativeinfo_t message_natives[] = {
 	{"DiscordMessage.AddComponent", message_AddComponent},
 	{"DiscordMessage.ClearComponents", message_ClearComponents},
 	{"DiscordMessage.Send", message_Send},
-	{"DiscordMessage.HasPoll.get", message_HasPoll},
+	{"DiscordMessage.HasPoll.get", EntityGetBool<DiscordMessage, &DiscordMessage::HasPoll>},
 	{"DiscordMessage.SetPoll", message_SetPoll},
 	{"DiscordMessage.Poll.get", message_GetPoll},
 	{"DiscordMessage.EndPoll", message_EndPoll},

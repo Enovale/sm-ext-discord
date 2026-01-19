@@ -23,7 +23,7 @@ methodmap DiscordResult < Handle {
 	}
 
 	/**
-	 * Gets an integer value from the result
+	 * Gets a integer value from the result
 	 *
 	 * @param key           Key name
 	 * @param defaultValue  Default value if key not found

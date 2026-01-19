@@ -104,7 +104,10 @@ Action Command_Webhook(int client, int args)
 
 	// Set webhook name and avatar
 	webhook.SetName("Game Server");
-	webhook.SetAvatar("addons/sourcemod/data/avatar.png");
+
+	if (FileExists("addons/sourcemod/data/avatar.png")) {
+		webhook.SetAvatarFromFile("addons/sourcemod/data/avatar.png");
+	}
 
 	// Send webhook message with embed
 	webhook.ExecuteEmbed("Server update:", embed);
@@ -151,7 +154,7 @@ void OnWebhooksReceived(Discord bot, DiscordResult result, any data)
 	}
 
 	// Get the webhooks array from result
-	DiscordHandleArray webhooks = view_as<DiscordHandleArray>(result.GetHandle("webhooks"));
+	DiscordHandleArray webhooks = view_as<DiscordHandleArray>(result.GetHandle("items"));
 	int count = webhooks.Length;
 
 	PrintToServer("[Discord] Found %d webhooks:", count);

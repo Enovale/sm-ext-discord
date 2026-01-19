@@ -24,7 +24,9 @@
 static cell_t poll_Create(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordPoll* poll = new DiscordPoll();
-	return Handles.Create(pContext, poll, HandleId::DiscordPoll);
+	Handle_t handle = Handles.Create(pContext, poll, HandleId::DiscordPoll);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t poll_SetQuestion(IPluginContext* pContext, const cell_t* params)

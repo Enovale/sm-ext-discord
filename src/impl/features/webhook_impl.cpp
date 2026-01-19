@@ -54,11 +54,11 @@ void DiscordWebhook::Execute(const char* message, IPluginFunction* callback, cel
 	if (!m_client || !message) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Webhooks().Execute(m_webhook, message, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Webhooks().Execute(m_webhook, message, m_thread_id, m_thread_name, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->Webhooks().Execute(m_webhook, message);
+		m_client->Webhooks().Execute(m_webhook, message, m_thread_id, m_thread_name);
 	}
 }
 
@@ -66,11 +66,11 @@ void DiscordWebhook::ExecuteEmbed(const char* message, const DiscordEmbed* embed
 	if (!m_client || !embed) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Webhooks().ExecuteEmbed(m_webhook, message ? message : "", embed, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Webhooks().ExecuteEmbed(m_webhook, message ? message : "", embed, m_thread_id, m_thread_name, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->Webhooks().ExecuteEmbed(m_webhook, message ? message : "", embed);
+		m_client->Webhooks().ExecuteEmbed(m_webhook, message ? message : "", embed, m_thread_id, m_thread_name);
 	}
 }
 
@@ -78,15 +78,15 @@ void DiscordWebhook::ExecuteMessage(const DiscordMessage* message, IPluginFuncti
 	if (!m_client || !message) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Webhooks().ExecuteMessage(m_webhook, message, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Webhooks().ExecuteMessage(m_webhook, message, m_thread_id, m_thread_name, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->Webhooks().ExecuteMessage(m_webhook, message);
+		m_client->Webhooks().ExecuteMessage(m_webhook, message, m_thread_id, m_thread_name);
 	}
 }
 
-bool DiscordWebhook::SetAvatar(const char* filepath, dpp::image_type type) {
+bool DiscordWebhook::SetAvatarFromFile(const char* filepath, dpp::image_type type) {
 	if (!filepath) return false;
 
 	char fullpath[PLATFORM_MAX_PATH];

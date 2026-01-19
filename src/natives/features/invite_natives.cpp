@@ -29,7 +29,6 @@ static cell_t invite_CreateInvite(IPluginContext* pContext, const cell_t* params
 	DiscordInvite* invite = new DiscordInvite(discord);
 	Handle_t handle = Handles.Create(pContext, invite, HandleId::DiscordInvite);
 	if (!handle) return 0;
-
 	return handle;
 }
 
@@ -69,12 +68,12 @@ static cell_t invite_GetInviterId(IPluginContext* pContext, const cell_t* params
 	return 1;
 }
 
-static cell_t invite_GetInviterUsername(IPluginContext* pContext, const cell_t* params)
+static cell_t invite_GetInviterUserName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordInvite* invite = Handles.GetPointer<DiscordInvite>(pContext, params[1]);
 	if (!invite) return 0;
 
-	pContext->StringToLocal(params[2], params[3], invite->GetInviterUsername());
+	pContext->StringToLocal(params[2], params[3], invite->GetInviterUserName());
 	return 1;
 }
 
@@ -283,13 +282,37 @@ static cell_t invite_Delete(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t invite_Get(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = Handles.GetPointer<DiscordClient>(pContext, params[1]);
+	if (!discord) return 0;
+
+	char* code;
+	pContext->LocalToString(params[2], &code);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[4];
+	Handle_t client_handle = discord->GetHandle();
+
+	discord->Invites().Get(code, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
+		PushResult<DiscordInvite>(client_handle, discord, callback, data, cb);
+	});
+
+	return 1;
+}
+
 extern const sp_nativeinfo_t invite_natives[] = {
 	{"DiscordInvite.DiscordInvite", invite_CreateInvite},
 	{"DiscordInvite.GetCode", invite_GetCode},
 	{"DiscordInvite.GetGuildId", invite_GetGuildId},
 	{"DiscordInvite.GetChannelId", invite_GetChannelId},
 	{"DiscordInvite.GetInviterId", invite_GetInviterId},
-	{"DiscordInvite.GetInviterUsername", invite_GetInviterUsername},
+	{"DiscordInvite.GetInviterUserName", invite_GetInviterUserName},
 	{"DiscordInvite.GetInviterAvatarUrl", invite_GetInviterAvatarUrl},
 	{"DiscordInvite.InviterIsBot.get", invite_GetInviterIsBot},
 	{"DiscordInvite.GetGuildName", invite_GetGuildName},
@@ -313,5 +336,6 @@ extern const sp_nativeinfo_t invite_natives[] = {
 	{"DiscordInvite.SetTargetUserId", invite_SetTargetUserId},
 	{"DiscordInvite.Create", invite_Create},
 	{"DiscordInvite.Delete", invite_Delete},
+	{"DiscordInvite.Get", invite_Get},
 	{nullptr, nullptr}
 };

@@ -29,20 +29,12 @@ void ChannelOperations::Get(dpp::snowflake channel_id, Callback callback) {
 	m_cluster->channel_get(channel_id, callback);
 }
 
-void ChannelOperations::Create(dpp::snowflake guild_id, const char* name, dpp::channel_type type, const char* topic, dpp::snowflake parent_id, IPluginFunction* callback, cell_t data) {
+void ChannelOperations::Create(dpp::snowflake guild_id, const char* name, dpp::channel_type type, const char* topic, dpp::snowflake parent_id, Callback callback) {
 	if (!IsValid() || !name) return;
 	dpp::channel ch; ch.guild_id = guild_id; ch.name = name; ch.set_type(type);
 	if (topic) ch.topic = topic;
 	if (parent_id > 0) ch.parent_id = parent_id;
-
-	Handle_t client_handle = m_client->GetHandle();
-	m_cluster->channel_create(ch, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		if (callback) {
-			PushResult<DiscordChannel>(client_handle, client, callback, data, cb);
-		} else {
-			Log.DppError(cb, "Failed to create channel");
-		}
-	});
+	m_cluster->channel_create(ch, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create channel"); });
 }
 
 void ChannelOperations::CreateDM(dpp::snowflake user_id, Callback callback) {
@@ -72,4 +64,34 @@ void ChannelOperations::Delete(dpp::snowflake channel_id, Callback callback) {
 void ChannelOperations::Typing(dpp::snowflake channel_id, Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->channel_typing(channel_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to send typing indicator"); });
+}
+
+void ChannelOperations::ModifyFromObject(const DiscordChannel* channel_obj, Callback callback) {
+	if (!IsValid() || !channel_obj) return;
+	m_cluster->channel_edit(channel_obj->GetDPPChannel(), callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to modify channel"); });
+}
+
+void ChannelOperations::GetInvites(const dpp::channel& channel, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->channel_invites_get(channel, callback);
+}
+
+void ChannelOperations::GetWebhooks(dpp::snowflake channel_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->get_channel_webhooks(channel_id, callback);
+}
+
+void ChannelOperations::GetChannels(dpp::snowflake guild_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->channels_get(guild_id, callback);
+}
+
+void ChannelOperations::EditPermissions(dpp::snowflake channel_id, dpp::snowflake overwrite_id, uint64_t allow, uint64_t deny, bool is_member, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->channel_edit_permissions(channel_id, overwrite_id, allow, deny, is_member, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to edit channel permissions"); });
+}
+
+void ChannelOperations::EditPositions(const std::vector<dpp::channel>& channels, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->channel_edit_positions(channels, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to edit channel positions"); });
 }

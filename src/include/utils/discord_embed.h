@@ -52,12 +52,12 @@ public:
 	}
 
 	// Get methods
-	std::string GetTitle() const { return m_embed.title; }
-	std::string GetDescription() const { return m_embed.description; }
+	const std::string& GetTitle() const { return m_embed.title; }
+	const std::string& GetDescription() const { return m_embed.description; }
 	uint32_t GetColor() const { return m_embed.color.value_or(0); }
 	time_t GetTimestamp() const { return m_embed.timestamp; }
-	std::string GetType() const { return m_embed.type; }
-	std::string GetUrl() const { return m_embed.url; }
+	const std::string& GetType() const { return m_embed.type; }
+	const std::string& GetUrl() const { return m_embed.url; }
 	std::string GetAuthorName() const { return m_embed.author.has_value() ? m_embed.author->name : ""; }
 	std::string GetAuthorUrl() const { return m_embed.author.has_value() ? m_embed.author->url : ""; }
 	std::string GetAuthorIconUrl() const { return m_embed.author.has_value() ? m_embed.author->icon_url : ""; }

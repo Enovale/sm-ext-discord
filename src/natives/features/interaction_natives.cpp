@@ -21,6 +21,7 @@
 #include "natives/natives_common.h"
 #include "features/discord_interaction.h"
 #include "utils/discord_embed.h"
+#include "entities/discord_message.h"
 
 static cell_t interaction_CreateResponse(IPluginContext* pContext, const cell_t* params)
 {
@@ -80,8 +81,8 @@ static cell_t interaction_GetOptionValueInt(IPluginContext* pContext, const cell
 	}
 
 	// Check if value fits in 32-bit int
-	if (value > INT32_MAX || value < INT32_MIN) {
-		pContext->ReportError("Integer option '%s' value %lld exceeds 32-bit range, data will be truncated. Use GetOptionValueInt64 instead.", name, value);
+	if (!IsInt32Range(value)) {
+		pContext->ReportError("Integer option exceeds 32-bit range. Use GetOptionValueInt64() instead.");
 		return 0;
 	}
 
@@ -102,7 +103,7 @@ static cell_t interaction_GetOptionValueInt64(IPluginContext* pContext, const ce
 	}
 
 	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "%lld", value);
+	FormatInt64(value, buffer, sizeof(buffer));
 	pContext->StringToLocal(params[3], params[4], buffer);
 	return 1;
 }
@@ -264,6 +265,60 @@ static cell_t interaction_EditFollowUpEmbed(IPluginContext* pContext, const cell
 	return 1;
 }
 
+static cell_t interaction_CreateResponseFromObject(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = Handles.GetPointer<DiscordInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[2]);
+	if (!message) return 0;
+
+	interaction->CreateResponseFromObject(message);
+	return 1;
+}
+
+static cell_t interaction_EditResponseFromObject(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = Handles.GetPointer<DiscordInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[2]);
+	if (!message) return 0;
+
+	interaction->EditResponseFromObject(message);
+	return 1;
+}
+
+static cell_t interaction_FollowUpFromObject(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = Handles.GetPointer<DiscordInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[2]);
+	if (!message) return 0;
+
+	interaction->FollowUpFromObject(message);
+	return 1;
+}
+
+static cell_t interaction_EditFollowUpFromObject(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = Handles.GetPointer<DiscordInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	char* messageId;
+	pContext->LocalToString(params[2], &messageId);
+
+	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[3]);
+	if (!message) return 0;
+
+	dpp::snowflake msgFlake;
+	if (!ParseSnowflake(pContext, messageId, msgFlake)) return 0;
+
+	interaction->EditFollowUpFromObject(msgFlake, message);
+	return 1;
+}
+
 static cell_t interaction_GetCommandName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordInteraction* interaction = Handles.GetPointer<DiscordInteraction>(pContext, params[1]);
@@ -329,12 +384,12 @@ static cell_t interaction_GetUserName(IPluginContext* pContext, const cell_t* pa
 	return 1;
 }
 
-static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+static cell_t interaction_GetUserNickName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordInteraction* interaction = Handles.GetPointer<DiscordInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickName().c_str());
 	return 1;
 }
 
@@ -383,12 +438,12 @@ static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* param
 	return handle;
 }
 
-static cell_t autocomplete_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+static cell_t autocomplete_GetUserNickName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickName().c_str());
 	return 1;
 }
 
@@ -400,7 +455,11 @@ static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	std::string value = interaction->GetOptionValue(name);
+	std::string value;
+	if (!interaction->GetOptionValue(name, value)) {
+		return 0;
+	}
+
 	pContext->StringToLocal(params[3], params[4], value.c_str());
 	return 1;
 }
@@ -413,11 +472,14 @@ static cell_t autocomplete_GetOptionValueInt(IPluginContext* pContext, const cel
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	int64_t value = interaction->GetOptionValueInt(name);
+	int64_t value;
+	if (!interaction->GetOptionValueInt(name, value)) {
+		return 0;
+	}
 
 	// Check if value fits in 32-bit int
-	if (value > INT32_MAX || value < INT32_MIN) {
-		pContext->ReportError("Integer option '%s' value %lld exceeds 32-bit range, data will be truncated. Use GetOptionValueInt64 instead.", name, value);
+	if (!IsInt32Range(value)) {
+		pContext->ReportError("Integer option exceeds 32-bit range. Use GetOptionValueInt64() instead.");
 		return 0;
 	}
 
@@ -432,10 +494,13 @@ static cell_t autocomplete_GetOptionValueInt64(IPluginContext* pContext, const c
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	int64_t value = interaction->GetOptionValueInt(name);
+	int64_t value;
+	if (!interaction->GetOptionValueInt(name, value)) {
+		return 0;
+	}
 
 	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "%lld", value);
+	FormatInt64(value, buffer, sizeof(buffer));
 	pContext->StringToLocal(params[3], params[4], buffer);
 	return 1;
 }
@@ -448,7 +513,11 @@ static cell_t autocomplete_GetOptionValueFloat(IPluginContext* pContext, const c
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	double value = interaction->GetOptionValueDouble(name);
+	double value;
+	if (!interaction->GetOptionValueDouble(name, value)) {
+		return 0;
+	}
+
 	return sp_ftoc((float)value);
 }
 
@@ -460,7 +529,11 @@ static cell_t autocomplete_GetOptionValueBool(IPluginContext* pContext, const ce
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	bool value = interaction->GetOptionValueBool(name);
+	bool value;
+	if (!interaction->GetOptionValueBool(name, value)) {
+		return 0;
+	}
+
 	return value;
 }
 
@@ -469,11 +542,11 @@ static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, 
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	if (!interaction->m_client) {
+	if (!interaction->GetClient()) {
 		return 0;
 	}
 
-	interaction->m_client->Commands().CreateAutocompleteResponse(interaction->m_command.id, interaction->m_command.token, interaction->m_response);
+	interaction->CreateAutocompleteResponse();
 	return 1;
 }
 
@@ -494,7 +567,7 @@ static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const
 		value = static_cast<int64_t>(params[4]);
 	}
 
-	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, value));
+	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, value));
 	return 1;
 }
 
@@ -509,7 +582,7 @@ static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext,
 	char* str_value;
 	pContext->LocalToString(params[3], &str_value);
 
-	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
+	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
 	return 1;
 }
 
@@ -528,7 +601,10 @@ static cell_t autocomplete_GetFocusedOptionValue(IPluginContext* pContext, const
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	std::string value = interaction->GetFocusedOptionValue();
+	std::string value;
+	if (!interaction->GetFocusedOptionValue(value)) {
+		return 0;
+	}
 	pContext->StringToLocal(params[2], params[3], value.c_str());
 	return 1;
 }
@@ -546,7 +622,30 @@ static cell_t autocomplete_GetFocusedOptionValueInt(IPluginContext* pContext, co
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	return static_cast<cell_t>(interaction->GetFocusedOptionValueInt());
+	int64_t value;
+	if (!interaction->GetFocusedOptionValueInt(value)) {
+		return 0;
+	}
+	if (!IsInt32Range(value)) {
+		pContext->ReportError("Integer option exceeds 32-bit range. Use GetFocusedOptionValueInt64() instead.");
+		return 0;
+	}
+	return static_cast<cell_t>(value);
+}
+
+static cell_t autocomplete_GetFocusedOptionValueInt64(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	int64_t value;
+	if (!interaction->GetFocusedOptionValueInt(value)) {
+		return 0;
+	}
+	char buffer[32];
+	FormatInt64(value, buffer, sizeof(buffer));
+	pContext->StringToLocal(params[2], params[3], buffer);
+	return 1;
 }
 
 static cell_t autocomplete_GetFocusedOptionValueFloat(IPluginContext* pContext, const cell_t* params)
@@ -554,7 +653,11 @@ static cell_t autocomplete_GetFocusedOptionValueFloat(IPluginContext* pContext, 
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	return sp_ftoc((float)interaction->GetFocusedOptionValueDouble());
+	double value;
+	if (!interaction->GetFocusedOptionValueDouble(value)) {
+		return 0;
+	}
+	return sp_ftoc((float)value);
 }
 
 static cell_t autocomplete_GetFocusedOptionValueBool(IPluginContext* pContext, const cell_t* params)
@@ -562,7 +665,11 @@ static cell_t autocomplete_GetFocusedOptionValueBool(IPluginContext* pContext, c
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
 	if (!interaction) return 0;
 
-	return interaction->GetFocusedOptionValueBool();
+	bool value;
+	if (!interaction->GetFocusedOptionValueBool(value)) {
+		return 0;
+	}
+	return value;
 }
 
 extern const sp_nativeinfo_t interaction_natives[] = {
@@ -582,18 +689,22 @@ extern const sp_nativeinfo_t interaction_natives[] = {
 	{"DiscordInteraction.FollowUpEphemeral", interaction_FollowUpEphemeral},
 	{"DiscordInteraction.EditFollowUp", interaction_EditFollowUp},
 	{"DiscordInteraction.EditFollowUpEmbed", interaction_EditFollowUpEmbed},
+	{"DiscordInteraction.CreateResponseFromObject", interaction_CreateResponseFromObject},
+	{"DiscordInteraction.EditResponseFromObject", interaction_EditResponseFromObject},
+	{"DiscordInteraction.FollowUpFromObject", interaction_FollowUpFromObject},
+	{"DiscordInteraction.EditFollowUpFromObject", interaction_EditFollowUpFromObject},
 	{"DiscordInteraction.GetCommandName", interaction_GetCommandName},
 	{"DiscordInteraction.GetGuildId", interaction_GetGuildId},
 	{"DiscordInteraction.GetChannelId", interaction_GetChannelId},
 	{"DiscordInteraction.User.get", interaction_GetUser},
-	{"DiscordInteraction.GetUserNickname", interaction_GetUserNickname},
+	{"DiscordInteraction.GetUserNickName", interaction_GetUserNickName},
 	{"DiscordInteraction.GetUserId", interaction_GetUserId},
 	{"DiscordInteraction.GetUserName", interaction_GetUserName},
 	{"DiscordAutocompleteInteraction.GetCommandName", autocomplete_GetCommandName},
 	{"DiscordAutocompleteInteraction.GetGuildId", autocomplete_GetGuildId},
 	{"DiscordAutocompleteInteraction.GetChannelId", autocomplete_GetChannelId},
 	{"DiscordAutocompleteInteraction.User.get", autocomplete_GetUser},
-	{"DiscordAutocompleteInteraction.GetUserNickname", autocomplete_GetUserNickname},
+	{"DiscordAutocompleteInteraction.GetUserNickName", autocomplete_GetUserNickName},
 	{"DiscordAutocompleteInteraction.GetOptionValue", autocomplete_GetOptionValue},
 	{"DiscordAutocompleteInteraction.GetOptionValueInt", autocomplete_GetOptionValueInt},
 	{"DiscordAutocompleteInteraction.GetOptionValueInt64", autocomplete_GetOptionValueInt64},
@@ -606,6 +717,7 @@ extern const sp_nativeinfo_t interaction_natives[] = {
 	{"DiscordAutocompleteInteraction.FocusedOptionType.get", autocomplete_GetFocusedOptionType},
 	{"DiscordAutocompleteInteraction.GetFocusedOptionValue", autocomplete_GetFocusedOptionValue},
 	{"DiscordAutocompleteInteraction.FocusedOptionValueInt.get", autocomplete_GetFocusedOptionValueInt},
+	{"DiscordAutocompleteInteraction.GetFocusedOptionValueInt64", autocomplete_GetFocusedOptionValueInt64},
 	{"DiscordAutocompleteInteraction.FocusedOptionValueFloat.get", autocomplete_GetFocusedOptionValueFloat},
 	{"DiscordAutocompleteInteraction.FocusedOptionValueBool.get", autocomplete_GetFocusedOptionValueBool},
 	{nullptr, nullptr}

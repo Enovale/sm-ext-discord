@@ -122,8 +122,6 @@ All reactions of specific emoji removed.
 ### message_poll_vote_add
 User voted on a poll.
 
-> **⚠️ Known Issue**: Due to a DPP library bug, this event cannot retrieve valid data. Will be fixed after [DPP#1525](https://github.com/brainboxdotcc/DPP/pull/1525) is merged.
-
 | Key | Type | Description |
 |-----|------|-------------|
 | user_id | string | Voter user ID |
@@ -134,8 +132,6 @@ User voted on a poll.
 
 ### message_poll_vote_remove
 User removed poll vote.
-
-> **⚠️ Known Issue**: Due to a DPP library bug, this event cannot retrieve valid data. Will be fixed after [DPP#1525](https://github.com/brainboxdotcc/DPP/pull/1525) is merged.
 
 | Key | Type | Description |
 |-----|------|-------------|
@@ -309,7 +305,7 @@ Guild emojis updated.
 
 | Key | Type | Description |
 |-----|------|-------------|
-| emojis | Handle (DiscordHandleArray) | Array of DiscordEmoji handles |
+| emoji_ids | Handle (DiscordHandleArray) | Array of DiscordEmoji strings |
 | guild_id | string | Guild snowflake ID |
 | emoji_count | int | Number of emojis |
 

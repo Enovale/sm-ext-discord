@@ -12,7 +12,7 @@ methodmap DiscordSelectInteraction < Handle
   /**
    * Gets the component type
    */
-  property ComponentType Type {
+  property DiscordComponentType Type {
     public native get();
   }
 

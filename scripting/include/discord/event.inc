@@ -1,7 +1,7 @@
 // Discord event - Unified event object for all Discord events
 methodmap DiscordEvent < Handle {
 	/**
-	 * Gets an integer value from the event
+	 * Gets a integer value from the event
 	 *
 	 * @param key           Key name
 	 * @param defaultValue  Default value if key not found

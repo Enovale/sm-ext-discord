@@ -39,7 +39,7 @@ methodmap DiscordAutocompleteInteraction < Handle
    * @param buffer    Buffer to store the nickname
    * @param maxlength    Maximum length of the buffer
    */
-  public native void GetUserNickname(char[] buffer, int maxlength);
+  public native void GetUserNickName(char[] buffer, int maxlength);
 
   /**
    * Gets a string option value from the command
@@ -52,10 +52,10 @@ methodmap DiscordAutocompleteInteraction < Handle
   public native bool GetOptionValue(const char[] name, char[] buffer, int maxlength);
 
   /**
-   * Gets an integer option value from the command
+   * Gets a integer option value from the command
    *
    * @param name      Name of the option
-   * @return          Integer value of the option, 0 if option doesn't exist
+   * @return          Integer value of the option, 0 if option doesn't exist or type mismatch
    * @note            WARNING: Discord integers are 64-bit. Values exceeding int32 range will be truncated.
    *                  Use GetOptionValueInt64() for full 64-bit integers.
    */
@@ -67,7 +67,7 @@ methodmap DiscordAutocompleteInteraction < Handle
    * @param name      Name of the option
    * @param buffer    Buffer to store the integer as string
    * @param maxlength Maximum length of the buffer
-   * @return          True if option exists, false otherwise
+   * @return          True if option exists and is integer type, false otherwise
    */
   public native bool GetOptionValueInt64(const char[] name, char[] buffer, int maxlength);
 
@@ -75,7 +75,7 @@ methodmap DiscordAutocompleteInteraction < Handle
    * Gets a float option value from the command
    *
    * @param name      Name of the option
-   * @return          Float value of the option, 0.0 if option doesn't exist
+   * @return          Float value of the option, 0.0 if option doesn't exist or type mismatch
    */
   public native float GetOptionValueFloat(const char[] name);
 
@@ -83,7 +83,7 @@ methodmap DiscordAutocompleteInteraction < Handle
    * Gets a boolean option value from the command
    *
    * @param name      Name of the option
-   * @return          Boolean value of the option, false if option doesn't exist
+   * @return          Boolean value of the option, false if option doesn't exist or type mismatch
    */
   public native bool GetOptionValueBool(const char[] name);
 
@@ -124,15 +124,27 @@ methodmap DiscordAutocompleteInteraction < Handle
    *
    * @param buffer    Buffer to store the option value
    * @param maxlength    Maximum length of the buffer
+   * @return          True if option exists and is string type, false otherwise
    */
-  public native void GetFocusedOptionValue(char[] buffer, int maxlength);
+  public native bool GetFocusedOptionValue(char[] buffer, int maxlength);
 
   /**
    * Gets the current value of the focused option as integer
+   * @note WARNING: Discord integers are 64-bit. Values exceeding int32 range will cause an error.
+   *                Use GetFocusedOptionValueInt64() for full 64-bit integers.
    */
   property int FocusedOptionValueInt {
     public native get();
   }
+
+  /**
+   * Gets the current value of the focused option as 64-bit integer
+   *
+   * @param buffer    Buffer to store the integer as string
+   * @param maxlength Maximum length of the buffer
+   * @return          True if option exists and is integer type, false otherwise
+   */
+  public native bool GetFocusedOptionValueInt64(char[] buffer, int maxlength);
 
   /**
    * Gets the current value of the focused option as float

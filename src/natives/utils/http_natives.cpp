@@ -24,8 +24,9 @@
 static cell_t httpheaders_HttpHeaders(IPluginContext* pContext, const cell_t* params)
 {
 	HttpHeaders* headers = new HttpHeaders();
-
-	return Handles.Create(pContext, headers, HandleId::HttpHeaders);
+	Handle_t handle = Handles.Create(pContext, headers, HandleId::HttpHeaders);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t httpheaders_SetHeader(IPluginContext* pContext, const cell_t* params)

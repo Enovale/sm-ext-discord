@@ -27,8 +27,9 @@ static cell_t role_CreateEmpty(IPluginContext* pContext, const cell_t* params)
 	if (!discord) return 0;
 
 	DiscordRole* pDiscordRole = new DiscordRole(discord);
-
-	return Handles.Create(pContext, pDiscordRole, HandleId::DiscordRole);
+	Handle_t handle = Handles.Create(pContext, pDiscordRole, HandleId::DiscordRole);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t role_FetchRole(IPluginContext* pContext, const cell_t* params)
@@ -99,24 +100,9 @@ static cell_t role_FindRole(IPluginContext* pContext, const cell_t* params)
 	}
 
 	DiscordRole* pDiscordRole = new DiscordRole(*role_ptr, guild_id, discord);
-
-	return Handles.Create(pContext, pDiscordRole, HandleId::DiscordRole);
-}
-
-static cell_t role_GetColor(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return static_cast<cell_t>(role->GetColor());
-}
-
-static cell_t role_GetHoist(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->IsHoisted();
+	Handle_t handle = Handles.Create(pContext, pDiscordRole, HandleId::DiscordRole);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t role_GetIconHash(IPluginContext* pContext, const cell_t* params)
@@ -137,71 +123,15 @@ static cell_t role_GetUnicodeEmoji(IPluginContext* pContext, const cell_t* param
 	return 1;
 }
 
-static cell_t role_GetPosition(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->GetPosition();
-}
-
 static cell_t role_GetPermissions(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
 	if (!role) return 0;
 
 	char perms_str[32];
-	snprintf(perms_str, sizeof(perms_str), "%" PRIu64, role->GetPermissions());
+	FormatInt64(static_cast<int64_t>(role->GetPermissions()), perms_str, sizeof(perms_str));
 	pContext->StringToLocal(params[2], params[3], perms_str);
 	return 1;
-}
-
-static cell_t role_GetManaged(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->IsManaged();
-}
-
-static cell_t role_GetMentionable(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->IsMentionable();
-}
-
-static cell_t role_GetHasTags(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->HasTags();
-}
-
-static cell_t role_GetIsPremiumSubscriberRole(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->IsPremiumSubscriberRole();
-}
-
-static cell_t role_GetIsAvailableForPurchase(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->IsAvailableForPurchase();
-}
-
-static cell_t role_GetIsGuildConnections(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
-	if (!role) return 0;
-
-	return role->IsGuildConnections();
 }
 
 static cell_t role_GetBotId(IPluginContext* pContext, const cell_t* params)
@@ -297,7 +227,22 @@ static cell_t role_Modify(IPluginContext* pContext, const cell_t* params)
 	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
 	if (!role) return 0;
 
-	role->Modify();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	role->Modify(callback, data);
+	return 1;
+}
+
+static cell_t role_Delete(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
+	if (!role) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	role->Delete(callback, data);
 	return 1;
 }
 
@@ -348,28 +293,28 @@ extern const sp_nativeinfo_t role_natives[] = {
 	{"DiscordRole.GetId", EntityGetId<DiscordRole>},
 	{"DiscordRole.GetName", EntityGetName<DiscordRole>},
 	{"DiscordRole.SetName", role_SetName},
-	{"DiscordRole.Color.get", role_GetColor},
+	{"DiscordRole.Color.get", EntityGetInt<DiscordRole, uint32_t, &DiscordRole::GetColor>},
 	{"DiscordRole.Color.set", role_SetColor},
-	{"DiscordRole.Hoist.get", role_GetHoist},
+	{"DiscordRole.Hoist.get", EntityGetBool<DiscordRole, &DiscordRole::IsHoisted>},
 	{"DiscordRole.Hoist.set", role_SetHoist},
 	{"DiscordRole.GetIconHash", role_GetIconHash},
 	{"DiscordRole.GetUnicodeEmoji", role_GetUnicodeEmoji},
-	{"DiscordRole.Position.get", role_GetPosition},
+	{"DiscordRole.Position.get", EntityGetInt<DiscordRole, int32_t, &DiscordRole::GetPosition>},
 	{"DiscordRole.GetPermissions", role_GetPermissions},
-	{"DiscordRole.Managed.get", role_GetManaged},
-	{"DiscordRole.Mentionable.get", role_GetMentionable},
+	{"DiscordRole.Managed.get", EntityGetBool<DiscordRole, &DiscordRole::IsManaged>},
+	{"DiscordRole.Mentionable.get", EntityGetBool<DiscordRole, &DiscordRole::IsMentionable>},
 	{"DiscordRole.Mentionable.set", role_SetMentionable},
-	{"DiscordRole.HasTags.get", role_GetHasTags},
-	{"DiscordRole.IsPremiumSubscriberRole.get", role_GetIsPremiumSubscriberRole},
-	{"DiscordRole.IsAvailableForPurchase.get", role_GetIsAvailableForPurchase},
-	{"DiscordRole.IsGuildConnections.get", role_GetIsGuildConnections},
+	{"DiscordRole.HasTags.get", EntityGetBool<DiscordRole, &DiscordRole::HasTags>},
+	{"DiscordRole.IsPremiumSubscriberRole.get", EntityGetBool<DiscordRole, &DiscordRole::IsPremiumSubscriberRole>},
+	{"DiscordRole.IsAvailableForPurchase.get", EntityGetBool<DiscordRole, &DiscordRole::IsAvailableForPurchase>},
+	{"DiscordRole.IsGuildConnections.get", EntityGetBool<DiscordRole, &DiscordRole::IsGuildConnections>},
 	{"DiscordRole.GetBotId", role_GetBotId},
 	{"DiscordRole.GetIntegrationId", role_GetIntegrationId},
 	{"DiscordRole.GetSubscriptionListingId", role_GetSubscriptionListingId},
 	{"DiscordRole.HasPermission", role_HasPermission},
 	{"DiscordRole.GetMention", EntityGetMention<DiscordRole>},
 	{"DiscordRole.Modify", role_Modify},
-	{"DiscordRole.Delete", EntityDelete<DiscordRole>},
+	{"DiscordRole.Delete", role_Delete},
 	{"DiscordRole.AddToUser", role_AddToUser},
 	{"DiscordRole.RemoveFromUser", role_RemoveFromUser},
 	{"DiscordRole.SetIcon", role_SetIcon},

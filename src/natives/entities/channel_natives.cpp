@@ -44,13 +44,15 @@ static cell_t channel_CreateFromId(IPluginContext* pContext, const cell_t* param
 		channel_obj.id = channelFlake;
 
 		DiscordChannel* pDiscordChannel = new DiscordChannel(channel_obj, discord);
-
-		return Handles.Create(pContext, pDiscordChannel, HandleId::DiscordChannel);
+		Handle_t handle = Handles.Create(pContext, pDiscordChannel, HandleId::DiscordChannel);
+		if (!handle) return 0;
+		return handle;
 	}
 
 	DiscordChannel* pDiscordChannel = new DiscordChannel(*channel_ptr, discord);
-
-	return Handles.Create(pContext, pDiscordChannel, HandleId::DiscordChannel);
+	Handle_t handle = Handles.Create(pContext, pDiscordChannel, HandleId::DiscordChannel);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t channel_FetchChannel(IPluginContext* pContext, const cell_t* params)
@@ -104,8 +106,9 @@ static cell_t channel_FindChannel(IPluginContext* pContext, const cell_t* params
 	}
 
 	DiscordChannel* pDiscordChannel = new DiscordChannel(*channel_ptr, discord);
-
-	return Handles.Create(pContext, pDiscordChannel, HandleId::DiscordChannel);
+	Handle_t handle = Handles.Create(pContext, pDiscordChannel, HandleId::DiscordChannel);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t channel_GetParentId(IPluginContext* pContext, const cell_t* params)
@@ -138,109 +141,6 @@ static cell_t channel_GetTopic(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t channel_GetType(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetType();
-}
-
-static cell_t channel_GetPosition(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetPosition();
-}
-
-static cell_t channel_IsNSFW(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsNSFW();
-}
-
-static cell_t channel_IsTextChannel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsTextChannel();
-}
-
-static cell_t channel_IsVoiceChannel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsVoiceChannel();
-}
-
-static cell_t channel_IsCategory(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsCategory();
-}
-
-static cell_t channel_IsThread(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsThread();
-}
-
-static cell_t channel_IsForum(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsForum();
-}
-
-static cell_t channel_IsNewsChannel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsNewsChannel();
-}
-
-static cell_t channel_IsStageChannel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsStageChannel();
-}
-
-static cell_t channel_GetBitrate(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetBitrate();
-}
-
-static cell_t channel_GetUserLimit(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetUserLimit();
-}
-
-static cell_t channel_GetRateLimitPerUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetRateLimitPerUser();
-}
 
 static cell_t channel_SetName(IPluginContext* pContext, const cell_t* params)
 {
@@ -347,7 +247,11 @@ static cell_t channel_AddPermissionOverwrite(IPluginContext* pContext, const cel
 	uint64_t allowed, denied;
 	if (!ParseUInt64(allowed_str, allowed)) return 0;
 	if (!ParseUInt64(denied_str, denied)) return 0;
-	channel->AddPermissionOverwrite(target, type, allowed, denied);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
+
+	cell_t data = params[7];
+	channel->AddPermissionOverwrite(target, type, allowed, denied, callback, data);
 	return 1;
 }
 
@@ -370,7 +274,11 @@ static cell_t channel_SetPermissionOverwrite(IPluginContext* pContext, const cel
 	uint64_t allowed, denied;
 	if (!ParseUInt64(allowed_str, allowed)) return 0;
 	if (!ParseUInt64(denied_str, denied)) return 0;
-	channel->SetPermissionOverwrite(target, type, allowed, denied);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
+
+	cell_t data = params[7];
+	channel->SetPermissionOverwrite(target, type, allowed, denied, callback, data);
 	return 1;
 }
 
@@ -385,7 +293,33 @@ static cell_t channel_RemovePermissionOverwrite(IPluginContext* pContext, const 
 
 	dpp::snowflake target;
 	if (!ParseSnowflake(pContext, targetId, target)) return 0;
-	channel->RemovePermissionOverwrite(target, type);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
+
+	cell_t data = params[5];
+	channel->RemovePermissionOverwrite(target, type, callback, data);
+	return 1;
+}
+
+static cell_t channel_EditPermissions(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
+	if (!channel) return 0;
+
+	char* overwrite_id_str;
+	pContext->LocalToString(params[2], &overwrite_id_str);
+
+	dpp::snowflake overwrite_id;
+	if (!ParseSnowflake(pContext, overwrite_id_str, overwrite_id)) return 0;
+
+	uint64_t allow = static_cast<uint64_t>(params[3]);
+	uint64_t deny = static_cast<uint64_t>(params[4]);
+	bool is_member = params[5];
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
+
+	cell_t data = params[7];
+	channel->EditPermissions(overwrite_id, allow, deny, is_member, callback, data);
 	return 1;
 }
 
@@ -415,8 +349,8 @@ static cell_t channel_CreateInvite(IPluginContext* pContext, const cell_t* param
 	bool unique = params[5];
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
-	cell_t data = params[7];
 
+	cell_t data = params[7];
 	channel->CreateInvite(max_age, max_uses, temporary, unique, callback, data);
 	return 1;
 }
@@ -430,8 +364,8 @@ static cell_t channel_CreateInviteFromObject(IPluginContext* pContext, const cel
 	if (!invite) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	channel->CreateInviteFromObject(invite, callback, data);
 	return 1;
 }
@@ -447,7 +381,8 @@ static cell_t channel_GetInvites(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	channel->GetInvites(callback, params[3]);
+	cell_t data = params[3];
+	channel->GetInvites(callback, data);
 	return 1;
 }
 
@@ -462,7 +397,8 @@ static cell_t channel_GetWebhooks(IPluginContext* pContext, const cell_t* params
 		return 0;
 	}
 
-	channel->GetWebhooks(callback, params[3]);
+	cell_t data = params[3];
+	channel->GetWebhooks(callback, data);
 	return 1;
 }
 
@@ -475,8 +411,8 @@ static cell_t channel_SendMessage(IPluginContext* pContext, const cell_t* params
 	pContext->LocalToString(params[2], &content);
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	channel->SendMessage(content, callback, data);
 	return 1;
 }
@@ -493,8 +429,8 @@ static cell_t channel_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 	if (!embed) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
-	cell_t data = params[5];
 
+	cell_t data = params[5];
 	channel->SendMessageEmbed(content, embed, callback, data);
 	return 1;
 }
@@ -508,8 +444,8 @@ static cell_t channel_SendDiscordMessage(IPluginContext* pContext, const cell_t*
 	if (!message) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	channel->SendDiscordMessage(message, callback, data);
 	return 1;
 }
@@ -546,45 +482,18 @@ static cell_t channel_GetLastMessageId(IPluginContext* pContext, const cell_t* p
 	return 1;
 }
 
-static cell_t channel_GetLastPinTimestamp(IPluginContext* pContext, const cell_t* params)
+
+static cell_t channel_GetLastPinTimestamp64(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	return static_cast<cell_t>(channel->GetLastPinTimestamp());
+	char buffer[32];
+	FormatInt64(static_cast<int64_t>(channel->GetLastPinTimestamp()), buffer, sizeof(buffer));
+	pContext->StringToLocal(params[2], params[3], buffer);
+	return 1;
 }
 
-static cell_t channel_GetDefaultThreadRateLimitPerUser(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetDefaultThreadRateLimitPerUser();
-}
-
-static cell_t channel_GetDefaultAutoArchiveDuration(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetDefaultAutoArchiveDuration();
-}
-
-static cell_t channel_GetDefaultSortOrder(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetDefaultSortOrder();
-}
-
-static cell_t channel_GetForumLayout(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->GetForumLayout();
-}
 
 static cell_t channel_GetRTCRegion(IPluginContext* pContext, const cell_t* params)
 {
@@ -596,85 +505,6 @@ static cell_t channel_GetRTCRegion(IPluginContext* pContext, const cell_t* param
 	return 1;
 }
 
-static cell_t channel_IsDM(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsDM();
-}
-
-static cell_t channel_IsGroupDM(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsGroupDM();
-}
-
-static cell_t channel_IsMediaChannel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsMediaChannel();
-}
-
-static cell_t channel_IsVideo720p(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsVideo720p();
-}
-
-static cell_t channel_IsVideoAuto(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsVideoAuto();
-}
-
-static cell_t channel_IsPinnedThread(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsPinnedThread();
-}
-
-static cell_t channel_IsTagRequired(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsTagRequired();
-}
-
-static cell_t channel_IsDownloadOptionsHidden(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsDownloadOptionsHidden();
-}
-
-static cell_t channel_IsLockedPermissions(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return channel->IsLockedPermissions();
-}
-
-static cell_t channel_GetPermissionOverwriteCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return static_cast<cell_t>(channel->GetPermissionOverwriteCount());
-}
 
 static cell_t channel_GetPermissionOverwriteTargetId(IPluginContext* pContext, const cell_t* params)
 {
@@ -695,13 +525,6 @@ static cell_t channel_GetPermissionOverwriteType(IPluginContext* pContext, const
 	return static_cast<cell_t>(channel->GetPermissionOverwriteType(params[2]));
 }
 
-static cell_t channel_GetAvailableTagCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
-	if (!channel) return 0;
-
-	return static_cast<cell_t>(channel->GetAvailableTagCount());
-}
 
 static cell_t channel_GetAvailableTagName(IPluginContext* pContext, const cell_t* params)
 {
@@ -835,8 +658,8 @@ static cell_t channel_CreateForumThread(IPluginContext* pContext, const cell_t* 
 	int rate_limit = params[7];
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[8]);
-	cell_t data = params[9];
 
+	cell_t data = params[9];
 	channel->CreateForumThread(name, message, tag_ids, auto_archive, rate_limit, callback, data);
 	return 1;
 }
@@ -875,8 +698,8 @@ static cell_t channel_CreateForumThreadEmbed(IPluginContext* pContext, const cel
 	int rate_limit = params[8];
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[9]);
-	cell_t data = params[10];
 
+	cell_t data = params[10];
 	channel->CreateForumThreadEmbed(name, message, embed, tag_ids, auto_archive, rate_limit, callback, data);
 	return 1;
 }
@@ -905,9 +728,75 @@ static cell_t channel_CreateThread(IPluginContext* pContext, const cell_t* param
 	bool invitable = params[5];
 	int rate_limit = params[6];
 	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
-	cell_t data = params[8];
 
+	cell_t data = params[8];
 	channel->CreateThread(name, type, auto_archive, invitable, rate_limit, callback, data);
+	return 1;
+}
+
+static cell_t channel_CreateThreadWithMessage(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
+	if (!channel) return 0;
+
+	char* message_id_str;
+	pContext->LocalToString(params[2], &message_id_str);
+
+	dpp::snowflake message_id;
+	if (!ParseSnowflake(pContext, message_id_str, message_id)) return 0;
+
+	char* name;
+	pContext->LocalToString(params[3], &name);
+
+	int auto_archive = params[4];
+	int rate_limit = params[5];
+	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
+
+	cell_t data = params[7];
+	channel->CreateThreadWithMessage(message_id, name, auto_archive, rate_limit, callback, data);
+	return 1;
+}
+
+static cell_t channel_JoinThread(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
+	if (!channel) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	channel->JoinThread(callback, data);
+	return 1;
+}
+
+static cell_t channel_LeaveThread(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
+	if (!channel) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	channel->LeaveThread(callback, data);
+	return 1;
+}
+
+static cell_t channel_ModifyThread(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
+	if (!channel) return 0;
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	int auto_archive = params[3];
+	int rate_limit = params[4];
+	bool archived = params[5];
+	bool locked = params[6];
+	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
+
+	cell_t data = params[8];
+	channel->ModifyThread(name, auto_archive, rate_limit, archived, locked, callback, data);
 	return 1;
 }
 
@@ -919,7 +808,10 @@ static cell_t channel_ThreadMemberAdd(IPluginContext* pContext, const cell_t* pa
 	char* user_id;
 	pContext->LocalToString(params[2], &user_id);
 
-	channel->ThreadMemberAdd(dpp::snowflake(user_id));
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	channel->ThreadMemberAdd(dpp::snowflake(user_id), callback, data);
 	return 1;
 }
 
@@ -931,7 +823,10 @@ static cell_t channel_ThreadMemberRemove(IPluginContext* pContext, const cell_t*
 	char* user_id;
 	pContext->LocalToString(params[2], &user_id);
 
-	channel->ThreadMemberRemove(dpp::snowflake(user_id));
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	channel->ThreadMemberRemove(dpp::snowflake(user_id), callback, data);
 	return 1;
 }
 
@@ -940,7 +835,10 @@ static cell_t channel_SetArchived(IPluginContext* pContext, const cell_t* params
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	channel->SetArchived(params[2]);
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	channel->SetArchived(params[2], callback, data);
 	return 1;
 }
 
@@ -949,7 +847,10 @@ static cell_t channel_SetLocked(IPluginContext* pContext, const cell_t* params)
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	channel->SetLocked(params[2]);
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	channel->SetLocked(params[2], callback, data);
 	return 1;
 }
 
@@ -968,7 +869,8 @@ static cell_t channel_GetArchivedThreads(IPluginContext* pContext, const cell_t*
 		return 0;
 	}
 
-	channel->GetArchivedThreads(is_private, before, limit, callback, params[6]);
+	cell_t data = params[6];
+	channel->GetArchivedThreads(is_private, before, limit, callback, data);
 	return 1;
 }
 
@@ -983,7 +885,8 @@ static cell_t channel_GetThreadMembers(IPluginContext* pContext, const cell_t* p
 		return 0;
 	}
 
-	channel->GetThreadMembers(callback, params[3]);
+	cell_t data = params[3];
+	channel->GetThreadMembers(callback, data);
 	return 1;
 }
 
@@ -998,19 +901,19 @@ extern const sp_nativeinfo_t channel_natives[] = {
 	{"DiscordChannel.GetParentId", channel_GetParentId},
 	{"DiscordChannel.SetParentId", channel_SetParentId},
 	{"DiscordChannel.GetTopic", channel_GetTopic},
-	{"DiscordChannel.Type.get", channel_GetType},
-	{"DiscordChannel.Position.get", channel_GetPosition},
-	{"DiscordChannel.IsNSFW.get", channel_IsNSFW},
-	{"DiscordChannel.IsTextChannel.get", channel_IsTextChannel},
-	{"DiscordChannel.IsVoiceChannel.get", channel_IsVoiceChannel},
-	{"DiscordChannel.IsCategory.get", channel_IsCategory},
-	{"DiscordChannel.IsThread.get", channel_IsThread},
-	{"DiscordChannel.IsForum.get", channel_IsForum},
-	{"DiscordChannel.IsNewsChannel.get", channel_IsNewsChannel},
-	{"DiscordChannel.IsStageChannel.get", channel_IsStageChannel},
-	{"DiscordChannel.Bitrate.get", channel_GetBitrate},
-	{"DiscordChannel.UserLimit.get", channel_GetUserLimit},
-	{"DiscordChannel.RateLimitPerUser.get", channel_GetRateLimitPerUser},
+	{"DiscordChannel.Type.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetType>},
+	{"DiscordChannel.Position.get", EntityGetInt<DiscordChannel, uint16_t, &DiscordChannel::GetPosition>},
+	{"DiscordChannel.IsNSFW.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsNSFW>},
+	{"DiscordChannel.IsTextChannel.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsTextChannel>},
+	{"DiscordChannel.IsVoiceChannel.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsVoiceChannel>},
+	{"DiscordChannel.IsCategory.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsCategory>},
+	{"DiscordChannel.IsThread.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsThread>},
+	{"DiscordChannel.IsForum.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsForum>},
+	{"DiscordChannel.IsNewsChannel.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsNewsChannel>},
+	{"DiscordChannel.IsStageChannel.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsStageChannel>},
+	{"DiscordChannel.Bitrate.get", EntityGetInt<DiscordChannel, uint16_t, &DiscordChannel::GetBitrate>},
+	{"DiscordChannel.UserLimit.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetUserLimit>},
+	{"DiscordChannel.RateLimitPerUser.get", EntityGetInt<DiscordChannel, uint16_t, &DiscordChannel::GetRateLimitPerUser>},
 	{"DiscordChannel.GetMention", EntityGetMention<DiscordChannel>},
 	{"DiscordChannel.GetUrl", EntityGetUrl<DiscordChannel>},
 	{"DiscordChannel.SetName", channel_SetName},
@@ -1025,25 +928,26 @@ extern const sp_nativeinfo_t channel_natives[] = {
 	{"DiscordChannel.Flags.get", EntityGetFlags<DiscordChannel>},
 	{"DiscordChannel.GetOwnerId", channel_GetOwnerId},
 	{"DiscordChannel.GetLastMessageId", channel_GetLastMessageId},
-	{"DiscordChannel.LastPinTimestamp.get", channel_GetLastPinTimestamp},
-	{"DiscordChannel.DefaultThreadRateLimitPerUser.get", channel_GetDefaultThreadRateLimitPerUser},
-	{"DiscordChannel.DefaultAutoArchiveDuration.get", channel_GetDefaultAutoArchiveDuration},
-	{"DiscordChannel.DefaultSortOrder.get", channel_GetDefaultSortOrder},
-	{"DiscordChannel.ForumLayout.get", channel_GetForumLayout},
+	{"DiscordChannel.LastPinTimestamp.get", EntityGetInt<DiscordChannel, time_t, &DiscordChannel::GetLastPinTimestamp>},
+	{"DiscordChannel.GetLastPinTimestamp", channel_GetLastPinTimestamp64},
+	{"DiscordChannel.DefaultThreadRateLimitPerUser.get", EntityGetInt<DiscordChannel, uint16_t, &DiscordChannel::GetDefaultThreadRateLimitPerUser>},
+	{"DiscordChannel.DefaultAutoArchiveDuration.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetDefaultAutoArchiveDuration>},
+	{"DiscordChannel.DefaultSortOrder.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetDefaultSortOrder>},
+	{"DiscordChannel.ForumLayout.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetForumLayout>},
 	{"DiscordChannel.GetRTCRegion", channel_GetRTCRegion},
-	{"DiscordChannel.IsDM.get", channel_IsDM},
-	{"DiscordChannel.IsGroupDM.get", channel_IsGroupDM},
-	{"DiscordChannel.IsMediaChannel.get", channel_IsMediaChannel},
-	{"DiscordChannel.IsVideo720p.get", channel_IsVideo720p},
-	{"DiscordChannel.IsVideoAuto.get", channel_IsVideoAuto},
-	{"DiscordChannel.IsPinnedThread.get", channel_IsPinnedThread},
-	{"DiscordChannel.IsTagRequired.get", channel_IsTagRequired},
-	{"DiscordChannel.IsDownloadOptionsHidden.get", channel_IsDownloadOptionsHidden},
-	{"DiscordChannel.IsLockedPermissions.get", channel_IsLockedPermissions},
-	{"DiscordChannel.PermissionOverwriteCount.get", channel_GetPermissionOverwriteCount},
+	{"DiscordChannel.IsDM.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsDM>},
+	{"DiscordChannel.IsGroupDM.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsGroupDM>},
+	{"DiscordChannel.IsMediaChannel.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsMediaChannel>},
+	{"DiscordChannel.IsVideo720p.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsVideo720p>},
+	{"DiscordChannel.IsVideoAuto.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsVideoAuto>},
+	{"DiscordChannel.IsPinnedThread.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsPinnedThread>},
+	{"DiscordChannel.IsTagRequired.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsTagRequired>},
+	{"DiscordChannel.IsDownloadOptionsHidden.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsDownloadOptionsHidden>},
+	{"DiscordChannel.IsLockedPermissions.get", EntityGetBool<DiscordChannel, &DiscordChannel::IsLockedPermissions>},
+	{"DiscordChannel.PermissionOverwriteCount.get", EntityGetInt<DiscordChannel, size_t, &DiscordChannel::GetPermissionOverwriteCount>},
 	{"DiscordChannel.GetPermissionOverwriteTargetId", channel_GetPermissionOverwriteTargetId},
 	{"DiscordChannel.GetPermissionOverwriteType", channel_GetPermissionOverwriteType},
-	{"DiscordChannel.AvailableTagCount.get", channel_GetAvailableTagCount},
+	{"DiscordChannel.AvailableTagCount.get", EntityGetInt<DiscordChannel, size_t, &DiscordChannel::GetAvailableTagCount>},
 	{"DiscordChannel.GetAvailableTagName", channel_GetAvailableTagName},
 	{"DiscordChannel.GetAvailableTagId", channel_GetAvailableTagId},
 	{"DiscordChannel.GetAvailableTagEmoji", channel_GetAvailableTagEmoji},
@@ -1058,6 +962,7 @@ extern const sp_nativeinfo_t channel_natives[] = {
 	{"DiscordChannel.AddPermissionOverwrite", channel_AddPermissionOverwrite},
 	{"DiscordChannel.SetPermissionOverwrite", channel_SetPermissionOverwrite},
 	{"DiscordChannel.RemovePermissionOverwrite", channel_RemovePermissionOverwrite},
+	{"DiscordChannel.EditPermissions", channel_EditPermissions},
 	{"DiscordChannel.GetUserPermissions", channel_GetUserPermissions},
 	{"DiscordChannel.CreateInvite", channel_CreateInvite},
 	{"DiscordChannel.CreateInviteFromObject", channel_CreateInviteFromObject},
@@ -1067,6 +972,10 @@ extern const sp_nativeinfo_t channel_natives[] = {
 	{"DiscordChannel.SendMessageFromObject", channel_SendDiscordMessage},
 	{"DiscordChannel.SetRTCRegion", channel_SetRTCRegion},
 	{"DiscordChannel.CreateThread", channel_CreateThread},
+	{"DiscordChannel.CreateThreadWithMessage", channel_CreateThreadWithMessage},
+	{"DiscordChannel.JoinThread", channel_JoinThread},
+	{"DiscordChannel.LeaveThread", channel_LeaveThread},
+	{"DiscordChannel.ModifyThread", channel_ModifyThread},
 	{"DiscordChannel.ThreadMemberAdd", channel_ThreadMemberAdd},
 	{"DiscordChannel.ThreadMemberRemove", channel_ThreadMemberRemove},
 	{"DiscordChannel.SetArchived", channel_SetArchived},

@@ -37,7 +37,15 @@ public:
 	// Basic information
 	std::string GetUserId() const { return m_member.user_id.str(); }
 	std::string GetGuildId() const { return m_member.guild_id.str(); }
-	std::string GetNickname() const { return m_member.get_nickname(); }
+	std::string GetNickName() const { return m_member.get_nickname(); }
+	const char* GetUserName() const {
+		dpp::user* user = dpp::find_user(m_member.user_id);
+		return user ? user->username.c_str() : "";
+	}
+	const char* GetGlobalName() const {
+		dpp::user* user = dpp::find_user(m_member.user_id);
+		return user ? user->global_name.c_str() : "";
+	}
 
 	// Avatar
 	std::string GetAvatarHash() const { return m_member.avatar.to_string(); }
@@ -67,6 +75,7 @@ public:
 		if (index >= roles.size()) return "";
 		return roles[index].str();
 	}
+	const std::vector<dpp::snowflake>& GetRoles() const { return m_member.get_roles(); }
 	bool HasRole(dpp::snowflake role_id) const {
 		const auto& roles = m_member.get_roles();
 		return std::find(roles.begin(), roles.end(), role_id) != roles.end();
@@ -79,11 +88,17 @@ public:
 	// Management methods (require client)
 	void AddRole(dpp::snowflake role_id, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void RemoveRole(dpp::snowflake role_id, IPluginFunction* callback = nullptr, cell_t data = 0);
-	void SetNickname(const char* nickname, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void SetNickName(const char* nickname, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Kick(const char* reason = nullptr, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Ban(uint32_t delete_message_seconds = 0, const char* reason = nullptr, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Timeout(time_t until, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void RemoveTimeout(IPluginFunction* callback = nullptr, cell_t data = 0);
+
+	// Voice operations (require client)
+	void MoveToVoiceChannel(dpp::snowflake channel_id, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void DisconnectFromVoice(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void SetMute(bool mute, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void SetDeaf(bool deaf, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Internal accessor
 	const dpp::guild_member& GetDPPMember() const { return m_member; }

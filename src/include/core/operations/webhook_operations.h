@@ -34,9 +34,9 @@ public:
 	void GetByGuild(dpp::snowflake guild_id, Callback callback);
 	void Create(dpp::snowflake channel_id, const std::string& name, const std::string& avatar = "", Callback callback = nullptr);
 	void Create(const dpp::webhook& wh, Callback callback);
-	void Execute(dpp::webhook wh, const char* message, Callback callback = nullptr);
-	void ExecuteEmbed(dpp::webhook wh, const char* message, const DiscordEmbed* embed, Callback callback = nullptr);
-	void ExecuteMessage(dpp::webhook wh, const DiscordMessage* message, Callback callback = nullptr);
+	void Execute(dpp::webhook wh, const char* message, dpp::snowflake thread_id, const std::string& thread_name, Callback callback = nullptr);
+	void ExecuteEmbed(dpp::webhook wh, const char* message, const DiscordEmbed* embed, dpp::snowflake thread_id, const std::string& thread_name, Callback callback = nullptr);
+	void ExecuteMessage(dpp::webhook wh, const DiscordMessage* message, dpp::snowflake thread_id, const std::string& thread_name, Callback callback = nullptr);
 	void Modify(const dpp::webhook& wh, Callback callback = nullptr);
 	void Delete(dpp::snowflake webhook_id, Callback callback = nullptr);
 };

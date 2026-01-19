@@ -31,8 +31,8 @@ methodmap DiscordEmbed < Handle
    * Sets the embed author
    *
    * @param name      Author name
-   * @param url       Author URL (optional)
-   * @param icon_url  Author icon URL (optional)
+   * @param url       Optional author URL
+   * @param icon_url  Optional author icon URL
    */
   public native void SetAuthor(const char[] name, const char[] url = NULL_STRING, const char[] icon_url = NULL_STRING);
 
@@ -40,7 +40,7 @@ methodmap DiscordEmbed < Handle
    * Sets the embed footer
    *
    * @param text      Footer text
-   * @param icon_url  Footer icon URL (optional)
+   * @param icon_url  Optional Footer icon URL
    */
   public native void SetFooter(const char[] text, const char[] icon_url = NULL_STRING);
 
@@ -78,7 +78,7 @@ methodmap DiscordEmbed < Handle
    * Sets the embed provider information
    *
    * @param name      Provider name
-   * @param url       Provider URL (optional)
+   * @param url       Optional provider URL
    */
   public native void SetProvider(const char[] name, const char[] url = NULL_STRING);
 
@@ -113,6 +113,14 @@ methodmap DiscordEmbed < Handle
     public native get();
     public native set(int timestamp);
   }
+
+  /**
+   * Gets the embed timestamp as a 64-bit timestamp string
+   *
+   * @param buffer      Buffer to store the timestamp
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetTimestamp(char[] buffer, int maxlength);
 
   /**
    * Gets the embed type

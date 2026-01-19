@@ -21,6 +21,7 @@
 #include "entities/discord_scheduled_event.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
+#include "core/callback_helpers.h"
 
 void DiscordScheduledEvent::SetChannelId(const char* channel_id) {
 	if (!channel_id) return;
@@ -30,48 +31,62 @@ void DiscordScheduledEvent::SetChannelId(const char* channel_id) {
 	}
 }
 
-void DiscordScheduledEvent::Delete() {
+void DiscordScheduledEvent::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	m_client->GetCluster()->guild_event_delete(m_event.guild_id, m_event.id,
-		[id = m_event.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to delete scheduled event %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->ScheduledEvents().Delete(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
 		});
+	} else {
+		m_client->ScheduledEvents().Delete(m_event.guild_id, m_event.id);
+	}
 }
 
-void DiscordScheduledEvent::Edit() {
+void DiscordScheduledEvent::Edit(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	m_client->GetCluster()->guild_event_edit(m_event,
-		[id = m_event.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to edit scheduled event %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->ScheduledEvents().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
 		});
+	} else {
+		m_client->ScheduledEvents().ModifyFromObject(this);
+	}
 }
 
-void DiscordScheduledEvent::Start() {
+void DiscordScheduledEvent::Start(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	dpp::scheduled_event edited = m_event;
-	edited.status = dpp::es_active;
-	m_client->GetCluster()->guild_event_edit(edited,
-		[id = m_event.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to start scheduled event %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->ScheduledEvents().Start(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
 		});
+	} else {
+		m_client->ScheduledEvents().Start(m_event.guild_id, m_event.id);
+	}
 }
 
-void DiscordScheduledEvent::End() {
+void DiscordScheduledEvent::End(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	dpp::scheduled_event edited = m_event;
-	edited.status = dpp::es_completed;
-	m_client->GetCluster()->guild_event_edit(edited,
-		[id = m_event.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to end scheduled event %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->ScheduledEvents().End(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
 		});
+	} else {
+		m_client->ScheduledEvents().End(m_event.guild_id, m_event.id);
+	}
 }
 
-void DiscordScheduledEvent::Cancel() {
+void DiscordScheduledEvent::Cancel(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	dpp::scheduled_event edited = m_event;
-	edited.status = dpp::es_cancelled;
-	m_client->GetCluster()->guild_event_edit(edited,
-		[id = m_event.id](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to cancel scheduled event %" PRIu64 "", id);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->ScheduledEvents().Cancel(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
 		});
+	} else {
+		m_client->ScheduledEvents().Cancel(m_event.guild_id, m_event.id);
+	}
 }

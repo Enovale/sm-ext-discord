@@ -21,48 +21,111 @@
 #include "features/discord_slashcommand.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
+#include "core/callback_helpers.h"
 
-bool DiscordSlashCommand::Update(dpp::snowflake guild_id) {
+void DiscordSlashCommand::RegisterToGuild(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	m_command.set_application_id(m_client->GetBotIdSnowflake());
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Commands().RegisterGuild(guild_id, m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandRegister);
+		});
+	} else {
+		m_client->Commands().RegisterGuild(guild_id, m_command);
+	}
+}
+
+void DiscordSlashCommand::RegisterGlobally(IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	m_command.set_application_id(m_client->GetBotIdSnowflake());
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Commands().RegisterGlobal(m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandRegister);
+		});
+	} else {
+		m_client->Commands().RegisterGlobal(m_command);
+	}
+}
+
+bool DiscordSlashCommand::Update(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return false;
 
 	dpp::snowflake target_guild = (guild_id != 0) ? guild_id : m_guild_id;
 
 	if (target_guild != 0) {
-		m_client->Commands().ModifyGuild(target_guild, m_command);
+		if (callback) {
+			Handle_t client_handle = m_client->GetHandle();
+			m_client->Commands().ModifyGuild(target_guild, m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandUpdate);
+			});
+		} else {
+			m_client->Commands().ModifyGuild(target_guild, m_command);
+		}
 	} else {
-		m_client->Commands().ModifyGlobal(m_command);
+		if (callback) {
+			Handle_t client_handle = m_client->GetHandle();
+			m_client->Commands().ModifyGlobal(m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandUpdate);
+			});
+		} else {
+			m_client->Commands().ModifyGlobal(m_command);
+		}
 	}
 	return true;
 }
 
-void DiscordSlashCommand::Delete(dpp::snowflake guild_id) {
+void DiscordSlashCommand::Delete(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	dpp::snowflake target_guild = (guild_id != 0) ? guild_id : m_guild_id;
+
 	if (target_guild != 0) {
-		m_client->Commands().DeleteGuild(target_guild, m_command.id);
+		if (callback) {
+			Handle_t client_handle = m_client->GetHandle();
+			m_client->Commands().DeleteGuild(target_guild, m_command.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandDelete);
+			});
+		} else {
+			m_client->Commands().DeleteGuild(target_guild, m_command.id);
+		}
 	} else {
-		m_client->Commands().DeleteGlobal(m_command.id);
+		if (callback) {
+			Handle_t client_handle = m_client->GetHandle();
+			m_client->Commands().DeleteGlobal(m_command.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandDelete);
+			});
+		} else {
+			m_client->Commands().DeleteGlobal(m_command.id);
+		}
 	}
 }
 
-bool DiscordSlashCommand::ApplyPermissionOverrides(dpp::snowflake guild_id) {
+bool DiscordSlashCommand::ApplyPermissionOverrides(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return false;
 	dpp::snowflake target_guild = (guild_id != 0) ? guild_id : m_guild_id;
 	if (target_guild == 0) return false;
 
 	m_command.permissions = m_permissions;
-	m_client->Commands().SetPermissions(target_guild, m_command);
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Commands().SetPermissions(target_guild, m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandPermission);
+		});
+	} else {
+		m_client->Commands().SetPermissions(target_guild, m_command);
+	}
 	return true;
 }
 
-void DiscordSlashCommand::RegisterToGuild(dpp::snowflake guild_id) {
-	if (!m_client) return;
-	m_command.set_application_id(m_client->GetCluster()->me.id);
-	m_client->Commands().RegisterGuild(guild_id, m_command);
-}
-
-void DiscordSlashCommand::RegisterGlobally() {
-	if (!m_client) return;
-	m_command.set_application_id(m_client->GetCluster()->me.id);
-	m_client->Commands().RegisterGlobal(m_command);
+void DiscordSlashCommand::BulkDeleteGlobal(DiscordClient* client, IPluginFunction* callback, cell_t data) {
+	if (!client) return;
+	if (callback) {
+		Handle_t client_handle = client->GetHandle();
+		client->Commands().BulkDeleteGlobal([client_handle, client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandBulkDelete);
+		});
+	} else {
+		client->Commands().BulkDeleteGlobal();
+	}
 }

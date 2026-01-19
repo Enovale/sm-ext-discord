@@ -124,7 +124,7 @@ Action Command_FetchUser(int client, int args)
 	GetCmdArg(1, userId, sizeof(userId));
 
 	// FetchUser uses DiscordResult callback
-	DiscordUser.FetchUser(g_Bot, userId, "", OnUserFetched, client);
+	DiscordUser.FetchUser(g_Bot, userId, OnUserFetched, client);
 	ReplyToCommand(client, "[Discord] Fetching user %s...", userId);
 	return Plugin_Handled;
 }
@@ -374,7 +374,7 @@ void OnUserFetched(Discord bot, DiscordResult result, any data)
 	user.GetGlobalName(globalName, sizeof(globalName));
 
 	char avatarUrl[256];
-	user.GetAvatarUrl(true, avatarUrl, sizeof(avatarUrl));
+	user.GetAvatarUrl(avatarUrl, sizeof(avatarUrl));
 
 	bool isBot = user.IsBot;
 

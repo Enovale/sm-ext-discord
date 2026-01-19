@@ -18,15 +18,10 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "core/operations/interaction_operations.h"
+#include "utils/discord_common.h"
 
-#include "base_operations.h"
-
-class StageOperations : public BaseOperations {
-public:
-	using BaseOperations::BaseOperations;
-
-	void Create(dpp::snowflake channel_id, const char* topic, dpp::stage_privacy_level privacy = dpp::sp_guild_only, Callback callback = nullptr);
-	void Modify(dpp::snowflake channel_id, const char* topic, dpp::stage_privacy_level privacy = dpp::sp_guild_only, Callback callback = nullptr);
-	void Delete(dpp::snowflake channel_id, Callback callback = nullptr);
-};
+void InteractionOperations::EditFollowUp(const std::string& token, const dpp::message& message, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->interaction_followup_edit(token, message, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to edit follow-up message"); });
+}

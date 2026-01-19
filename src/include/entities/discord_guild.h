@@ -135,22 +135,37 @@ public:
 	bool HasPermissionInChannel(dpp::snowflake user_id, dpp::snowflake channel_id, const char* permission) const;
 
 	// Guild management methods
-	void Modify();
+	void Modify(IPluginFunction* callback = nullptr, cell_t data = 0);
+	bool GetChannels(IPluginFunction* callback, cell_t data = 0);
 	bool GetInvites(IPluginFunction* callback, cell_t data = 0);
 	bool GetWebhooks(IPluginFunction* callback, cell_t data = 0);
+	bool GetRoles(IPluginFunction* callback, cell_t data = 0);
 	bool GetMember(dpp::snowflake user_id, IPluginFunction* callback, cell_t data = 0);
 	bool GetMembers(uint16_t limit, dpp::snowflake after, IPluginFunction* callback, cell_t data = 0);
 	bool SearchMembers(const char* query, uint16_t limit, IPluginFunction* callback, cell_t data = 0);
 	bool GetActiveThreads(IPluginFunction* callback, cell_t data = 0);
 	bool GetBans(dpp::snowflake before, dpp::snowflake after, uint16_t limit, IPluginFunction* callback, cell_t data = 0);
-	void CreateEmoji(const char* name, const char* image_path, dpp::image_type type);
-	void CreateSticker(const char* name, const char* description, const char* tags, const char* file_path, dpp::sticker_format format);
-	void CreateScheduledEvent(const char* name, const char* description, dpp::snowflake channel_id, time_t start_time, time_t end_time, dpp::event_entity_type type);
-	void CreateExternalScheduledEvent(const char* name, const char* description, const char* location, time_t start_time, time_t end_time);
-	void UnbanUser(dpp::snowflake user_id);
+	void EditChannelPositions(const std::vector<dpp::channel>& channels, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateEmoji(const char* name, const char* image_path, dpp::image_type type, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void GetEmoji(dpp::snowflake emoji_id, IPluginFunction* callback, cell_t data = 0);
+	void GetAllEmojis(IPluginFunction* callback, cell_t data = 0);
+	void CreateSticker(const char* name, const char* description, const char* tags, const char* file_path, dpp::sticker_format format, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateScheduledEvent(const char* name, const char* description, dpp::snowflake channel_id, time_t start_time, time_t end_time, dpp::event_entity_type type, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateExternalScheduledEvent(const char* name, const char* description, const char* location, time_t start_time, time_t end_time, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void GetScheduledEvents(IPluginFunction* callback, cell_t data = 0);
+	void GetScheduledEvent(dpp::snowflake event_id, IPluginFunction* callback, cell_t data = 0);
+	void GetScheduledEventUsers(dpp::snowflake event_id, uint16_t limit, dpp::snowflake before, dpp::snowflake after, IPluginFunction* callback, cell_t data = 0);
+	void BanUser(dpp::snowflake user_id, uint32_t delete_message_seconds, const char* reason, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void UnbanUser(dpp::snowflake user_id, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void CreateRole(const char* name, uint32_t color, bool hoist, bool mentionable, uint64_t permissions, IPluginFunction* callback, cell_t data);
 	void CreateRoleFromObject(DiscordRole* role, IPluginFunction* callback, cell_t data);
-	void BulkDeleteCommands();
+	void EditRolePositions(const std::vector<dpp::role>& roles, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void BulkDeleteCommands(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void GetCommands(IPluginFunction* callback, cell_t data = 0);
+	void GetCommand(dpp::snowflake command_id, IPluginFunction* callback, cell_t data = 0);
+	void ModifyCurrentMember(const char* nickname, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void GetPruneCount(uint16_t days, IPluginFunction* callback, cell_t data = 0);
+	void BeginPrune(uint16_t days, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Internal accessor
 	const dpp::guild& GetDPPGuild() const { return m_guild; }

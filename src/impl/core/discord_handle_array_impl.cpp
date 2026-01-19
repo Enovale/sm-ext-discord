@@ -23,8 +23,10 @@
 
 DiscordHandleArray::~DiscordHandleArray() {
 	if (m_autoFree) {
-		for (Handle_t h : m_handles) {
-			if (h) Handles.FreeHandle(h);
+		if (auto* vec = std::get_if<std::vector<Handle_t>>(&m_data)) {
+			for (Handle_t h : *vec) {
+				if (h) Handles.FreeHandle(h);
+			}
 		}
 	}
 }

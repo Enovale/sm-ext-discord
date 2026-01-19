@@ -18,22 +18,13 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "natives/entity_natives_common.h"
-#include "entities/discord_thread_member.h"
+#pragma once
 
-static cell_t thread_member_GetThreadId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordThreadMember* member = Handles.GetPointer<DiscordThreadMember>(pContext, params[1]);
-	if (!member) return 0;
+#include "base_operations.h"
 
-	pContext->StringToLocal(params[2], params[3], member->GetThreadId().c_str());
-	return 1;
-}
+class InteractionOperations : public BaseOperations {
+public:
+	using BaseOperations::BaseOperations;
 
-extern const sp_nativeinfo_t thread_member_natives[] = {
-	{"DiscordThreadMember.GetThreadId", thread_member_GetThreadId},
-	{"DiscordThreadMember.GetUserId", EntityGetUserId<DiscordThreadMember>},
-	{"DiscordThreadMember.JoinedTimestamp.get", EntityGetInt<DiscordThreadMember, int, &DiscordThreadMember::GetJoinedTimestamp>},
-	{"DiscordThreadMember.Flags.get", EntityGetFlags<DiscordThreadMember>},
-	{nullptr, nullptr}
+	void EditFollowUp(const std::string& token, const dpp::message& message, Callback callback = nullptr);
 };

@@ -144,27 +144,36 @@ methodmap DiscordSlashCommand < Handle
    * Registers the slash command to a specific guild
    *
    * @param guild_id  Guild ID to register the command to
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void RegisterToGuild(const char[] guild_id);
+  public native void RegisterToGuild(const char[] guild_id, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Registers the slash command globally
+   *
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void RegisterGlobally();
+  public native void RegisterGlobally(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Updates an existing slash command
    *
    * @param guild_id  Guild ID (empty string for global command)
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void Update(const char[] guild_id = NULL_STRING);
+  public native void Update(const char[] guild_id = NULL_STRING, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Deletes a slash command
    *
    * @param guild_id  Guild ID (empty string for global command)
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void Delete(const char[] guild_id = NULL_STRING);
+  public native void Delete(const char[] guild_id = NULL_STRING, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Adds a permission override for the slash command
@@ -213,8 +222,10 @@ methodmap DiscordSlashCommand < Handle
    * Applies permission overrides to the slash command
    *
    * @param guild_id  Guild ID where the command exists
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void ApplyPermissionOverrides(const char[] guild_id);
+  public native void ApplyPermissionOverrides(const char[] guild_id, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Controls the context menu type of the slash command
@@ -245,7 +256,7 @@ methodmap DiscordSlashCommand < Handle
    *
    * @param language     Language code (e.g., "en-US", "zh-CN")
    * @param name         Localized command name
-   * @param description  Localized command description (optional)
+   * @param description  Optional localized command description
    */
   public native void AddLocalization(const char[] language, const char[] name, const char[] description = NULL_STRING);
 
@@ -328,7 +339,9 @@ methodmap DiscordSlashCommand < Handle
    * Bulk deletes all global slash commands
    *
    * @param discord    Discord client handle
+   * @param callback   Optional callback to receive confirmation
+   * @param data       Optional data to pass to callback
    * @note             This will remove all global slash commands for the bot
    */
-  public static native void BulkDeleteGlobalCommands(Discord discord);
+  public static native void BulkDeleteGlobalCommands(Discord discord, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 }

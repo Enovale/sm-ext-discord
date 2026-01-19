@@ -48,14 +48,21 @@ void MemberOperations::RemoveRole(dpp::snowflake guild_id, dpp::snowflake user_i
 	m_cluster->guild_member_remove_role(guild_id, user_id, role_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to remove member role"); });
 }
 
-void MemberOperations::Kick(dpp::snowflake guild_id, dpp::snowflake user_id, Callback callback) {
+void MemberOperations::Kick(dpp::snowflake guild_id, dpp::snowflake user_id, const char* reason, Callback callback) {
 	if (!IsValid()) return;
+	if (reason && reason[0] != '\0') m_cluster->set_audit_reason(reason);
 	m_cluster->guild_member_kick(guild_id, user_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to kick member"); });
 }
 
-void MemberOperations::Ban(dpp::snowflake guild_id, dpp::snowflake user_id, const char* reason, int delete_message_days, Callback callback) {
+void MemberOperations::Ban(dpp::snowflake guild_id, dpp::snowflake user_id, const char* reason, uint32_t delete_message_seconds, Callback callback) {
 	if (!IsValid()) return;
-	m_cluster->guild_ban_add(guild_id, user_id, delete_message_days, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to ban member"); });
+	if (reason && reason[0] != '\0') m_cluster->set_audit_reason(reason);
+	m_cluster->guild_ban_add(guild_id, user_id, delete_message_seconds, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to ban member"); });
+}
+
+void MemberOperations::Unban(dpp::snowflake guild_id, dpp::snowflake user_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->guild_ban_delete(guild_id, user_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to unban member"); });
 }
 
 void MemberOperations::Timeout(dpp::snowflake guild_id, dpp::snowflake user_id, time_t timeout_until, Callback callback) {

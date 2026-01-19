@@ -39,14 +39,6 @@ static cell_t attachment_GetContentType(IPluginContext* pContext, const cell_t* 
 	return 1;
 }
 
-static cell_t attachment_GetSize(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return static_cast<cell_t>(att->GetSize());
-}
-
 static cell_t attachment_GetUrl(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
@@ -63,30 +55,6 @@ static cell_t attachment_GetProxyUrl(IPluginContext* pContext, const cell_t* par
 
 	pContext->StringToLocal(params[2], params[3], att->GetProxyUrl());
 	return 1;
-}
-
-static cell_t attachment_GetWidth(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return static_cast<cell_t>(att->GetWidth());
-}
-
-static cell_t attachment_GetHeight(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return static_cast<cell_t>(att->GetHeight());
-}
-
-static cell_t attachment_IsEphemeral(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return att->IsEphemeral();
 }
 
 static cell_t attachment_GetDurationSecs(IPluginContext* pContext, const cell_t* params)
@@ -106,55 +74,23 @@ static cell_t attachment_GetWaveform(IPluginContext* pContext, const cell_t* par
 	return 1;
 }
 
-static cell_t attachment_IsSpoiler(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return att->IsSpoiler();
-}
-
-static cell_t attachment_IsImage(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return att->IsImage();
-}
-
-static cell_t attachment_IsVideo(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return att->IsVideo();
-}
-
-static cell_t attachment_IsAudio(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAttachment* att = Handles.GetPointer<DiscordAttachment>(pContext, params[1]);
-	if (!att) return 0;
-
-	return att->IsAudio();
-}
-
 extern const sp_nativeinfo_t attachment_natives[] = {
 	{"DiscordAttachment.GetId", EntityGetId<DiscordAttachment>},
 	{"DiscordAttachment.GetFilename", attachment_GetFilename},
 	{"DiscordAttachment.GetDescription", EntityGetDescription<DiscordAttachment>},
 	{"DiscordAttachment.GetContentType", attachment_GetContentType},
-	{"DiscordAttachment.Size.get", attachment_GetSize},
+	{"DiscordAttachment.Size.get", EntityGetInt<DiscordAttachment, uint32_t, &DiscordAttachment::GetSize>},
 	{"DiscordAttachment.GetUrl", attachment_GetUrl},
 	{"DiscordAttachment.GetProxyUrl", attachment_GetProxyUrl},
-	{"DiscordAttachment.Width.get", attachment_GetWidth},
-	{"DiscordAttachment.Height.get", attachment_GetHeight},
-	{"DiscordAttachment.Ephemeral.get", attachment_IsEphemeral},
+	{"DiscordAttachment.Width.get", EntityGetInt<DiscordAttachment, uint32_t, &DiscordAttachment::GetWidth>},
+	{"DiscordAttachment.Height.get", EntityGetInt<DiscordAttachment, uint32_t, &DiscordAttachment::GetHeight>},
+	{"DiscordAttachment.Ephemeral.get", EntityGetBool<DiscordAttachment, &DiscordAttachment::IsEphemeral>},
 	{"DiscordAttachment.DurationSecs.get", attachment_GetDurationSecs},
 	{"DiscordAttachment.GetWaveform", attachment_GetWaveform},
 	{"DiscordAttachment.Flags.get", EntityGetFlags<DiscordAttachment>},
-	{"DiscordAttachment.IsSpoiler.get", attachment_IsSpoiler},
-	{"DiscordAttachment.IsImage.get", attachment_IsImage},
-	{"DiscordAttachment.IsVideo.get", attachment_IsVideo},
-	{"DiscordAttachment.IsAudio.get", attachment_IsAudio},
+	{"DiscordAttachment.IsSpoiler.get", EntityGetBool<DiscordAttachment, &DiscordAttachment::IsSpoiler>},
+	{"DiscordAttachment.IsImage.get", EntityGetBool<DiscordAttachment, &DiscordAttachment::IsImage>},
+	{"DiscordAttachment.IsVideo.get", EntityGetBool<DiscordAttachment, &DiscordAttachment::IsVideo>},
+	{"DiscordAttachment.IsAudio.get", EntityGetBool<DiscordAttachment, &DiscordAttachment::IsAudio>},
 	{nullptr, nullptr}
 };

@@ -78,6 +78,14 @@ methodmap DiscordEmoji < Handle
   public native void GetRoleId(int index, char[] buffer, int maxlength);
 
   /**
+   * Gets all role IDs as an array
+   *
+   * @return             DiscordHandleArray containing all role IDs
+   * @note               Caller is responsible for closing the returned handle
+   */
+  public native DiscordHandleArray GetRoles();
+
+  /**
    * Gets the emoji mention format
    *
    * @param buffer       Buffer to store the mention
@@ -104,13 +112,20 @@ methodmap DiscordEmoji < Handle
 
   /**
    * Deletes this emoji from the guild
+   *
+   * @param guild_id  Guild ID where the emoji is located
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void Delete();
+  public native void Delete(const char[] guild_id, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Edits this emoji's name
    *
-   * @param name         New name for the emoji
+   * @param guild_id  Guild ID where the emoji is located
+   * @param name      New name for the emoji
+   * @param callback  Optional callback to receive the updated emoji
+   * @param data      Optional data to pass to callback
    */
-  public native void Edit(const char[] name);
+  public native void Edit(const char[] guild_id, const char[] name, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 }

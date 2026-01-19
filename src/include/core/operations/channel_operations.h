@@ -21,16 +21,23 @@
 #pragma once
 
 #include "base_operations.h"
-#include "smsdk_ext.h"
+
+class DiscordChannel;
 
 class ChannelOperations : public BaseOperations {
 public:
 	using BaseOperations::BaseOperations;
 
 	void Get(dpp::snowflake channel_id, Callback callback);
-	void Create(dpp::snowflake guild_id, const char* name, dpp::channel_type type, const char* topic = "", dpp::snowflake parent_id = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void GetChannels(dpp::snowflake guild_id, Callback callback);
+	void Create(dpp::snowflake guild_id, const char* name, dpp::channel_type type, const char* topic = "", dpp::snowflake parent_id = 0, Callback callback = nullptr);
 	void CreateDM(dpp::snowflake user_id, Callback callback);
 	void Modify(dpp::snowflake channel_id, const std::string& name = "", const std::string& topic = "", uint16_t position = 0, bool nsfw = false, uint16_t rate_limit = 0, uint16_t bitrate = 0, uint8_t user_limit = 0, dpp::snowflake parent_id = 0, Callback callback = nullptr);
+	void ModifyFromObject(const DiscordChannel* channel_obj, Callback callback = nullptr);
 	void Delete(dpp::snowflake channel_id, Callback callback = nullptr);
+	void EditPermissions(dpp::snowflake channel_id, dpp::snowflake overwrite_id, uint64_t allow, uint64_t deny, bool is_member, Callback callback = nullptr);
+	void EditPositions(const std::vector<dpp::channel>& channels, Callback callback = nullptr);
 	void Typing(dpp::snowflake channel_id, Callback callback = nullptr);
+	void GetInvites(const dpp::channel& channel, Callback callback);
+	void GetWebhooks(dpp::snowflake channel_id, Callback callback);
 };

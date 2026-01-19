@@ -26,6 +26,7 @@ class StickerOperations : public BaseOperations {
 public:
 	using BaseOperations::BaseOperations;
 
+	void Create(dpp::snowflake guild_id, const char* name, const char* description, const char* tags, const char* file_path, dpp::sticker_format format, Callback callback = nullptr);
 	void Modify(dpp::snowflake guild_id, dpp::snowflake sticker_id, const char* name = nullptr, const char* description = nullptr, const char* tags = nullptr, Callback callback = nullptr);
 	void Delete(dpp::snowflake guild_id, dpp::snowflake sticker_id, Callback callback = nullptr);
 };

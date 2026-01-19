@@ -21,7 +21,6 @@
 #pragma once
 
 #include "base_operations.h"
-#include "smsdk_ext.h"
 
 class DiscordRole;
 
@@ -30,8 +29,10 @@ public:
 	using BaseOperations::BaseOperations;
 
 	void GetAll(dpp::snowflake guild_id, Callback callback);
-	void Create(dpp::snowflake guild_id, const char* name, uint32_t color = 0, bool hoist = false, bool mentionable = false, uint64_t permissions = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
-	void CreateFromObject(dpp::snowflake guild_id, const DiscordRole* role_obj, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Create(dpp::snowflake guild_id, const char* name, uint32_t color = 0, bool hoist = false, bool mentionable = false, uint64_t permissions = 0, Callback callback = nullptr);
+	void CreateFromObject(dpp::snowflake guild_id, const DiscordRole* role_obj, Callback callback = nullptr);
 	void Modify(dpp::snowflake guild_id, dpp::snowflake role_id, const std::string& name = "", uint32_t color = 0, bool hoist = false, bool mentionable = false, uint64_t permissions = 0, Callback callback = nullptr);
+	void ModifyFromObject(const DiscordRole* role_obj, Callback callback = nullptr);
 	void Delete(dpp::snowflake guild_id, dpp::snowflake role_id, Callback callback = nullptr);
+	void EditPositions(dpp::snowflake guild_id, const std::vector<dpp::role>& roles, Callback callback = nullptr);
 };

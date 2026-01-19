@@ -24,8 +24,9 @@
 static cell_t component_Constructor(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordComponent* component = new DiscordComponent();
-
-	return Handles.Create(pContext, component, HandleId::DiscordComponent);
+	Handle_t handle = Handles.Create(pContext, component, HandleId::DiscordComponent);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t component_SetType(IPluginContext* pContext, const cell_t* params)

@@ -39,7 +39,7 @@ methodmap DiscordInteraction < Handle
    * @param buffer    Buffer to store the nickname
    * @param maxlength    Maximum length of the buffer
    */
-  public native void GetUserNickname(char[] buffer, int maxlength);
+  public native void GetUserNickName(char[] buffer, int maxlength);
 
   /**
    * Gets the ID of the user who used the command
@@ -68,7 +68,7 @@ methodmap DiscordInteraction < Handle
   public native bool GetOptionValue(const char[] name, char[] buffer, int maxlength);
 
   /**
-   * Gets an integer option value from the command
+   * Gets a integer option value from the command
    *
    * @param name      Name of the option
    * @return          Integer value of the option, 0 if option doesn't exist
@@ -188,4 +188,38 @@ methodmap DiscordInteraction < Handle
    * @param embed       Embed object to include (can be null)
    */
   public native void EditFollowUpEmbed(const char[] message_id, const char[] content, DiscordEmbed embed);
+
+  /**
+   * Creates an immediate response using a message object
+   *
+   * @param message     DiscordMessage object containing the response
+   * @note              Use this method when you need to include components, multiple embeds, or other advanced features
+   */
+  public native void CreateResponseFromObject(DiscordMessage message);
+
+  /**
+   * Edits a previously sent response using a message object
+   *
+   * @param message     DiscordMessage object containing the new response
+   * @note              Use this method when you need to include components, multiple embeds, or other advanced features
+   */
+  public native void EditResponseFromObject(DiscordMessage message);
+
+  /**
+   * Sends a follow-up message using a message object
+   *
+   * @param message     DiscordMessage object containing the follow-up
+   * @note              Can only be used after DeferReply or CreateResponse
+   * @note              Use this method when you need to include components, multiple embeds, or other advanced features
+   */
+  public native void FollowUpFromObject(DiscordMessage message);
+
+  /**
+   * Edits a follow-up message using a message object
+   *
+   * @param message_id  ID of the follow-up message to edit
+   * @param message     DiscordMessage object containing the new content
+   * @note              Use this method when you need to include components, multiple embeds, or other advanced features
+   */
+  public native void EditFollowUpFromObject(const char[] message_id, DiscordMessage message);
 }

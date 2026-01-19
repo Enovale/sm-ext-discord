@@ -46,15 +46,12 @@ void DiscordGuildMember::AddRole(dpp::snowflake role_id, IPluginFunction* callba
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->guild_member_add_role(m_member.guild_id, m_member.user_id, role_id,
+		m_client->Members().AddRole(m_member.guild_id, m_member.user_id, role_id,
 			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::AddRole);
 			});
 	} else {
-		m_client->GetCluster()->guild_member_add_role(m_member.guild_id, m_member.user_id, role_id,
-			[user_id = m_member.user_id, role_id](const dpp::confirmation_callback_t& cb) {
-				Log.DppError(cb, "Failed to add role %" PRIu64 " to member %" PRIu64 "", role_id, user_id);
-			});
+		m_client->Members().AddRole(m_member.guild_id, m_member.user_id, role_id);
 	}
 }
 
@@ -62,92 +59,119 @@ void DiscordGuildMember::RemoveRole(dpp::snowflake role_id, IPluginFunction* cal
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->guild_member_remove_role(m_member.guild_id, m_member.user_id, role_id,
+		m_client->Members().RemoveRole(m_member.guild_id, m_member.user_id, role_id,
 			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::RemoveRole);
 			});
 	} else {
-		m_client->GetCluster()->guild_member_remove_role(m_member.guild_id, m_member.user_id, role_id,
-			[user_id = m_member.user_id, role_id](const dpp::confirmation_callback_t& cb) {
-				Log.DppError(cb, "Failed to remove role %" PRIu64 " from member %" PRIu64 "", role_id, user_id);
-			});
+		m_client->Members().RemoveRole(m_member.guild_id, m_member.user_id, role_id);
 	}
 }
 
-void DiscordGuildMember::SetNickname(const char* nickname, IPluginFunction* callback, cell_t data) {
+void DiscordGuildMember::SetNickName(const char* nickname, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	dpp::guild_member edited = m_member;
-	edited.set_nickname(nickname ? nickname : "");
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->guild_edit_member(edited,
+		m_client->Members().Modify(m_member.guild_id, m_member.user_id, nickname ? nickname : "",
 			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 				PushResult<DiscordGuildMember>(client_handle, client, callback, data, cb);
 			});
 	} else {
-		m_client->GetCluster()->guild_edit_member(edited,
-			[user_id = m_member.user_id](const dpp::confirmation_callback_t& cb) {
-				Log.DppError(cb, "Failed to set nickname for member %" PRIu64 "", user_id);
-			});
+		m_client->Members().Modify(m_member.guild_id, m_member.user_id, nickname ? nickname : "");
 	}
 }
 
 void DiscordGuildMember::Kick(const char* reason, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	if (reason && reason[0] != '\0') {
-		m_client->GetCluster()->set_audit_reason(reason);
-	}
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->guild_member_kick(m_member.guild_id, m_member.user_id,
+		m_client->Members().Kick(m_member.guild_id, m_member.user_id, reason,
 			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Kick);
 			});
 	} else {
-		m_client->GetCluster()->guild_member_kick(m_member.guild_id, m_member.user_id,
-			[user_id = m_member.user_id](const dpp::confirmation_callback_t& cb) {
-				Log.DppError(cb, "Failed to kick member %" PRIu64 "", user_id);
-			});
+		m_client->Members().Kick(m_member.guild_id, m_member.user_id, reason);
 	}
 }
 
 void DiscordGuildMember::Ban(uint32_t delete_message_seconds, const char* reason, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	if (reason && reason[0] != '\0') {
-		m_client->GetCluster()->set_audit_reason(reason);
-	}
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->guild_ban_add(m_member.guild_id, m_member.user_id, delete_message_seconds,
+		m_client->Members().Ban(m_member.guild_id, m_member.user_id, reason, delete_message_seconds,
 			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::BanOp);
 			});
 	} else {
-		m_client->GetCluster()->guild_ban_add(m_member.guild_id, m_member.user_id, delete_message_seconds,
-			[user_id = m_member.user_id](const dpp::confirmation_callback_t& cb) {
-				Log.DppError(cb, "Failed to ban member %" PRIu64 "", user_id);
-			});
+		m_client->Members().Ban(m_member.guild_id, m_member.user_id, reason, delete_message_seconds);
 	}
 }
 
 void DiscordGuildMember::Timeout(time_t until, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
-	dpp::guild_member edited = m_member;
-	edited.communication_disabled_until = until;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->guild_edit_member(edited,
+		m_client->Members().Timeout(m_member.guild_id, m_member.user_id, until,
 			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 				PushResult<DiscordGuildMember>(client_handle, client, callback, data, cb);
 			});
 	} else {
-		m_client->GetCluster()->guild_edit_member(edited,
-			[user_id = m_member.user_id](const dpp::confirmation_callback_t& cb) {
-				Log.DppError(cb, "Failed to timeout member %" PRIu64 "", user_id);
-			});
+		m_client->Members().Timeout(m_member.guild_id, m_member.user_id, until);
 	}
 }
 
 void DiscordGuildMember::RemoveTimeout(IPluginFunction* callback, cell_t data) {
 	Timeout(0, callback, data);
+}
+
+void DiscordGuildMember::MoveToVoiceChannel(dpp::snowflake channel_id, IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Voice().MoveToChannel(m_member.guild_id, m_member.user_id, channel_id,
+			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::VoiceMove);
+			});
+	} else {
+		m_client->Voice().MoveToChannel(m_member.guild_id, m_member.user_id, channel_id);
+	}
+}
+
+void DiscordGuildMember::DisconnectFromVoice(IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Voice().Disconnect(m_member.guild_id, m_member.user_id,
+			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::VoiceDisconnect);
+			});
+	} else {
+		m_client->Voice().Disconnect(m_member.guild_id, m_member.user_id);
+	}
+}
+
+void DiscordGuildMember::SetMute(bool mute, IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Voice().SetMute(m_member.guild_id, m_member.user_id, mute,
+			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::VoiceMute);
+			});
+	} else {
+		m_client->Voice().SetMute(m_member.guild_id, m_member.user_id, mute);
+	}
+}
+
+void DiscordGuildMember::SetDeaf(bool deaf, IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Voice().SetDeaf(m_member.guild_id, m_member.user_id, deaf,
+			[client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::VoiceDeaf);
+			});
+	} else {
+		m_client->Voice().SetDeaf(m_member.guild_id, m_member.user_id, deaf);
+	}
 }

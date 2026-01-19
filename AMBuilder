@@ -34,10 +34,10 @@ for cxx in builder.targets:
     'src/impl/core/operations/emoji_operations.cpp',
     'src/impl/core/operations/sticker_operations.cpp',
     'src/impl/core/operations/scheduled_event_operations.cpp',
-    'src/impl/core/operations/stage_operations.cpp',
     'src/impl/core/operations/voice_operations.cpp',
     'src/impl/core/operations/http_operations.cpp',
     'src/impl/core/operations/user_operations.cpp',
+    'src/impl/core/operations/interaction_operations.cpp',
     # Entity Implementation
     'src/impl/entities/user_impl.cpp',
     'src/impl/entities/message_impl.cpp',
@@ -51,6 +51,7 @@ for cxx in builder.targets:
     'src/impl/features/webhook_impl.cpp',
     'src/impl/features/slashcommand_impl.cpp',
     'src/impl/features/invite_impl.cpp',
+    'src/impl/features/interaction_impl.cpp',
     # Core natives
     'src/natives/core/discord_client_natives.cpp',
     'src/natives/core/discord_event_natives.cpp',

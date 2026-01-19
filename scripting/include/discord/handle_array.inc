@@ -1,7 +1,7 @@
 // Discord handle array - Container for multiple handles or strings returned from API calls
 methodmap DiscordHandleArray < Handle {
 	/**
-	 * Gets the number of handles in the array
+	 * Gets the number of elements in the array
 	 */
 	property int Length {
 		public native get();
@@ -15,13 +15,6 @@ methodmap DiscordHandleArray < Handle {
 	 * @note            Automatically managed - no need to manually free this handle
 	 */
 	public native Handle GetAt(int index);
-
-	/**
-	 * Gets the number of strings in the array
-	 */
-	property int StringCount {
-		public native get();
-	}
 
 	/**
 	 * Gets a string at the specified index

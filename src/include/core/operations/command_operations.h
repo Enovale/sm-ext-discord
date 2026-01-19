@@ -28,6 +28,8 @@ public:
 
 	void RegisterGuild(dpp::snowflake guild_id, const dpp::slashcommand& command, Callback callback = nullptr);
 	void RegisterGlobal(const dpp::slashcommand& command, Callback callback = nullptr);
+	void BulkCreateGuild(dpp::snowflake guild_id, const std::vector<dpp::slashcommand>& commands, Callback callback = nullptr);
+	void BulkCreateGlobal(const std::vector<dpp::slashcommand>& commands, Callback callback = nullptr);
 	void ModifyGuild(dpp::snowflake guild_id, const dpp::slashcommand& command, Callback callback = nullptr);
 	void ModifyGlobal(const dpp::slashcommand& command, Callback callback = nullptr);
 	void SetPermissions(dpp::snowflake guild_id, const dpp::slashcommand& command, Callback callback = nullptr);
@@ -38,4 +40,6 @@ public:
 	void BulkDeleteGlobal(Callback callback = nullptr);
 	void GetGuildCommands(dpp::snowflake guild_id, Callback callback);
 	void GetGlobalCommands(Callback callback);
+	void GetGuildCommand(dpp::snowflake guild_id, dpp::snowflake command_id, Callback callback);
+	void GetGlobalCommand(dpp::snowflake command_id, Callback callback);
 };

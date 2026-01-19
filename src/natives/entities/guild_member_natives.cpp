@@ -18,33 +18,33 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "natives/natives_common.h"
+#include "natives/entity_natives_common.h"
 #include "entities/discord_guild_member.h"
 
-static cell_t member_GetUserId(IPluginContext* pContext, const cell_t* params)
+static cell_t member_GetNickName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
 
-	pContext->StringToLocal(params[2], params[3], member->GetUserId().c_str());
+	pContext->StringToLocal(params[2], params[3], member->GetNickName().c_str());
 	return 1;
 }
 
-static cell_t member_GetGuildId(IPluginContext* pContext, const cell_t* params)
+static cell_t member_GetUserName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
 
-	pContext->StringToLocal(params[2], params[3], member->GetGuildId().c_str());
+	pContext->StringToLocal(params[2], params[3], member->GetUserName());
 	return 1;
 }
 
-static cell_t member_GetNickname(IPluginContext* pContext, const cell_t* params)
+static cell_t member_GetGlobalName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
 
-	pContext->StringToLocal(params[2], params[3], member->GetNickname().c_str());
+	pContext->StringToLocal(params[2], params[3], member->GetGlobalName());
 	return 1;
 }
 
@@ -66,118 +66,6 @@ static cell_t member_GetAvatarUrl(IPluginContext* pContext, const cell_t* params
 	return 1;
 }
 
-static cell_t member_HasAnimatedGuildAvatar(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->HasAnimatedGuildAvatar();
-}
-
-static cell_t member_GetJoinedAt(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return static_cast<cell_t>(member->GetJoinedAt());
-}
-
-static cell_t member_GetPremiumSince(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return static_cast<cell_t>(member->GetPremiumSince());
-}
-
-static cell_t member_GetCommunicationDisabledUntil(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return static_cast<cell_t>(member->GetCommunicationDisabledUntil());
-}
-
-static cell_t member_IsDeaf(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->IsDeaf();
-}
-
-static cell_t member_IsMuted(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->IsMuted();
-}
-
-static cell_t member_IsPending(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->IsPending();
-}
-
-static cell_t member_IsCommunicationDisabled(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->IsCommunicationDisabled();
-}
-
-static cell_t member_HasRejoined(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->HasRejoined();
-}
-
-static cell_t member_IsGuildOwner(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->IsGuildOwner();
-}
-
-static cell_t member_HasCompletedOnboarding(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->HasCompletedOnboarding();
-}
-
-static cell_t member_HasStartedOnboarding(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->HasStartedOnboarding();
-}
-
-static cell_t member_HasBypassesVerification(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return member->HasBypassesVerification();
-}
-
-static cell_t member_GetRoleCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
-	if (!member) return 0;
-
-	return static_cast<cell_t>(member->GetRoleCount());
-}
-
 static cell_t member_GetRoleId(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
@@ -185,6 +73,17 @@ static cell_t member_GetRoleId(IPluginContext* pContext, const cell_t* params)
 
 	pContext->StringToLocal(params[3], params[4], member->GetRoleId(params[2]).c_str());
 	return 1;
+}
+
+static cell_t member_GetRoles(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
+	if (!member) return 0;
+
+	DiscordHandleArray* array = new DiscordHandleArray(false);
+	array->AddStrings(member->GetRoles());
+
+	return Handles.Create(pContext, array, HandleId::DiscordHandleArray);
 }
 
 static cell_t member_HasRole(IPluginContext* pContext, const cell_t* params)
@@ -233,8 +132,8 @@ static cell_t member_AddRole(IPluginContext* pContext, const cell_t* params)
 	if (!ParseSnowflake(pContext, role_id_str, role_id)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	member->AddRole(role_id, callback, data);
 	return 1;
 }
@@ -251,13 +150,13 @@ static cell_t member_RemoveRole(IPluginContext* pContext, const cell_t* params)
 	if (!ParseSnowflake(pContext, role_id_str, role_id)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	member->RemoveRole(role_id, callback, data);
 	return 1;
 }
 
-static cell_t member_SetNickname(IPluginContext* pContext, const cell_t* params)
+static cell_t member_SetNickName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
@@ -266,9 +165,9 @@ static cell_t member_SetNickname(IPluginContext* pContext, const cell_t* params)
 	pContext->LocalToString(params[2], &nickname);
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
-	member->SetNickname(nickname, callback, data);
+	cell_t data = params[4];
+	member->SetNickName(nickname, callback, data);
 	return 1;
 }
 
@@ -277,15 +176,13 @@ static cell_t member_Kick(IPluginContext* pContext, const cell_t* params)
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
 
-	char* reason = nullptr;
-	if (params[0] >= 2) {
-		pContext->LocalToString(params[2], &reason);
-	}
+	char* reason;
+	pContext->LocalToString(params[2], &reason);
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
-	member->Kick(reason, callback, data);
+	cell_t data = params[4];
+	member->Kick(reason && reason[0] ? reason : nullptr, callback, data);
 	return 1;
 }
 
@@ -295,15 +192,13 @@ static cell_t member_Ban(IPluginContext* pContext, const cell_t* params)
 	if (!member) return 0;
 
 	uint32_t delete_message_seconds = params[2];
-	char* reason = nullptr;
-	if (params[0] >= 3) {
-		pContext->LocalToString(params[3], &reason);
-	}
+	char* reason;
+	pContext->LocalToString(params[3], &reason);
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
-	cell_t data = params[5];
 
-	member->Ban(delete_message_seconds, reason, callback, data);
+	cell_t data = params[5];
+	member->Ban(delete_message_seconds, reason && reason[0] ? reason : nullptr, callback, data);
 	return 1;
 }
 
@@ -313,8 +208,8 @@ static cell_t member_Timeout(IPluginContext* pContext, const cell_t* params)
 	if (!member) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	member->Timeout(static_cast<time_t>(params[2]), callback, data);
 	return 1;
 }
@@ -325,42 +220,105 @@ static cell_t member_RemoveTimeout(IPluginContext* pContext, const cell_t* param
 	if (!member) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	member->RemoveTimeout(callback, data);
 	return 1;
 }
 
+static cell_t member_MoveToVoiceChannel(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
+	if (!member) return 0;
+
+	char* channel_id_str;
+	pContext->LocalToString(params[2], &channel_id_str);
+
+	dpp::snowflake channel_id;
+	if (!ParseSnowflake(pContext, channel_id_str, channel_id)) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	member->MoveToVoiceChannel(channel_id, callback, data);
+	return 1;
+}
+
+static cell_t member_DisconnectFromVoice(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
+	if (!member) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	member->DisconnectFromVoice(callback, data);
+	return 1;
+}
+
+static cell_t member_SetMute(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
+	if (!member) return 0;
+
+	bool mute = params[2] != 0;
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	member->SetMute(mute, callback, data);
+	return 1;
+}
+
+static cell_t member_SetDeaf(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
+	if (!member) return 0;
+
+	bool deaf = params[2] != 0;
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	member->SetDeaf(deaf, callback, data);
+	return 1;
+}
+
 extern const sp_nativeinfo_t guild_member_natives[] = {
-	{"DiscordGuildMember.GetUserId", member_GetUserId},
-	{"DiscordGuildMember.GetGuildId", member_GetGuildId},
-	{"DiscordGuildMember.GetNickname", member_GetNickname},
+	{"DiscordGuildMember.GetUserId", EntityGetUserId<DiscordGuildMember>},
+	{"DiscordGuildMember.GetGuildId", EntityGetGuildId<DiscordGuildMember>},
+	{"DiscordGuildMember.GetNickName", member_GetNickName},
+	{"DiscordGuildMember.GetUserName", member_GetUserName},
+	{"DiscordGuildMember.GetGlobalName", member_GetGlobalName},
 	{"DiscordGuildMember.GetAvatarHash", member_GetAvatarHash},
 	{"DiscordGuildMember.GetAvatarUrl", member_GetAvatarUrl},
-	{"DiscordGuildMember.HasAnimatedGuildAvatar.get", member_HasAnimatedGuildAvatar},
-	{"DiscordGuildMember.JoinedAt.get", member_GetJoinedAt},
-	{"DiscordGuildMember.PremiumSince.get", member_GetPremiumSince},
-	{"DiscordGuildMember.CommunicationDisabledUntil.get", member_GetCommunicationDisabledUntil},
-	{"DiscordGuildMember.Deaf.get", member_IsDeaf},
-	{"DiscordGuildMember.Muted.get", member_IsMuted},
-	{"DiscordGuildMember.Pending.get", member_IsPending},
-	{"DiscordGuildMember.CommunicationDisabled.get", member_IsCommunicationDisabled},
-	{"DiscordGuildMember.HasRejoined.get", member_HasRejoined},
-	{"DiscordGuildMember.IsGuildOwner.get", member_IsGuildOwner},
-	{"DiscordGuildMember.HasCompletedOnboarding.get", member_HasCompletedOnboarding},
-	{"DiscordGuildMember.HasStartedOnboarding.get", member_HasStartedOnboarding},
-	{"DiscordGuildMember.HasBypassesVerification.get", member_HasBypassesVerification},
-	{"DiscordGuildMember.RoleCount.get", member_GetRoleCount},
+	{"DiscordGuildMember.HasAnimatedGuildAvatar.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::HasAnimatedGuildAvatar>},
+	{"DiscordGuildMember.JoinedAt.get", EntityGetInt<DiscordGuildMember, time_t, &DiscordGuildMember::GetJoinedAt>},
+	{"DiscordGuildMember.PremiumSince.get", EntityGetInt<DiscordGuildMember, time_t, &DiscordGuildMember::GetPremiumSince>},
+	{"DiscordGuildMember.CommunicationDisabledUntil.get", EntityGetInt<DiscordGuildMember, time_t, &DiscordGuildMember::GetCommunicationDisabledUntil>},
+	{"DiscordGuildMember.Deaf.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsDeaf>},
+	{"DiscordGuildMember.Muted.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsMuted>},
+	{"DiscordGuildMember.Pending.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsPending>},
+	{"DiscordGuildMember.CommunicationDisabled.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsCommunicationDisabled>},
+	{"DiscordGuildMember.HasRejoined.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::HasRejoined>},
+	{"DiscordGuildMember.IsGuildOwner.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsGuildOwner>},
+	{"DiscordGuildMember.HasCompletedOnboarding.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::HasCompletedOnboarding>},
+	{"DiscordGuildMember.HasStartedOnboarding.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::HasStartedOnboarding>},
+	{"DiscordGuildMember.HasBypassesVerification.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::HasBypassesVerification>},
+	{"DiscordGuildMember.RoleCount.get", EntityGetInt<DiscordGuildMember, size_t, &DiscordGuildMember::GetRoleCount>},
 	{"DiscordGuildMember.GetRoleId", member_GetRoleId},
+	{"DiscordGuildMember.GetRoles", member_GetRoles},
 	{"DiscordGuildMember.HasRole", member_HasRole},
 	{"DiscordGuildMember.GetPermissions", member_GetPermissions},
 	{"DiscordGuildMember.HasPermission", member_HasPermission},
 	{"DiscordGuildMember.AddRole", member_AddRole},
 	{"DiscordGuildMember.RemoveRole", member_RemoveRole},
-	{"DiscordGuildMember.SetNickname", member_SetNickname},
+	{"DiscordGuildMember.SetNickName", member_SetNickName},
 	{"DiscordGuildMember.Kick", member_Kick},
 	{"DiscordGuildMember.Ban", member_Ban},
 	{"DiscordGuildMember.Timeout", member_Timeout},
 	{"DiscordGuildMember.RemoveTimeout", member_RemoveTimeout},
+	{"DiscordGuildMember.MoveToVoiceChannel", member_MoveToVoiceChannel},
+	{"DiscordGuildMember.DisconnectFromVoice", member_DisconnectFromVoice},
+	{"DiscordGuildMember.SetMute", member_SetMute},
+	{"DiscordGuildMember.SetDeaf", member_SetDeaf},
 	{nullptr, nullptr}
 };

@@ -13,9 +13,9 @@ methodmap Discord < Handle {
 
   /**
    * Starts the Discord bot
-	 *
-	 * @note            This method performs an async start operation
-	 *                  You must wait for the BOT to be fully ready before executing certain actions
+   *
+   * @note            This method performs an async start operation
+   *                  You must wait for the BOT to be fully ready before executing certain actions
    */
   public native void Start();
 
@@ -185,9 +185,9 @@ methodmap Discord < Handle {
    * @param channel_id    Channel ID to get messages from
    * @param callback      Callback function to receive the messages
    * @param limit         Maximum number of messages to return (1-100, default 50)
-   * @param around        Get messages around this message ID (optional)
-   * @param before        Get messages before this message ID (optional)
-   * @param after         Get messages after this message ID (optional)
+   * @param around        Optional get messages around this message ID
+   * @param before        Optional get messages before this message ID
+   * @param after         Optional get messages after this message ID
    * @param data          Optional data to pass to callback
    * @note                Result contains: "items" (DiscordHandleArray of DiscordMessage), "count" (int)
    */
@@ -278,8 +278,8 @@ methodmap Discord < Handle {
   /**
    * Registers an event callback
    *
-   * @param event       Event name (see discord/event.inc for available events)
-   * @param callback    Callback function with signature: void(Discord, DiscordEvent, any)
+   * @param event       Event name
+   * @param callback    Callback function to register
    * @param data        Optional user data to pass to callback
    * @return            True if successful, false if event name is invalid
    *
@@ -302,9 +302,28 @@ methodmap Discord < Handle {
    * @param callback      Callback function to call when complete
    * @param body          Request body (for POST/PUT/PATCH)
    * @param content_type  Content-Type header (default: application/json)
-   * @param headers       Custom headers to send (optional)
+   * @param headers       Optional custom headers to send
    * @param data          User data to pass to callback
    * @note                Use result.GetHandle("completion") to get HttpCompletion object
    */
   public native void HttpRequest(const char[] url, HttpMethod method = HTTP_GET, DiscordResultCallback callback, const char[] body = NULL_STRING, const char[] content_type = "application/json", HttpHeaders headers = null, any data = 0);
+
+  /**
+   * Gets all global slash commands for this bot
+   *
+   * @param callback    Callback to receive the commands list
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordSlashCommand), "count" (int)
+   */
+  public native void GetGlobalCommands(DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Gets a specific global slash command by ID
+   *
+   * @param command_id  Command ID to fetch
+   * @param callback    Callback to receive the command
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "command" (DiscordSlashCommand handle)
+   */
+  public native void GetGlobalCommand(const char[] command_id, DiscordResultCallback callback, any data = 0);
 }

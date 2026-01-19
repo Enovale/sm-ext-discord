@@ -33,6 +33,7 @@ private:
 
 public:
 	DiscordSlashCommand(DiscordClient* client) : m_client(client), m_guild_id(0) {}
+	DiscordSlashCommand(const dpp::slashcommand& cmd, DiscordClient* client) : m_command(cmd), m_client(client), m_guild_id(0) {}
 
 	void SetName(const char* name) { m_command.set_name(name); }
 	void SetDescription(const char* description) { m_command.set_description(description); }
@@ -56,7 +57,7 @@ public:
 	const char* GetDescription() const { return m_command.description.c_str(); }
 	std::string GetDefaultPermissions() const {
 		char permStr[32];
-		snprintf(permStr, sizeof(permStr), "%" PRIu64, static_cast<uint64_t>(m_command.default_member_permissions));
+		FormatInt64(static_cast<int64_t>(m_command.default_member_permissions), permStr, sizeof(permStr));
 		return std::string(permStr);
 	}
 
@@ -94,8 +95,8 @@ public:
 		}
 	}
 
-	void RegisterToGuild(dpp::snowflake guild_id);
-	void RegisterGlobally();
+	void RegisterToGuild(dpp::snowflake guild_id, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void RegisterGlobally(IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// New advanced functionality methods
 	void SetContextMenuType(dpp::slashcommand_contextmenu_type type) { m_command.set_type(type); }
@@ -198,9 +199,10 @@ public:
 	}
 
 
-	bool Update(dpp::snowflake guild_id = 0);
-	void Delete(dpp::snowflake guild_id = 0);
-	bool ApplyPermissionOverrides(dpp::snowflake guild_id);
+	bool Update(dpp::snowflake guild_id = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Delete(dpp::snowflake guild_id = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	bool ApplyPermissionOverrides(dpp::snowflake guild_id, IPluginFunction* callback = nullptr, cell_t data = 0);
+	static void BulkDeleteGlobal(DiscordClient* client, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	const dpp::slashcommand& GetCommand() const { return m_command; }
 };

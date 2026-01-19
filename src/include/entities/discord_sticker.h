@@ -50,14 +50,14 @@ public:
 
 	// User who uploaded (for guild stickers)
 	std::string GetUserId() const { return m_sticker.sticker_user.id.str(); }
-	const char* GetUsername() const { return m_sticker.sticker_user.username.c_str(); }
+	const char* GetUserName() const { return m_sticker.sticker_user.username.c_str(); }
 
 	// URL
 	std::string GetUrl() const { return m_sticker.get_url(); }
 
 	// Management methods (require client)
-	void Delete();
-	void Edit(const char* name, const char* description, const char* tags);
+	void Delete(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Edit(const char* name, const char* description, const char* tags, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Internal accessor
 	const dpp::sticker& GetDPPSticker() const { return m_sticker; }

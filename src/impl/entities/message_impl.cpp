@@ -56,6 +56,18 @@ void DiscordMessage::EditEmbed(const char* new_content, const DiscordEmbed* embe
 	}
 }
 
+void DiscordMessage::EditFromObject(IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Messages().EditMessage(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		});
+	} else {
+		m_client->Messages().EditMessage(this);
+	}
+}
+
 void DiscordMessage::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
@@ -119,13 +131,11 @@ void DiscordMessage::Reply(const char* content, IPluginFunction* callback, cell_
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->message_create(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Messages().SendDPPMessage(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->GetCluster()->message_create(reply_msg, [](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to reply to message");
-		});
+		m_client->Messages().SendDPPMessage(reply_msg);
 	}
 }
 
@@ -144,34 +154,47 @@ void DiscordMessage::ReplyEmbed(const char* content, const DiscordEmbed* embed, 
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->message_create(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Messages().SendDPPMessage(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->GetCluster()->message_create(reply_msg, [](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to reply with embed to message");
+		m_client->Messages().SendDPPMessage(reply_msg);
+	}
+}
+
+void DiscordMessage::ReplyFromObject(const DiscordMessage* reply_message, IPluginFunction* callback, cell_t data) {
+	if (!m_client || !reply_message) return;
+
+	dpp::message reply_msg = reply_message->GetDPPMessage();
+	reply_msg.set_channel_id(m_message.channel_id);
+	reply_msg.message_reference.message_id = m_message.id;
+	reply_msg.message_reference.channel_id = m_message.channel_id;
+	reply_msg.message_reference.guild_id = m_message.guild_id;
+
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Messages().SendDPPMessage(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
+	} else {
+		m_client->Messages().SendDPPMessage(reply_msg);
 	}
 }
 
 void DiscordMessage::Crosspost() {
 	if (!m_client) return;
-	m_client->GetCluster()->message_crosspost(m_message.id, m_message.channel_id, [](const dpp::confirmation_callback_t& cb) {
-		Log.DppError(cb, "Failed to crosspost message");
-	});
+	m_client->Messages().Crosspost(m_message.channel_id, m_message.id);
 }
 
 void DiscordMessage::CreateThread(const char* name, int auto_archive_duration, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !name) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->thread_create_with_message(name, m_message.channel_id, m_message.id, auto_archive_duration, 0, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Threads().CreateWithMessage(m_message.channel_id, m_message.id, name, auto_archive_duration, 0, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->GetCluster()->thread_create_with_message(name, m_message.channel_id, m_message.id, auto_archive_duration, 0, [](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to create thread from message");
-		});
+		m_client->Threads().CreateWithMessage(m_message.channel_id, m_message.id, name, auto_archive_duration, 0);
 	}
 }
 
@@ -183,13 +206,11 @@ void DiscordMessage::Send(IPluginFunction* callback, cell_t data) {
 	}
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->GetCluster()->message_create(m_message, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+		m_client->Messages().SendObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
 			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
 		});
 	} else {
-		m_client->GetCluster()->message_create(m_message, [](const dpp::confirmation_callback_t& cb) {
-			Log.DppError(cb, "Failed to send message");
-		});
+		m_client->Messages().SendObject(this);
 	}
 }
 
@@ -204,15 +225,13 @@ DiscordPoll* DiscordMessage::GetPollInternal() const {
 
 void DiscordMessage::EndPoll() {
 	if (!m_client || !m_client->GetCluster()) return;
-	m_client->GetCluster()->poll_end(m_message, [](const dpp::confirmation_callback_t& cb) {
-		Log.DppError(cb, "Failed to end poll");
-	});
+	m_client->Messages().EndPoll(m_message);
 }
 
 bool DiscordMessage::GetPollAnswerVoters(uint32_t answer_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->GetCluster()->poll_get_answer_voters(m_message, answer_id, 0, 100, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
+	m_client->Messages().GetPollAnswerVoters(m_message, answer_id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
 		PushResultList<DiscordUser, dpp::user_map>(client_handle, client, callback, data, cb, DiscordResultType::Voters);
 	});
 	return true;

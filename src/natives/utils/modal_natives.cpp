@@ -30,8 +30,9 @@ static cell_t discord_modal_Create(IPluginContext* pContext, const cell_t* param
 	pContext->LocalToString(params[2], &title);
 
 	DiscordModal* modal = new DiscordModal(custom_id, title);
-
-	return Handles.Create(pContext, modal, HandleId::DiscordModal);
+	Handle_t handle = Handles.Create(pContext, modal, HandleId::DiscordModal);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t discord_modal_AddRow(IPluginContext* pContext, const cell_t* params) {

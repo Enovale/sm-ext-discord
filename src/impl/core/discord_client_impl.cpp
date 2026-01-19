@@ -37,10 +37,10 @@ DiscordClient::DiscordClient(const char* token, uint32_t intents) : m_discord_ha
 		m_emojiOps = std::make_unique<EmojiOperations>(m_cluster.get(), this);
 		m_stickerOps = std::make_unique<StickerOperations>(m_cluster.get(), this);
 		m_scheduledEventOps = std::make_unique<ScheduledEventOperations>(m_cluster.get(), this);
-		m_stageOps = std::make_unique<StageOperations>(m_cluster.get(), this);
 		m_voiceOps = std::make_unique<VoiceOperations>(m_cluster.get(), this);
 		m_httpOps = std::make_unique<HttpOperations>(m_cluster.get(), this);
 		m_userOps = std::make_unique<UserOperations>(m_cluster.get(), this);
+		m_interactionOps = std::make_unique<InteractionOperations>(m_cluster.get(), this);
 		// Initialize event handler
 		m_eventHandler = std::make_unique<EventHandler>(this, m_cluster.get(), m_callbacks);
 		m_callbacks.SetRegisterCallback([this](CallbackId id) {

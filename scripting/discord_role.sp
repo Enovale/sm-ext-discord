@@ -95,14 +95,23 @@ Action Command_AddRole(int client, int args)
 	DataPack pack = new DataPack();
 	pack.WriteString(roleId);
 
-	// Fetch user with guild context to get member data
-	DiscordUser.FetchUser(g_Bot, userId, g_GuildId, OnUserForAddRole, pack);
+	// Get guild and fetch member
+	DiscordGuild guild = DiscordGuild.FindGuild(g_Bot, g_GuildId);
+	if (guild == null)
+	{
+		delete pack;
+		ReplyToCommand(client, "[Discord] Guild not found in cache.");
+		return Plugin_Handled;
+	}
+
+	guild.GetMember(userId, OnMemberForAddRole, pack);
+	delete guild;
 
 	ReplyToCommand(client, "[Discord] Adding role...");
 	return Plugin_Handled;
 }
 
-void OnUserForAddRole(Discord bot, DiscordResult result, any data)
+void OnMemberForAddRole(Discord bot, DiscordResult result, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
@@ -115,18 +124,31 @@ void OnUserForAddRole(Discord bot, DiscordResult result, any data)
 	{
 		char error[256];
 		result.GetError(error, sizeof(error));
-		PrintToServer("[Discord] Failed to fetch user: %s", error);
+		PrintToServer("[Discord] Failed to fetch member: %s", error);
 		return;
 	}
 
-	DiscordUser user = view_as<DiscordUser>(result.GetHandle("user"));
+	DiscordGuildMember member = view_as<DiscordGuildMember>(result.GetHandle("member"));
 
-	// Add role to user
-	user.AddRole(roleId);
+	// Add role to member
+	member.AddRole(roleId, OnRoleAdded);
 
 	char username[MAX_DISCORD_NAME_LENGTH];
-	user.GetUserName(username, sizeof(username));
-	PrintToServer("[Discord] Role %s added to %s", roleId, username);
+	member.GetUserName(username, sizeof(username));
+	PrintToServer("[Discord] Adding role %s to %s...", roleId, username);
+}
+
+void OnRoleAdded(Discord bot, DiscordResult result, any data)
+{
+	if (!result.IsSuccess)
+	{
+		char error[256];
+		result.GetError(error, sizeof(error));
+		PrintToServer("[Discord] Failed to add role: %s", error);
+		return;
+	}
+
+	PrintToServer("[Discord] Role added successfully");
 }
 
 Action Command_RemoveRole(int client, int args)
@@ -156,14 +178,23 @@ Action Command_RemoveRole(int client, int args)
 	DataPack pack = new DataPack();
 	pack.WriteString(roleId);
 
-	// Fetch user with guild context to get member data
-	DiscordUser.FetchUser(g_Bot, userId, g_GuildId, OnUserForRemoveRole, pack);
+	// Get guild and fetch member
+	DiscordGuild guild = DiscordGuild.FindGuild(g_Bot, g_GuildId);
+	if (guild == null)
+	{
+		delete pack;
+		ReplyToCommand(client, "[Discord] Guild not found in cache.");
+		return Plugin_Handled;
+	}
+
+	guild.GetMember(userId, OnMemberForRemoveRole, pack);
+	delete guild;
 
 	ReplyToCommand(client, "[Discord] Removing role...");
 	return Plugin_Handled;
 }
 
-void OnUserForRemoveRole(Discord bot, DiscordResult result, any data)
+void OnMemberForRemoveRole(Discord bot, DiscordResult result, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
@@ -176,16 +207,29 @@ void OnUserForRemoveRole(Discord bot, DiscordResult result, any data)
 	{
 		char error[256];
 		result.GetError(error, sizeof(error));
-		PrintToServer("[Discord] Failed to fetch user: %s", error);
+		PrintToServer("[Discord] Failed to fetch member: %s", error);
 		return;
 	}
 
-	DiscordUser user = view_as<DiscordUser>(result.GetHandle("user"));
+	DiscordGuildMember member = view_as<DiscordGuildMember>(result.GetHandle("member"));
 
-	// Remove role from user
-	user.RemoveRole(roleId);
+	// Remove role from member
+	member.RemoveRole(roleId, OnRoleRemoved);
 
 	char username[MAX_DISCORD_NAME_LENGTH];
-	user.GetUserName(username, sizeof(username));
-	PrintToServer("[Discord] Role %s removed from %s", roleId, username);
+	member.GetUserName(username, sizeof(username));
+	PrintToServer("[Discord] Removing role %s from %s...", roleId, username);
+}
+
+void OnRoleRemoved(Discord bot, DiscordResult result, any data)
+{
+	if (!result.IsSuccess)
+	{
+		char error[256];
+		result.GetError(error, sizeof(error));
+		PrintToServer("[Discord] Failed to remove role: %s", error);
+		return;
+	}
+
+	PrintToServer("[Discord] Role removed successfully");
 }

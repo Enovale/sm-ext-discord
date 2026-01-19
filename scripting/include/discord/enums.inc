@@ -208,17 +208,8 @@ enum DiscordImageType
   Image_WEBP = 3   // WebP image format
 };
 
-// Image type aliases for guild methods
-enum ImageType
-{
-  ImageType_PNG = 0,
-  ImageType_JPG = 1,
-  ImageType_GIF = 2,
-  ImageType_WEBP = 3
-};
-
-// Sticker format types
-enum StickerFormat
+// Discord sticker format types
+enum DiscordStickerFormat
 {
   StickerFormat_PNG = 1,    // PNG sticker
   StickerFormat_APNG = 2,   // Animated PNG sticker
@@ -226,16 +217,16 @@ enum StickerFormat
   StickerFormat_GIF = 4     // GIF sticker
 };
 
-// Scheduled event entity types
-enum EventEntityType
+// Discord scheduled event entity types
+enum DiscordEventEntityType
 {
   EventEntityType_StageInstance = 1, // Stage instance event
   EventEntityType_Voice = 2,         // Voice channel event
   EventEntityType_External = 3       // External event (location-based)
 };
 
-// Message flags bitmask
-enum MessageFlags {
+// Discord message flags bitmask
+enum DiscordMessageFlags {
   MessageFlag_Crossposted = (1 << 0),            // This message has been published to subscribed channels (via Channel Following)
   MessageFlag_IsCrosspost = (1 << 1),            // This message originated from a message in another channel (via Channel Following)
   MessageFlag_SuppressEmbeds = (1 << 2),         // Do not include any embeds when serializing this message
@@ -251,8 +242,8 @@ enum MessageFlags {
   MessageFlag_UsingComponentsV2 = (1 << 15)      // Message components vector contains v2 components
 };
 
-// Channel flags bitmask
-enum ChannelFlags {
+// Discord channel flags bitmask
+enum DiscordChannelFlags {
   ChannelFlag_NSFW = (1 << 4),                     // NSFW Gated Channel
   ChannelFlag_VideoQuality720p = (1 << 5),         // Video quality forced to 720p
   ChannelFlag_LockPermissions = (1 << 6),          // Lock permissions (only used when updating channel positions)
@@ -261,35 +252,35 @@ enum ChannelFlags {
   ChannelFlag_HideMediaDownloadOptions = (1 << 12) // When set hides the embedded media download options. Available only for media channels
 };
 
-// Types for sort posts in a forum channel
-enum ForumSortOrder {
+// Discord types for sort posts in a forum channel
+enum DiscordForumSortOrder {
   ForumSort_LatestActivity = 0, // Sort forum posts by activity (default)
   ForumSort_CreationDate = 1    // Sort forum posts by creation time (from most recent to oldest)
 };
 
-// Types of forum layout views that indicates how the threads in a forum channel will be displayed for users by default
-enum ForumLayoutType {
+// Discord types of forum layout views that indicates how the threads in a forum channel will be displayed for users by default
+enum DiscordForumLayoutType {
   ForumLayout_NotSet = 0,     // No default has been set for the forum channel
   ForumLayout_ListView = 1,   // Display posts as a list
   ForumLayout_GalleryView = 2 // Display posts as a collection of tiles
 };
 
-// Auto archive duration of threads
-enum AutoArchiveDuration {
+// Discord auto archive duration of threads
+enum DiscordAutoArchiveDuration {
   AutoArchive_1Hour = 1,  // Auto archive duration of 1 hour (60 minutes)
   AutoArchive_1Day = 2,   // Auto archive duration of 1 day (1440 minutes)
   AutoArchive_3Days = 3,  // Auto archive duration of 3 days (4320 minutes)
   AutoArchive_1Week = 4   // Auto archive duration of 1 week (10080 minutes)
 };
 
-// Channel permission overwrite types
-enum OverwriteType {
+// Discord channel permission overwrite types
+enum DiscordOverwriteType {
   Overwrite_Role = 0,  // Role overwrite
   Overwrite_Member = 1 // Member overwrite
 };
 
-// Message types enum
-enum MessageType {
+// Discord message types enum
+enum DiscordMessageType {
   MessageType_Default = 0,                                  // Default message type
   MessageType_RecipientAdd = 1,                             // Add recipient
   MessageType_RecipientRemove = 2,                          // Remove recipient
@@ -323,8 +314,8 @@ enum MessageType {
   MessageType_ApplicationPremiumSubscription = 32           // Guild application premium subscription
 };
 
-// Guild flags enum
-enum GuildFlags {
+// Discord guild flags enum
+enum DiscordGuildFlags {
   GuildFlag_Large = (1 << 0),                    // Large guild
   GuildFlag_Unavailable = (1 << 1),              // Unavailable due to outage
   GuildFlag_WidgetEnabled = (1 << 2),            // Widget enabled
@@ -359,8 +350,8 @@ enum GuildFlags {
   GuildFlag_ChannelBanners = (1 << 31)           // Channel banners (deprecated)
 };
 
-// Additional guild flags enum
-enum GuildFlagsExtra {
+// Discord additional guild flags enum
+enum DiscordGuildFlagsExtra {
   GuildFlagExtra_PremiumProgressBarEnabled = (1 << 0),             // Premium progress bar enabled
   GuildFlagExtra_AnimatedBanner = (1 << 1),                        // Can have animated banner
   GuildFlagExtra_AutoModeration = (1 << 2),                        // Auto moderation enabled
@@ -372,8 +363,8 @@ enum GuildFlagsExtra {
   GuildFlagExtra_RaidAlertsDisabled = (1 << 8)                     // Raid alerts disabled
 };
 
-// Guild verification levels
-enum GuildVerificationLevel {
+// Discord guild verification levels
+enum DiscordGuildVerificationLevel {
   GuildVerification_None = 0,    // Unrestricted
   GuildVerification_Low = 1,     // Must have verified email
   GuildVerification_Medium = 2,  // Must be registered for 5+ minutes
@@ -381,43 +372,43 @@ enum GuildVerificationLevel {
   GuildVerification_VeryHigh = 4 // Must have verified phone
 };
 
-// Guild explicit content filter levels
-enum GuildExplicitContentFilter {
+// Discord guild explicit content filter levels
+enum DiscordGuildExplicitContentFilter {
   GuildExplicitContent_Disabled = 0,            // No scanning
   GuildExplicitContent_MembersWithoutRoles = 1, // Scan members without roles
   GuildExplicitContent_AllMembers = 2           // Scan all members
 };
 
-// Guild MFA levels
-enum GuildMfaLevel {
+// Discord guild MFA levels
+enum DiscordGuildMfaLevel {
   GuildMfa_None = 0,    // MFA not required
   GuildMfa_Elevated = 1 // MFA required for moderation actions
 };
 
-// Guild NSFW levels
-enum GuildNsfwLevel {
+// Discord guild NSFW levels
+enum DiscordGuildNsfwLevel {
   GuildNsfw_Default = 0,      // Default setting
   GuildNsfw_Explicit = 1,     // Explicit content may be present
   GuildNsfw_Safe = 2,         // Safe for work content only
   GuildNsfw_AgeRestricted = 3 // Age restricted (18+)
 };
 
-// Guild premium tiers (boost levels)
-enum GuildPremiumTier {
+// Discord guild premium tiers (boost levels)
+enum DiscordGuildPremiumTier {
   GuildPremium_None = 0,  // No boosts
   GuildPremium_Tier1 = 1, // Tier 1 perks
   GuildPremium_Tier2 = 2, // Tier 2 perks
   GuildPremium_Tier3 = 3  // Tier 3 perks
 };
 
-// Guild default message notification levels
-enum GuildDefaultMessageNotifications {
+// Discord guild default message notification levels
+enum DiscordGuildDefaultMessageNotifications {
   GuildNotifications_AllMessages = 0, // All messages
   GuildNotifications_OnlyMentions = 1 // Only @mentions
 };
 
-// Guild AFK timeout values
-enum GuildAfkTimeout {
+// Discord guild AFK timeout values
+enum DiscordGuildAfkTimeout {
   GuildAfk_Off = 0,  // Disabled
   GuildAfk_60 = 1,   // 1 minute (60 seconds)
   GuildAfk_300 = 2,  // 5 minutes (300 seconds)
@@ -426,8 +417,8 @@ enum GuildAfkTimeout {
   GuildAfk_3600 = 5  // 1 hour (3600 seconds)
 };
 
-// Component types enum
-enum ComponentType {
+// Discord component types enum
+enum DiscordComponentType {
   ComponentType_ActionRow = 1,              // Container for other components
   ComponentType_Button = 2,                 // Clickable button
   ComponentType_SelectMenu = 3,             // String select menu (dropdown)
@@ -448,8 +439,8 @@ enum ComponentType {
   ComponentType_FileUpload = 19             // File upload component
 };
 
-// Component button styles enum
-enum ComponentStyle {
+// Discord component button styles enum
+enum DiscordComponentStyle {
   ComponentStyle_Primary = 1,   // Blurple button
   ComponentStyle_Secondary = 2, // Grey button
   ComponentStyle_Success = 3,   // Green button
@@ -458,20 +449,20 @@ enum ComponentStyle {
   ComponentStyle_Premium = 6    // Premium/SKU button
 };
 
-// Text input styles enum
-enum TextStyleType {
+// Discord text input styles enum
+enum DiscordTextStyleType {
   TextStyle_Short = 1,    // Single-line input
   TextStyle_Paragraph = 2 // Multi-line input
 };
 
-// Separator spacing enum
-enum SeparatorSpacing {
+// Discord separator spacing enum
+enum DiscordSeparatorSpacing {
   SeparatorSpacing_Small = 1, // Small spacing
   SeparatorSpacing_Large = 2  // Large spacing
 };
 
-// Component default value types enum
-enum ComponentDefaultValueType {
+// Discord component default value types enum
+enum DiscordComponentDefaultValueType {
   ComponentDefaultValueType_User = 0,    // Default value is a user
   ComponentDefaultValueType_Role = 1,    // Default value is a role
   ComponentDefaultValueType_Channel = 2  // Default value is a channel
@@ -520,17 +511,30 @@ enum DiscordResultType {
   ResultType_Unpin = 33,
   ResultType_Kick = 34,
   ResultType_BanOp = 35,
-  ResultType_AddRole = 36,
-  ResultType_RemoveRole = 37,
-  ResultType_Timeout = 38,
-  ResultType_Edit = 39,
-  ResultType_Create = 40,
-  ResultType_Send = 41,
-  ResultType_Http = 42
+  ResultType_Unban = 36,
+  ResultType_AddRole = 37,
+  ResultType_RemoveRole = 38,
+  ResultType_Timeout = 39,
+  ResultType_Edit = 40,
+  ResultType_Create = 41,
+  ResultType_Send = 42,
+  ResultType_Http = 43,
+  ResultType_VoiceMove = 44,
+  ResultType_VoiceDisconnect = 45,
+  ResultType_VoiceMute = 46,
+  ResultType_VoiceDeaf = 47,
+  ResultType_ThreadMemberAdd = 48,
+  ResultType_ThreadMemberRemove = 49,
+  ResultType_CommandRegister = 50,
+  ResultType_CommandUpdate = 51,
+  ResultType_CommandDelete = 52,
+  ResultType_CommandPermission = 53,
+  ResultType_CommandBulkDelete = 54
 };
 
-// Allowed mentions flags - controls what mentions are parsed in a message
-enum AllowedMentions {
+// Discord allowed mentions flags - controls what mentions are parsed in a message
+enum DiscordAllowedMentions {
+  AllowedMentions_None = 0,               // Don't parse any mentions
   AllowedMentions_Users = (1 << 0),       // Parse user mentions
   AllowedMentions_Everyone = (1 << 1),    // Parse @everyone and @here mentions
   AllowedMentions_Roles = (1 << 2),       // Parse role mentions

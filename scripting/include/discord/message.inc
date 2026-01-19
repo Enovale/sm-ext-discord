@@ -119,7 +119,7 @@ methodmap DiscordMessage < Handle
    * @param buffer      Buffer to store the author nickname
    * @param maxlength   Maximum length of the buffer
    */
-  public native void GetAuthorNickname(char[] buffer, int maxlength);
+  public native void GetAuthorNickName(char[] buffer, int maxlength);
 
   /**
    * Checks if the message is pinned
@@ -173,9 +173,9 @@ methodmap DiscordMessage < Handle
    *
    * @return          Message type
    */
-  property MessageType Type {
+  property DiscordMessageType Type {
     public native get();
-    public native set(MessageType type);
+    public native set(DiscordMessageType type);
   }
 
   /**
@@ -196,6 +196,16 @@ methodmap DiscordMessage < Handle
    * @param data      Optional data to pass to callback
    */
   public native void EditEmbed(const char[] content, DiscordEmbed embed, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Edits this message using the full message object
+   *
+   * @note            Use this method when you need to edit components, embeds, or other properties
+   * @note            Modify the message properties (SetContent, AddEmbed, AddComponent, etc.) before calling this
+   * @param callback  Optional callback to receive the edited message
+   * @param data      Optional data to pass to callback
+   */
+  public native void EditFromObject(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Deletes this message
@@ -250,9 +260,9 @@ methodmap DiscordMessage < Handle
   /**
    * Gets or sets the message flags
    */
-  property MessageFlags Flags {
+  property DiscordMessageFlags Flags {
     public native get();
-    public native set(MessageFlags flags);
+    public native set(DiscordMessageFlags flags);
   }
 
   /**
@@ -268,6 +278,22 @@ methodmap DiscordMessage < Handle
   property int EditedTimestamp {
     public native get();
   }
+
+  /**
+   * Gets when this message was sent as a 64-bit timestamp string
+   *
+   * @param buffer      Buffer to store the timestamp
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetTimestamp(char[] buffer, int maxlength);
+
+  /**
+   * Gets when this message was edited as a 64-bit timestamp string
+   *
+   * @param buffer      Buffer to store the timestamp
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetEditedTimestamp(char[] buffer, int maxlength);
 
   /**
    * Gets the nonce used for message validation
@@ -404,6 +430,39 @@ methodmap DiscordMessage < Handle
   public native void GetMentionedRoleId(int index, char[] buffer, int maxlength);
 
   /**
+   * Gets mentioned channel ID by index
+   *
+   * @param index     Index of the mentioned channel
+   * @param buffer    Buffer to store the channel ID
+   * @param maxlength Maximum length of the buffer
+   */
+  public native void GetMentionedChannelId(int index, char[] buffer, int maxlength);
+
+  /**
+   * Gets all mentioned user IDs as an array
+   *
+   * @return          DiscordHandleArray containing all mentioned user IDs
+   * @note            Caller is responsible for closing the returned handle
+   */
+  public native DiscordHandleArray GetMentionedUserIds();
+
+  /**
+   * Gets all mentioned role IDs as an array
+   *
+   * @return          DiscordHandleArray containing all mentioned role IDs
+   * @note            Caller is responsible for closing the returned handle
+   */
+  public native DiscordHandleArray GetMentionedRoleIds();
+
+  /**
+   * Gets all mentioned channel IDs as an array
+   *
+   * @return          DiscordHandleArray containing all mentioned channel IDs
+   * @note            Caller is responsible for closing the returned handle
+   */
+  public native DiscordHandleArray GetMentionedChannelIds();
+
+  /**
    * Gets the webhook ID if message was sent by webhook
    *
    * @param buffer      Buffer to store the webhook ID
@@ -436,12 +495,12 @@ methodmap DiscordMessage < Handle
    * Sets allowed mentions for this message
    *
    * @param allowedMentionsMask    Allowed mentions mask
-   * @param allowedUsersMentions   Array of allowed user IDs to mention (optional)
+   * @param allowedUsersMentions   Optional array of allowed user IDs to mention
    * @param allowedUserSize        Size of allowed users array (default: 0)
-   * @param allowedRolesMentions   Array of allowed role IDs to mention (optional)
+   * @param allowedRolesMentions   Optional array of allowed role IDs to mention
    * @param allowedRolesSize       Size of allowed roles array (default: 0)
    */
-  public native void SetAllowedMentions(AllowedMentions allowedMentionsMask = 0, const char[][] allowedUsersMentions = {}, int allowedUserSize = 0, const char[][] allowedRolesMentions = {}, int allowedRolesSize = 0);
+  public native void SetAllowedMentions(DiscordAllowedMentions allowedMentionsMask = AllowedMentions_None, const char[][] allowedUsersMentions = {}, int allowedUserSize = 0, const char[][] allowedRolesMentions = {}, int allowedRolesSize = 0);
 
   /**
    * Adds an embed to this message
@@ -496,6 +555,16 @@ methodmap DiscordMessage < Handle
   public native void ReplyEmbed(const char[] content, DiscordEmbed embed, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
+   * Creates a reply to this message using a message object
+   *
+   * @param message   DiscordMessage object containing the reply content
+   * @param callback  Optional callback to receive the created message
+   * @param data      Optional data to pass to callback
+   * @note            Use this method when you need to include components, multiple embeds, or other advanced features
+   */
+  public native void ReplyFromObject(DiscordMessage message, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
    * Crossposts this message (publish to following channels)
    *
    * @param callback  Optional callback to receive confirmation
@@ -511,7 +580,7 @@ methodmap DiscordMessage < Handle
    * @param callback              Optional callback to receive the created thread
    * @param data                  Optional data to pass to callback
    */
-  public native void CreateThread(const char[] name, AutoArchiveDuration auto_archive_duration = AutoArchive_1Hour, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void CreateThread(const char[] name, DiscordAutoArchiveDuration auto_archive_duration = AutoArchive_1Hour, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Checks if this message has a poll
@@ -556,7 +625,7 @@ methodmap DiscordMessage < Handle
   public native void GetPollAnswerVoters(int answer_id, DiscordResultCallback callback, any data = 0);
 
   /**
-   * Gets an attachment object by index
+   * Gets a attachment object by index
    *
    * @param index       Index of the attachment (0 to AttachmentCount-1)
    * @return            DiscordAttachment handle or null if index out of bounds

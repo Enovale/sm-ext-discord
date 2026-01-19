@@ -21,6 +21,7 @@
 #include "entities/discord_role.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
+#include "core/callback_helpers.h"
 #include <fstream>
 
 
@@ -30,33 +31,39 @@ bool DiscordRole::HasPermission(const char* permission) const {
 	return (m_role.permissions & target_perm) == target_perm;
 }
 
-void DiscordRole::Modify() {
-	if (!m_client || !m_client->GetCluster()) return;
+void DiscordRole::Modify(IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
 	m_role.guild_id = m_guild_id;
-	m_client->GetCluster()->role_edit(m_role, [](const dpp::confirmation_callback_t& cb) {
-		Log.DppError(cb, "Failed to modify role");
-	});
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Roles().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordRole>(client_handle, client, callback, data, cb);
+		});
+	} else {
+		m_client->Roles().ModifyFromObject(this);
+	}
 }
 
-void DiscordRole::Delete() {
-	if (!m_client || !m_client->GetCluster()) return;
-	m_client->GetCluster()->role_delete(m_guild_id, m_role.id, [](const dpp::confirmation_callback_t& cb) {
-		Log.DppError(cb, "Failed to delete role");
-	});
+void DiscordRole::Delete(IPluginFunction* callback, cell_t data) {
+	if (!m_client) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Roles().Delete(m_guild_id, m_role.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		});
+	} else {
+		m_client->Roles().Delete(m_guild_id, m_role.id);
+	}
 }
 
 void DiscordRole::AddToUser(dpp::snowflake user_id) {
-	if (!m_client || !m_client->GetCluster()) return;
-	m_client->GetCluster()->guild_member_add_role(m_guild_id, user_id, m_role.id, [](const dpp::confirmation_callback_t& cb) {
-		Log.DppError(cb, "Failed to add role to user");
-	});
+	if (!m_client) return;
+	m_client->Members().AddRole(m_guild_id, user_id, m_role.id);
 }
 
 void DiscordRole::RemoveFromUser(dpp::snowflake user_id) {
-	if (!m_client || !m_client->GetCluster()) return;
-	m_client->GetCluster()->guild_member_remove_role(m_guild_id, user_id, m_role.id, [](const dpp::confirmation_callback_t& cb) {
-		Log.DppError(cb, "Failed to remove role from user");
-	});
+	if (!m_client) return;
+	m_client->Members().RemoveRole(m_guild_id, user_id, m_role.id);
 }
 
 bool DiscordRole::SetIcon(const char* filepath, dpp::image_type type) {

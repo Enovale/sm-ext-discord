@@ -27,12 +27,13 @@
 class DiscordWebhook
 {
 private:
-	mutable CachedHandle<DiscordUser> m_userHandle;
-
-public:
 	dpp::webhook m_webhook;
 	DiscordClient* m_client;
+	mutable CachedHandle<DiscordUser> m_userHandle;
+	dpp::snowflake m_thread_id = 0;
+	std::string m_thread_name;
 
+public:
 	// Constructors
 	DiscordWebhook(const dpp::webhook& wbhk, DiscordClient* client) : m_webhook(wbhk), m_client(client) {}
 	DiscordWebhook(const std::string& webhook_url, DiscordClient* client = nullptr) : m_webhook(webhook_url), m_client(client) {}
@@ -57,7 +58,10 @@ public:
 	const char* GetName() const { return m_webhook.name.c_str(); }
 	void SetName(const char* value) { m_webhook.name = value; }
 	const char* GetAvatarUrl() const { return m_webhook.avatar_url.c_str(); }
-	bool SetAvatar(const char* filepath, dpp::image_type type);
+
+	// Avatar methods (mutually exclusive - use either SetAvatarFromFile OR SetAvatarFromUrl, not both)
+	bool SetAvatarFromFile(const char* filepath, dpp::image_type type);
+	void SetAvatarFromUrl(const char* url) { m_webhook.avatar_url = url ? url : ""; }
 
 	// Additional webhook properties (read-only)
 	uint8_t GetType() const { return m_webhook.type; }
@@ -68,7 +72,7 @@ public:
 	std::string GetSourceGuildId() const { return m_webhook.source_guild.id.str(); }
 	std::string GetSourceChannelId() const { return m_webhook.source_channel.id.str(); }
 	const char* GetUrl() const { return m_webhook.url.c_str(); }
-	std::string GetImageData() const { return m_webhook.image_data; }
+	const std::string& GetImageData() const { return m_webhook.image_data; }
 
 	// Webhook management methods
 	void Modify(IPluginFunction* callback = nullptr, cell_t data = 0);
@@ -76,6 +80,12 @@ public:
 	void Execute(const char* message, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void ExecuteEmbed(const char* message, const class DiscordEmbed* embed, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void ExecuteMessage(const class DiscordMessage* message, IPluginFunction* callback = nullptr, cell_t data = 0);
+
+	// Forum thread support
+	void SetThreadId(dpp::snowflake thread_id) { m_thread_id = thread_id; }
+	void SetThreadName(const char* thread_name) { m_thread_name = thread_name ? thread_name : ""; }
+	dpp::snowflake GetThreadId() const { return m_thread_id; }
+	const std::string& GetThreadName() const { return m_thread_name; }
 
 	// Internal accessor
 	const dpp::webhook& GetDPPWebhook() const { return m_webhook; }

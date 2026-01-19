@@ -18,17 +18,8 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "natives/natives_common.h"
+#include "natives/entity_natives_common.h"
 #include "entities/discord_ban.h"
-
-static cell_t ban_GetUserId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordBan* ban = Handles.GetPointer<DiscordBan>(pContext, params[1]);
-	if (!ban) return 0;
-
-	pContext->StringToLocal(params[2], params[3], ban->GetUserId().c_str());
-	return 1;
-}
 
 static cell_t ban_GetReason(IPluginContext* pContext, const cell_t* params)
 {
@@ -40,7 +31,7 @@ static cell_t ban_GetReason(IPluginContext* pContext, const cell_t* params)
 }
 
 extern const sp_nativeinfo_t ban_natives[] = {
-	{"DiscordBan.GetUserId", ban_GetUserId},
+	{"DiscordBan.GetUserId", EntityGetUserId<DiscordBan>},
 	{"DiscordBan.GetReason", ban_GetReason},
 	{nullptr, nullptr}
 };

@@ -47,10 +47,10 @@ private:
 	std::unique_ptr<EmojiOperations> m_emojiOps;
 	std::unique_ptr<StickerOperations> m_stickerOps;
 	std::unique_ptr<ScheduledEventOperations> m_scheduledEventOps;
-	std::unique_ptr<StageOperations> m_stageOps;
 	std::unique_ptr<VoiceOperations> m_voiceOps;
 	std::unique_ptr<HttpOperations> m_httpOps;
 	std::unique_ptr<UserOperations> m_userOps;
+	std::unique_ptr<InteractionOperations> m_interactionOps;
 
 public:
 	DiscordClient(const char* token, uint32_t intents = 0);
@@ -80,12 +80,13 @@ public:
 	EmojiOperations& Emojis() { return *m_emojiOps; }
 	StickerOperations& Stickers() { return *m_stickerOps; }
 	ScheduledEventOperations& ScheduledEvents() { return *m_scheduledEventOps; }
-	StageOperations& Stages() { return *m_stageOps; }
 	VoiceOperations& Voice() { return *m_voiceOps; }
 	HttpOperations& Http() { return *m_httpOps; }
 	UserOperations& Users() { return *m_userOps; }
+	InteractionOperations& Interactions() { return *m_interactionOps; }
 
 	// Bot info
+	dpp::snowflake GetBotIdSnowflake() const { return m_cluster ? m_cluster->me.id : dpp::snowflake(0); }
 	std::string GetBotId() const { return m_cluster ? m_cluster->me.id.str() : ""; }
 	const char* GetBotName() const { return m_cluster ? m_cluster->me.username.c_str() : ""; }
 	uint16_t GetBotDiscriminator() const { return m_cluster ? m_cluster->me.discriminator : 0; }

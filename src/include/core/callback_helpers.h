@@ -152,10 +152,52 @@ void PushResultList(Handle_t client_handle, DiscordClient* client, IPluginFuncti
 			result->SetSuccess(true);
 			try {
 				const auto& items = confirmation.get<MapType>();
-				DiscordHandleArray* arr = new DiscordHandleArray(true);
+				DiscordHandleArray* arr = new DiscordHandleArray();
 
 				for (const auto& [id, item] : items) {
 					T* obj = new T(item, client);
+					Handle_t h = Handles.CreateCallback(obj, HandleIdOf<T>::value);
+					if (h) arr->Add(h);
+				}
+
+				result->SetInt("count", static_cast<int>(arr->GetLength()));
+				Handle_t arrHandle = Handles.CreateCallback(arr, HandleId::DiscordHandleArray);
+				result->SetHandle("items", arrHandle);
+			} catch (...) {
+				result->SetError("Failed to create objects from response");
+			}
+		}
+
+		Handle_t resultHandle = Handles.CreateCallback(result, HandleId::DiscordResult);
+
+		callback->PushCell(client_handle);
+		callback->PushCell(resultHandle);
+		callback->PushCell(data);
+		callback->Execute(nullptr);
+
+		Handles.FreeHandle(resultHandle);
+	});
+}
+
+// List result with custom extractor for complex types
+// Usage: PushResultList<DiscordChannel, dpp::active_threads>(client_handle, client, callback, data, cb, DiscordResultType::Threads,
+//        [](const auto& item) { return item.active_thread; });
+template<typename T, typename MapType, typename Extractor>
+void PushResultList(Handle_t client_handle, DiscordClient* client, IPluginFunction* callback, cell_t data,
+				const dpp::confirmation_callback_t& confirmation, DiscordResultType type, Extractor&& extractor) {
+	Tasks.Push([client_handle, client, callback, data, type, confirmation, extractor]() {
+		DiscordResult* result = new DiscordResult(type, client);
+
+		if (confirmation.is_error()) {
+			result->SetError(confirmation.get_error().human_readable);
+		} else {
+			result->SetSuccess(true);
+			try {
+				const auto& items = confirmation.get<MapType>();
+				DiscordHandleArray* arr = new DiscordHandleArray();
+
+				for (const auto& [id, item] : items) {
+					T* obj = new T(extractor(item), client);
 					Handle_t h = Handles.CreateCallback(obj, HandleIdOf<T>::value);
 					if (h) arr->Add(h);
 				}

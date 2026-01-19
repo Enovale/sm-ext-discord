@@ -44,7 +44,7 @@ public:
 	DiscordForumTag(const dpp::forum_tag& tag) : m_tag(tag) {}
 
 	std::string GetId() const { return m_tag.id.str(); }
-	std::string GetName() const { return m_tag.name; }
+	const std::string& GetName() const { return m_tag.name; }
 	void SetName(const char* name) { m_tag.set_name(name); }
 
 	std::string GetEmoji() const {

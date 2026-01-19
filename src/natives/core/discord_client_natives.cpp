@@ -22,6 +22,7 @@
 #include "core/event_registry.h"
 #include "entities/discord_message.h"
 #include "entities/discord_channel.h"
+#include "features/discord_slashcommand.h"
 #include "utils/discord_embed.h"
 #include "utils/discord_http.h"
 
@@ -32,9 +33,8 @@ static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* param
 
 	DiscordClient* pDiscordClient = new DiscordClient(token, static_cast<uint32_t>(params[2]));
 	Handle_t handle = Handles.Create(pContext, pDiscordClient, HandleId::Discord);
-	if (handle) {
-		pDiscordClient->SetHandle(handle);
-	}
+	if (!handle) return 0;
+	pDiscordClient->SetHandle(handle);
 	return handle;
 }
 
@@ -133,9 +133,8 @@ static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params
 	if (!discord) return 0;
 
 	char* channelId;
-	pContext->LocalToString(params[2], &channelId);
-
 	char* message;
+	pContext->LocalToString(params[2], &channelId);
 	pContext->LocalToString(params[3], &message);
 
 	dpp::snowflake channel;
@@ -161,9 +160,8 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 	if (!discord) return 0;
 
 	char* channelId;
-	pContext->LocalToString(params[2], &channelId);
-
 	char* message;
+	pContext->LocalToString(params[2], &channelId);
 	pContext->LocalToString(params[3], &message);
 
 	DiscordEmbed* embed = Handles.GetPointer<DiscordEmbed>(pContext, params[4]);
@@ -250,12 +248,10 @@ static cell_t discord_EditMessage(IPluginContext* pContext, const cell_t* params
 	if (!discord) return 0;
 
 	char* channelId;
-	pContext->LocalToString(params[2], &channelId);
-
 	char* messageId;
-	pContext->LocalToString(params[3], &messageId);
-
 	char* content;
+	pContext->LocalToString(params[2], &channelId);
+	pContext->LocalToString(params[3], &messageId);
 	pContext->LocalToString(params[4], &content);
 
 	dpp::snowflake channel, message;
@@ -281,12 +277,10 @@ static cell_t discord_EditMessageEmbed(IPluginContext* pContext, const cell_t* p
 	if (!discord) return 0;
 
 	char* channelId;
-	pContext->LocalToString(params[2], &channelId);
-
 	char* messageId;
-	pContext->LocalToString(params[3], &messageId);
-
 	char* content;
+	pContext->LocalToString(params[2], &channelId);
+	pContext->LocalToString(params[3], &messageId);
 	pContext->LocalToString(params[4], &content);
 
 	DiscordEmbed* embed = Handles.GetPointer<DiscordEmbed>(pContext, params[5]);
@@ -534,25 +528,16 @@ static cell_t discord_HttpRequest(IPluginContext* pContext, const cell_t* params
 		return 0;
 	}
 
-	char* body = nullptr;
-	if (params[0] >= 5) {
-		pContext->LocalToString(params[5], &body);
-	}
+	char* body;
+	char* content_type;
+	pContext->LocalToString(params[5], &body);
+	pContext->LocalToString(params[6], &content_type);
 
-	char* content_type = nullptr;
-	if (params[0] >= 6) {
-		pContext->LocalToString(params[6], &content_type);
-	}
-
-	HttpHeaders* headers = nullptr;
-	if (params[0] >= 7) {
-		headers = Handles.GetPointer<HttpHeaders>(pContext, params[7]);
-	}
-
+	HttpHeaders* headers = Handles.GetPointer<HttpHeaders>(pContext, params[7]);
 	cell_t data = params[8];
 
-	std::string request_body = body ? body : "";
-	std::string mime_type = content_type ? content_type : "application/json";
+	std::string request_body = body && body[0] ? body : "";
+	std::string mime_type = content_type && content_type[0] ? content_type : "application/json";
 	dpp::http_headers dpp_headers;
 
 	if (headers) {
@@ -644,6 +629,51 @@ static cell_t discord_UnregisterEvent(IPluginContext* pContext, const cell_t* pa
 	return 1;
 }
 
+static cell_t discord_GetGlobalCommands(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = Handles.GetPointer<DiscordClient>(pContext, params[1]);
+	if (!discord) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+	cell_t data = params[3];
+
+	Handle_t client_handle = discord->GetHandle();
+	discord->Commands().GetGlobalCommands([client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
+		PushResultList<DiscordSlashCommand, dpp::slashcommand_map>(client_handle, discord, callback, data, cb, DiscordResultType::SlashCommands);
+	});
+	return 1;
+}
+
+static cell_t discord_GetGlobalCommand(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = Handles.GetPointer<DiscordClient>(pContext, params[1]);
+	if (!discord) return 0;
+
+	char* command_id_str;
+	pContext->LocalToString(params[2], &command_id_str);
+
+	dpp::snowflake command_id;
+	if (!ParseSnowflake(pContext, command_id_str, command_id)) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[4];
+
+	Handle_t client_handle = discord->GetHandle();
+	discord->Commands().GetGlobalCommand(command_id, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
+		PushResult<DiscordSlashCommand>(client_handle, discord, callback, data, cb);
+	});
+	return 1;
+}
+
 // Global cache count natives
 static cell_t discord_GetCachedUserCount(IPluginContext* pContext, const cell_t* params)
 {
@@ -702,5 +732,7 @@ extern const sp_nativeinfo_t discord_core_natives[] = {
 	{"Discord.CachedChannelCount.get", discord_GetCachedChannelCount},
 	{"Discord.CachedRoleCount.get", discord_GetCachedRoleCount},
 	{"Discord.CachedEmojiCount.get", discord_GetCachedEmojiCount},
+	{"Discord.GetGlobalCommands", discord_GetGlobalCommands},
+	{"Discord.GetGlobalCommand", discord_GetGlobalCommand},
 	{nullptr, nullptr}
 };

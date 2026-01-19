@@ -34,6 +34,7 @@ public:
 	DiscordRole(const dpp::role& role, DiscordClient* client) : m_role(role), m_guild_id(role.guild_id), m_client(client) {}
 	DiscordRole(const dpp::role& role, dpp::snowflake guild_id) : m_role(role), m_guild_id(guild_id), m_client(nullptr) {}
 	DiscordRole(const dpp::role& role, dpp::snowflake guild_id, DiscordClient* client) : m_role(role), m_guild_id(guild_id), m_client(client) {}
+	DiscordRole(const std::pair<dpp::role, dpp::snowflake>& data, DiscordClient* client) : m_role(data.first), m_guild_id(data.second), m_client(client) {}
 
 	// Basic role information
 	std::string GetId() const { return m_role.id.str(); }
@@ -96,8 +97,8 @@ public:
 	std::string GetMention() const { return m_role.get_mention(); }
 
 	// Role management methods
-	void Modify();
-	void Delete();
+	void Modify(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Delete(IPluginFunction* callback = nullptr, cell_t data = 0);
 	void AddToUser(dpp::snowflake user_id);
 	void RemoveFromUser(dpp::snowflake user_id);
 

@@ -43,8 +43,9 @@ static cell_t webhook_CreateWebhookFromUrl(IPluginContext* pContext, const cell_
 	}
 
 	DiscordWebhook* pDiscordWebhook = new DiscordWebhook(webhook, discord);
-
-	return Handles.Create(pContext, pDiscordWebhook, HandleId::DiscordWebhook);
+	Handle_t handle = Handles.Create(pContext, pDiscordWebhook, HandleId::DiscordWebhook);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t webhook_CreateWebhookFromIdToken(IPluginContext* pContext, const cell_t* params)
@@ -60,8 +61,11 @@ static cell_t webhook_CreateWebhookFromIdToken(IPluginContext* pContext, const c
 
 	dpp::snowflake id;
 	if (!ParseSnowflake(pContext, webhook_id, id)) return 0;
+
 	DiscordWebhook* pDiscordWebhook = new DiscordWebhook(id, std::string(webhook_token), discord);
-	return Handles.Create(pContext, pDiscordWebhook, HandleId::DiscordWebhook);
+	Handle_t handle = Handles.Create(pContext, pDiscordWebhook, HandleId::DiscordWebhook);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t webhook_FetchWebhook(IPluginContext* pContext, const cell_t* params)
@@ -144,7 +148,7 @@ static cell_t webhook_GetAvatarUrl(IPluginContext* pContext, const cell_t* param
 	return 1;
 }
 
-static cell_t webhook_SetAvatar(IPluginContext* pContext, const cell_t* params)
+static cell_t webhook_SetAvatarFromFile(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordWebhook* webhook = Handles.GetPointer<DiscordWebhook>(pContext, params[1]);
 	if (!webhook) return 0;
@@ -153,7 +157,19 @@ static cell_t webhook_SetAvatar(IPluginContext* pContext, const cell_t* params)
 	pContext->LocalToString(params[2], &filepath);
 
 	dpp::image_type type = static_cast<dpp::image_type>(params[3]);
-	return webhook->SetAvatar(filepath, type);
+	return webhook->SetAvatarFromFile(filepath, type);
+}
+
+static cell_t webhook_SetAvatarFromUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = Handles.GetPointer<DiscordWebhook>(pContext, params[1]);
+	if (!webhook) return 0;
+
+	char* url;
+	pContext->LocalToString(params[2], &url);
+
+	webhook->SetAvatarFromUrl(url);
+	return 1;
 }
 
 static cell_t webhook_GetType(IPluginContext* pContext, const cell_t* params)
@@ -236,14 +252,41 @@ static cell_t webhook_GetImageData(IPluginContext* pContext, const cell_t* param
 	return 1;
 }
 
+static cell_t webhook_SetThreadId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = Handles.GetPointer<DiscordWebhook>(pContext, params[1]);
+	if (!webhook) return 0;
+
+	char* threadId;
+	pContext->LocalToString(params[2], &threadId);
+
+	dpp::snowflake threadFlake;
+	if (!ParseSnowflake(pContext, threadId, threadFlake)) return 0;
+
+	webhook->SetThreadId(threadFlake);
+	return 1;
+}
+
+static cell_t webhook_SetThreadName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = Handles.GetPointer<DiscordWebhook>(pContext, params[1]);
+	if (!webhook) return 0;
+
+	char* threadName;
+	pContext->LocalToString(params[2], &threadName);
+
+	webhook->SetThreadName(threadName);
+	return 1;
+}
+
 static cell_t webhook_Modify(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordWebhook* webhook = Handles.GetPointer<DiscordWebhook>(pContext, params[1]);
 	if (!webhook) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	webhook->Modify(callback, data);
 	return 1;
 }
@@ -254,8 +297,8 @@ static cell_t webhook_Delete(IPluginContext* pContext, const cell_t* params)
 	if (!webhook) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
-	cell_t data = params[3];
 
+	cell_t data = params[3];
 	webhook->Delete(callback, data);
 	return 1;
 }
@@ -269,8 +312,8 @@ static cell_t webhook_Execute(IPluginContext* pContext, const cell_t* params)
 	pContext->LocalToString(params[2], &message);
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	webhook->Execute(message, callback, data);
 	return 1;
 }
@@ -287,8 +330,8 @@ static cell_t webhook_ExecuteEmbed(IPluginContext* pContext, const cell_t* param
 	if (!embed) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
-	cell_t data = params[5];
 
+	cell_t data = params[5];
 	webhook->ExecuteEmbed(message, embed, callback, data);
 	return 1;
 }
@@ -302,8 +345,8 @@ static cell_t webhook_ExecuteMessage(IPluginContext* pContext, const cell_t* par
 	if (!message) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
-	cell_t data = params[4];
 
+	cell_t data = params[4];
 	webhook->ExecuteMessage(message, callback, data);
 	return 1;
 }
@@ -399,7 +442,8 @@ extern const sp_nativeinfo_t webhook_natives[] = {
 	{"DiscordWebhook.GetName", webhook_GetName},
 	{"DiscordWebhook.SetName", webhook_SetName},
 	{"DiscordWebhook.GetAvatarUrl", webhook_GetAvatarUrl},
-	{"DiscordWebhook.SetAvatar", webhook_SetAvatar},
+	{"DiscordWebhook.SetAvatarFromFile", webhook_SetAvatarFromFile},
+	{"DiscordWebhook.SetAvatarFromUrl", webhook_SetAvatarFromUrl},
 	{"DiscordWebhook.Type.get", webhook_GetType},
 	{"DiscordWebhook.GetGuildId", webhook_GetGuildId},
 	{"DiscordWebhook.GetChannelId", webhook_GetChannelId},
@@ -409,6 +453,8 @@ extern const sp_nativeinfo_t webhook_natives[] = {
 	{"DiscordWebhook.GetSourceChannelId", webhook_GetSourceChannelId},
 	{"DiscordWebhook.GetUrl", webhook_GetUrl},
 	{"DiscordWebhook.GetImageData", webhook_GetImageData},
+	{"DiscordWebhook.SetThreadId", webhook_SetThreadId},
+	{"DiscordWebhook.SetThreadName", webhook_SetThreadName},
 	{"DiscordWebhook.Modify", webhook_Modify},
 	{"DiscordWebhook.Delete", webhook_Delete},
 	{"DiscordWebhook.Execute", webhook_Execute},

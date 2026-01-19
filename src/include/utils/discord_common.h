@@ -24,13 +24,23 @@
 #include "core/handle_manager.h"
 #include "core/logger.h"
 
-// Parse string to uint64 using std::from_chars (faster, no exceptions)
+// Parse string to uint64_t, returns false if invalid or empty
 inline bool ParseUInt64(const char* str, uint64_t& out) {
 	if (!str || !*str) return false;
 	auto [ptr, ec] = std::from_chars(str, str + std::strlen(str), out);
-	return ec == std::errc{};
+	return ec == std::errc{} && *ptr == '\0';
 }
 
+// Format int64_t to string, returns false if buffer too small
+inline bool FormatInt64(int64_t value, char* buffer, size_t size) {
+	if (!buffer || size < 2) return false;
+	auto [ptr, ec] = std::to_chars(buffer, buffer + size - 1, value);
+	if (ec != std::errc{}) return false;
+	*ptr = '\0';
+	return true;
+}
+
+// Parse string to snowflake
 inline bool ParseSnowflake(const char* str, dpp::snowflake& out) {
 	uint64_t val;
 	if (!ParseUInt64(str, val)) return false;
@@ -38,6 +48,7 @@ inline bool ParseSnowflake(const char* str, dpp::snowflake& out) {
 	return true;
 }
 
+// Parse string to snowflake with error reporting
 inline bool ParseSnowflake(IPluginContext* ctx, char* str, dpp::snowflake& out) {
 	uint64_t val;
 	if (!ParseUInt64(str, val)) {
@@ -46,4 +57,9 @@ inline bool ParseSnowflake(IPluginContext* ctx, char* str, dpp::snowflake& out) 
 	}
 	out = val;
 	return true;
+}
+
+// Check if int64_t fits in int32_t range using sign extension comparison
+inline bool IsInt32Range(int64_t value) {
+	return (value >> 31) == (value >> 63);
 }

@@ -91,7 +91,7 @@ methodmap DiscordSticker < Handle
    * @param buffer       Buffer to store the username
    * @param maxlength    Maximum length of the buffer
    */
-  public native void GetUsername(char[] buffer, int maxlength);
+  public native void GetUserName(char[] buffer, int maxlength);
 
   /**
    * Gets the sticker URL
@@ -103,8 +103,11 @@ methodmap DiscordSticker < Handle
 
   /**
    * Deletes this sticker from the guild
+   *
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void Delete();
+  public native void Delete(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Edits this sticker
@@ -112,6 +115,8 @@ methodmap DiscordSticker < Handle
    * @param name         New name for the sticker
    * @param description  New description for the sticker
    * @param tags         New tags for the sticker
+   * @param callback     Optional callback to receive the updated sticker
+   * @param data         Optional data to pass to callback
    */
-  public native void Edit(const char[] name, const char[] description, const char[] tags);
+  public native void Edit(const char[] name, const char[] description, const char[] tags, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 }

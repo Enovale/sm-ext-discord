@@ -40,7 +40,7 @@ methodmap DiscordModal < Handle
    * modal.AddTextInput("bio", "About You", TextStyle_Paragraph, false, "Tell us about yourself...", 10, 1000);
    */
   public native bool AddTextInput(const char[] custom_id, const char[] label,
-                                   TextStyleType style, bool required,
+                                   DiscordTextStyleType style, bool required,
                                    const char[] placeholder = NULL_STRING,
                                    int min_length = 0, int max_length = 4000,
                                    const char[] default_value = NULL_STRING);

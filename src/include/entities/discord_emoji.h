@@ -33,7 +33,7 @@ private:
 
 public:
 	DiscordEmoji(const dpp::emoji& emoji) : m_emoji(emoji), m_guild_id(0), m_client(nullptr) {}
-	DiscordEmoji(const dpp::emoji& emoji, dpp::snowflake guild_id) : m_emoji(emoji), m_guild_id(guild_id), m_client(nullptr) {}
+	DiscordEmoji(const dpp::emoji& emoji, DiscordClient* client) : m_emoji(emoji), m_guild_id(0), m_client(client) {}
 	DiscordEmoji(const dpp::emoji& emoji, dpp::snowflake guild_id, DiscordClient* client) : m_emoji(emoji), m_guild_id(guild_id), m_client(client) {}
 	DiscordEmoji(dpp::snowflake emoji_id, dpp::snowflake guild_id, DiscordClient* client) : m_guild_id(guild_id), m_client(client) {
 		m_emoji.id = emoji_id;
@@ -57,15 +57,16 @@ public:
 		if (index >= m_emoji.roles.size()) return "";
 		return m_emoji.roles[index].str();
 	}
+	const std::vector<dpp::snowflake>& GetRoles() const { return m_emoji.roles; }
 
 	// URLs and mentions
 	std::string GetMention() const { return m_emoji.get_mention(); }
 	std::string GetUrl(uint16_t size = 0) const { return m_emoji.get_url(size); }
 	std::string GetFormat() const { return m_emoji.format(); }
 
-	// Management methods (require client)
-	void Delete();
-	void Edit(const char* name);
+	// Management methods (require client and guild_id)
+	void Delete(dpp::snowflake guild_id, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Edit(dpp::snowflake guild_id, const char* name, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Internal accessor
 	const dpp::emoji& GetDPPEmoji() const { return m_emoji; }

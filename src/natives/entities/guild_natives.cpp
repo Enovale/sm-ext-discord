@@ -21,6 +21,7 @@
 #include "natives/entity_natives_common.h"
 #include "entities/discord_guild.h"
 #include "entities/discord_role.h"
+#include "entities/discord_channel.h"
 
 static cell_t guild_FetchGuild(IPluginContext* pContext, const cell_t* params)
 {
@@ -73,8 +74,9 @@ static cell_t guild_FindGuild(IPluginContext* pContext, const cell_t* params)
 	}
 
 	DiscordGuild* pDiscordGuild = new DiscordGuild(*guild_ptr, discord);
-
-	return Handles.Create(pContext, pDiscordGuild, HandleId::DiscordGuild);
+	Handle_t handle = Handles.Create(pContext, pDiscordGuild, HandleId::DiscordGuild);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t guild_SetName(IPluginContext* pContext, const cell_t* params)
@@ -108,53 +110,6 @@ static cell_t guild_GetOwnerId(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t guild_GetMemberCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return static_cast<cell_t>(guild->GetMemberCount());
-}
-
-static cell_t guild_GetVerificationLevel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetVerificationLevel();
-}
-
-static cell_t guild_GetPremiumTier(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetPremiumTier();
-}
-
-static cell_t guild_IsLarge(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->IsLarge();
-}
-
-static cell_t guild_IsVerified(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->IsVerified();
-}
-
-static cell_t guild_IsPartnered(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->IsPartnered();
-}
 
 static cell_t guild_GetIconUrl(IPluginContext* pContext, const cell_t* params)
 {
@@ -216,85 +171,6 @@ static cell_t guild_GetVanityUrlCode(IPluginContext* pContext, const cell_t* par
 	return 1;
 }
 
-static cell_t guild_GetMaxMembers(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetMaxMembers();
-}
-
-static cell_t guild_GetMaxPresences(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetMaxPresences();
-}
-
-static cell_t guild_GetPremiumSubscriptionCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetPremiumSubscriptionCount();
-}
-
-static cell_t guild_GetExplicitContentFilter(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetExplicitContentFilter();
-}
-
-static cell_t guild_GetMfaLevel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetMfaLevel();
-}
-
-static cell_t guild_GetNsfwLevel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetNsfwLevel();
-}
-
-static cell_t guild_GetAfkTimeout(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetAfkTimeout();
-}
-
-static cell_t guild_GetDefaultMessageNotifications(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetDefaultMessageNotifications();
-}
-
-static cell_t guild_GetShardId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetShardId();
-}
-
-static cell_t guild_GetFlagsExtra(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return guild->GetFlagsExtra();
-}
 
 static cell_t guild_GetAfkChannelId(IPluginContext* pContext, const cell_t* params)
 {
@@ -360,7 +236,7 @@ static cell_t guild_GetBasePermissions(IPluginContext* pContext, const cell_t* p
 	uint64_t permissions = guild->GetBasePermissions(user_id);
 
 	char permStr[32];
-	snprintf(permStr, sizeof(permStr), "%" PRIu64, permissions);
+	FormatInt64(static_cast<int64_t>(permissions), permStr, sizeof(permStr));
 	pContext->StringToLocal(params[3], params[4], permStr);
 	return 1;
 }
@@ -382,7 +258,7 @@ static cell_t guild_GetPermissionsInChannel(IPluginContext* pContext, const cell
 	uint64_t permissions = guild->GetPermissionsInChannel(user_id, channel_id);
 
 	char permStr[32];
-	snprintf(permStr, sizeof(permStr), "%" PRIu64, permissions);
+	FormatInt64(static_cast<int64_t>(permissions), permStr, sizeof(permStr));
 	pContext->StringToLocal(params[4], params[5], permStr);
 	return 1;
 }
@@ -425,7 +301,10 @@ static cell_t guild_Modify(IPluginContext* pContext, const cell_t* params)
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	guild->Modify();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	guild->Modify(callback, data);
 	return 1;
 }
 
@@ -440,7 +319,8 @@ static cell_t guild_GetInvites(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	guild->GetInvites(callback, params[3]);
+	cell_t data = params[3];
+	guild->GetInvites(callback, data);
 	return 1;
 }
 
@@ -455,49 +335,27 @@ static cell_t guild_GetWebhooks(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	guild->GetWebhooks(callback, params[3]);
+	cell_t data = params[3];
+	guild->GetWebhooks(callback, data);
 	return 1;
 }
 
-static cell_t guild_GetRoleCount(IPluginContext* pContext, const cell_t* params)
+static cell_t guild_GetRoles(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	return static_cast<cell_t>(guild->GetRoleCount());
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[3];
+	guild->GetRoles(callback, data);
+	return 1;
 }
 
-static cell_t guild_GetChannelCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return static_cast<cell_t>(guild->GetChannelCount());
-}
-
-static cell_t guild_GetThreadCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return static_cast<cell_t>(guild->GetThreadCount());
-}
-
-static cell_t guild_GetEmojiCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return static_cast<cell_t>(guild->GetEmojiCount());
-}
-
-static cell_t guild_GetVoiceMemberCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
-	if (!guild) return 0;
-
-	return static_cast<cell_t>(guild->GetVoiceMemberCount());
-}
 
 static cell_t guild_GetMember(IPluginContext* pContext, const cell_t* params)
 {
@@ -516,7 +374,8 @@ static cell_t guild_GetMember(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	guild->GetMember(user_id, callback, params[4]);
+	cell_t data = params[4];
+	guild->GetMember(user_id, callback, data);
 	return 1;
 }
 
@@ -540,7 +399,8 @@ static cell_t guild_GetMembers(IPluginContext* pContext, const cell_t* params)
 		ParseSnowflake(after_str, after);
 	}
 
-	guild->GetMembers(limit, after, callback, params[5]);
+	cell_t data = params[5];
+	guild->GetMembers(limit, after, callback, data);
 	return 1;
 }
 
@@ -559,7 +419,8 @@ static cell_t guild_SearchMembers(IPluginContext* pContext, const cell_t* params
 	}
 
 	uint16_t limit = static_cast<uint16_t>(params[4]);
-	guild->SearchMembers(query, limit, callback, params[5]);
+	cell_t data = params[5];
+	guild->SearchMembers(query, limit, callback, data);
 	return 1;
 }
 
@@ -574,7 +435,24 @@ static cell_t guild_GetActiveThreads(IPluginContext* pContext, const cell_t* par
 		return 0;
 	}
 
-	guild->GetActiveThreads(callback, params[3]);
+	cell_t data = params[3];
+	guild->GetActiveThreads(callback, data);
+	return 1;
+}
+
+static cell_t guild_GetChannels(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[3];
+	guild->GetChannels(callback, data);
 	return 1;
 }
 
@@ -599,7 +477,8 @@ static cell_t guild_GetBans(IPluginContext* pContext, const cell_t* params)
 	if (after_str && after_str[0] != '\0') ParseSnowflake(after_str, after);
 
 	uint16_t limit = static_cast<uint16_t>(params[5]);
-	guild->GetBans(before, after, limit, callback, params[6]);
+	cell_t data = params[6];
+	guild->GetBans(before, after, limit, callback, data);
 	return 1;
 }
 
@@ -613,7 +492,51 @@ static cell_t guild_CreateEmoji(IPluginContext* pContext, const cell_t* params)
 	pContext->LocalToString(params[2], &name);
 	pContext->LocalToString(params[3], &image_path);
 
-	guild->CreateEmoji(name, image_path, static_cast<dpp::image_type>(params[4]));
+	char fullpath[PLATFORM_MAX_PATH];
+	g_pSM->BuildPath(Path_Game, fullpath, sizeof(fullpath), "%s", image_path);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[5]);
+
+	cell_t data = params[6];
+	guild->CreateEmoji(name, fullpath, static_cast<dpp::image_type>(params[4]), callback, data);
+	return 1;
+}
+
+static cell_t guild_GetEmoji(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	char* emoji_id_str;
+	pContext->LocalToString(params[2], &emoji_id_str);
+
+	dpp::snowflake emoji_id;
+	if (!ParseSnowflake(pContext, emoji_id_str, emoji_id)) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[4];
+	guild->GetEmoji(emoji_id, callback, data);
+	return 1;
+}
+
+static cell_t guild_GetAllEmojis(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[3];
+	guild->GetAllEmojis(callback, data);
 	return 1;
 }
 
@@ -631,7 +554,13 @@ static cell_t guild_CreateSticker(IPluginContext* pContext, const cell_t* params
 	pContext->LocalToString(params[4], &tags);
 	pContext->LocalToString(params[5], &file_path);
 
-	guild->CreateSticker(name, description, tags, file_path, static_cast<dpp::sticker_format>(params[6]));
+	char fullpath[PLATFORM_MAX_PATH];
+	g_pSM->BuildPath(Path_Game, fullpath, sizeof(fullpath), "%s", file_path);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
+
+	cell_t data = params[8];
+	guild->CreateSticker(name, description, tags, fullpath, static_cast<dpp::sticker_format>(params[6]), callback, data);
 	return 1;
 }
 
@@ -650,7 +579,10 @@ static cell_t guild_CreateScheduledEvent(IPluginContext* pContext, const cell_t*
 	dpp::snowflake channel_id;
 	if (!ParseSnowflake(pContext, channel_id_str, channel_id)) return 0;
 
-	guild->CreateScheduledEvent(name, description, channel_id, params[5], params[6], static_cast<dpp::event_entity_type>(params[7]));
+	IPluginFunction* callback = pContext->GetFunctionById(params[8]);
+
+	cell_t data = params[9];
+	guild->CreateScheduledEvent(name, description, channel_id, params[5], params[6], static_cast<dpp::event_entity_type>(params[7]), callback, data);
 	return 1;
 }
 
@@ -666,7 +598,104 @@ static cell_t guild_CreateExternalScheduledEvent(IPluginContext* pContext, const
 	pContext->LocalToString(params[3], &description);
 	pContext->LocalToString(params[4], &location);
 
-	guild->CreateExternalScheduledEvent(name, description, location, params[5], params[6]);
+	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
+
+	cell_t data = params[8];
+	guild->CreateExternalScheduledEvent(name, description, location, params[5], params[6], callback, data);
+	return 1;
+}
+
+static cell_t guild_GetScheduledEvents(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[3];
+	guild->GetScheduledEvents(callback, data);
+	return 1;
+}
+
+static cell_t guild_GetScheduledEvent(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	char* event_id_str;
+	pContext->LocalToString(params[2], &event_id_str);
+
+	dpp::snowflake event_id;
+	if (!ParseSnowflake(pContext, event_id_str, event_id)) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[4];
+	guild->GetScheduledEvent(event_id, callback, data);
+	return 1;
+}
+
+static cell_t guild_GetScheduledEventUsers(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	char* event_id_str;
+	pContext->LocalToString(params[2], &event_id_str);
+
+	dpp::snowflake event_id;
+	if (!ParseSnowflake(pContext, event_id_str, event_id)) return 0;
+
+	uint16_t limit = static_cast<uint16_t>(params[3]);
+
+	char* before_str;
+	char* after_str;
+	pContext->LocalToString(params[4], &before_str);
+	pContext->LocalToString(params[5], &after_str);
+
+	dpp::snowflake before, after;
+	ParseSnowflake(before_str, before);
+	ParseSnowflake(after_str, after);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[7];
+	guild->GetScheduledEventUsers(event_id, limit, before, after, callback, data);
+	return 1;
+}
+
+static cell_t guild_BanUser(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	char* user_id_str;
+	pContext->LocalToString(params[2], &user_id_str);
+
+	dpp::snowflake user_id;
+	if (!ParseSnowflake(pContext, user_id_str, user_id)) return 0;
+
+	uint32_t delete_message_seconds = params[3];
+
+	char* reason;
+	pContext->LocalToString(params[4], &reason);
+
+	IPluginFunction* callback = params[5] ? pContext->GetFunctionById(params[5]) : nullptr;
+
+	cell_t data = params[6];
+	guild->BanUser(user_id, delete_message_seconds, reason, callback, data);
 	return 1;
 }
 
@@ -681,7 +710,10 @@ static cell_t guild_UnbanUser(IPluginContext* pContext, const cell_t* params)
 	dpp::snowflake user_id;
 	if (!ParseSnowflake(pContext, user_id_str, user_id)) return 0;
 
-	guild->UnbanUser(user_id);
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	guild->UnbanUser(user_id, callback, data);
 	return 1;
 }
 
@@ -712,7 +744,8 @@ static cell_t guild_CreateRole(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	guild->CreateRole(name, color, hoist, mentionable, permissions, callback, params[8]);
+	cell_t data = params[8];
+	guild->CreateRole(name, color, hoist, mentionable, permissions, callback, data);
 	return 1;
 }
 
@@ -730,7 +763,8 @@ static cell_t guild_CreateRoleFromObject(IPluginContext* pContext, const cell_t*
 		return 0;
 	}
 
-	guild->CreateRoleFromObject(role, callback, params[4]);
+	cell_t data = params[4];
+	guild->CreateRoleFromObject(role, callback, data);
 	return 1;
 }
 
@@ -739,7 +773,151 @@ static cell_t guild_BulkDeleteCommands(IPluginContext* pContext, const cell_t* p
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	guild->BulkDeleteCommands();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	guild->BulkDeleteCommands(callback, data);
+	return 1;
+}
+
+static cell_t guild_GetCommands(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[3];
+	guild->GetCommands(callback, data);
+	return 1;
+}
+
+static cell_t guild_GetCommand(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	char* command_id_str;
+	pContext->LocalToString(params[2], &command_id_str);
+
+	dpp::snowflake command_id;
+	if (!ParseSnowflake(pContext, command_id_str, command_id)) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[4];
+	guild->GetCommand(command_id, callback, data);
+	return 1;
+}
+
+static cell_t guild_ModifyCurrentMember(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	char* nickname;
+	pContext->LocalToString(params[2], &nickname);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	guild->ModifyCurrentMember(nickname, callback, data);
+	return 1;
+}
+
+static cell_t guild_GetPruneCount(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	uint16_t days = static_cast<uint16_t>(params[2]);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+
+	cell_t data = params[4];
+	guild->GetPruneCount(days, callback, data);
+	return 1;
+}
+
+static cell_t guild_BeginPrune(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	uint16_t days = static_cast<uint16_t>(params[2]);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+
+	cell_t data = params[4];
+	guild->BeginPrune(days, callback, data);
+	return 1;
+}
+
+static cell_t guild_EditRolePositions(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	int role_count = params[3];
+	if (role_count <= 0) return 0;
+
+	std::vector<dpp::role> roles;
+	cell_t* role_array;
+	pContext->LocalToPhysAddr(params[2], &role_array);
+
+	for (int i = 0; i < role_count; i++) {
+		DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, role_array[i]);
+		if (role) {
+			roles.push_back(role->GetDPPRole());
+		}
+	}
+
+	if (roles.empty()) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
+
+	cell_t data = params[5];
+	guild->EditRolePositions(roles, callback, data);
+	return 1;
+}
+
+static cell_t guild_EditChannelPositions(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
+	if (!guild) return 0;
+
+	int channel_count = params[3];
+	if (channel_count <= 0) return 0;
+
+	std::vector<dpp::channel> channels;
+	cell_t* channel_array;
+	pContext->LocalToPhysAddr(params[2], &channel_array);
+
+	for (int i = 0; i < channel_count; i++) {
+		DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, channel_array[i]);
+		if (channel) {
+			channels.push_back(channel->GetDPPChannel());
+		}
+	}
+
+	if (channels.empty()) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
+
+	cell_t data = params[5];
+	guild->EditChannelPositions(channels, callback, data);
 	return 1;
 }
 
@@ -752,28 +930,28 @@ extern const sp_nativeinfo_t guild_natives[] = {
 	{"DiscordGuild.GetDescription", EntityGetDescription<DiscordGuild>},
 	{"DiscordGuild.SetDescription", guild_SetDescription},
 	{"DiscordGuild.GetOwnerId", guild_GetOwnerId},
-	{"DiscordGuild.MemberCount.get", guild_GetMemberCount},
-	{"DiscordGuild.VerificationLevel.get", guild_GetVerificationLevel},
-	{"DiscordGuild.PremiumTier.get", guild_GetPremiumTier},
-	{"DiscordGuild.IsLarge.get", guild_IsLarge},
-	{"DiscordGuild.IsVerified.get", guild_IsVerified},
-	{"DiscordGuild.IsPartnered.get", guild_IsPartnered},
+	{"DiscordGuild.MemberCount.get", EntityGetInt<DiscordGuild, size_t, &DiscordGuild::GetMemberCount>},
+	{"DiscordGuild.VerificationLevel.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetVerificationLevel>},
+	{"DiscordGuild.PremiumTier.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetPremiumTier>},
+	{"DiscordGuild.IsLarge.get", EntityGetBool<DiscordGuild, &DiscordGuild::IsLarge>},
+	{"DiscordGuild.IsVerified.get", EntityGetBool<DiscordGuild, &DiscordGuild::IsVerified>},
+	{"DiscordGuild.IsPartnered.get", EntityGetBool<DiscordGuild, &DiscordGuild::IsPartnered>},
 	{"DiscordGuild.GetIconUrl", guild_GetIconUrl},
 	{"DiscordGuild.GetBannerUrl", guild_GetBannerUrl},
 	{"DiscordGuild.GetSplashUrl", guild_GetSplashUrl},
 	{"DiscordGuild.GetDiscoverySplashUrl", guild_GetDiscoverySplashUrl},
 	{"DiscordGuild.GetVanityUrlCode", guild_GetVanityUrlCode},
-	{"DiscordGuild.MaxMembers.get", guild_GetMaxMembers},
-	{"DiscordGuild.MaxPresences.get", guild_GetMaxPresences},
-	{"DiscordGuild.PremiumSubscriptionCount.get", guild_GetPremiumSubscriptionCount},
-	{"DiscordGuild.ExplicitContentFilter.get", guild_GetExplicitContentFilter},
-	{"DiscordGuild.MfaLevel.get", guild_GetMfaLevel},
-	{"DiscordGuild.NsfwLevel.get", guild_GetNsfwLevel},
-	{"DiscordGuild.AfkTimeout.get", guild_GetAfkTimeout},
-	{"DiscordGuild.DefaultMessageNotifications.get", guild_GetDefaultMessageNotifications},
-	{"DiscordGuild.ShardId.get", guild_GetShardId},
+	{"DiscordGuild.MaxMembers.get", EntityGetInt<DiscordGuild, uint32_t, &DiscordGuild::GetMaxMembers>},
+	{"DiscordGuild.MaxPresences.get", EntityGetInt<DiscordGuild, uint32_t, &DiscordGuild::GetMaxPresences>},
+	{"DiscordGuild.PremiumSubscriptionCount.get", EntityGetInt<DiscordGuild, uint16_t, &DiscordGuild::GetPremiumSubscriptionCount>},
+	{"DiscordGuild.ExplicitContentFilter.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetExplicitContentFilter>},
+	{"DiscordGuild.MfaLevel.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetMfaLevel>},
+	{"DiscordGuild.NsfwLevel.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetNsfwLevel>},
+	{"DiscordGuild.AfkTimeout.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetAfkTimeout>},
+	{"DiscordGuild.DefaultMessageNotifications.get", EntityGetInt<DiscordGuild, uint8_t, &DiscordGuild::GetDefaultMessageNotifications>},
+	{"DiscordGuild.ShardId.get", EntityGetInt<DiscordGuild, uint16_t, &DiscordGuild::GetShardId>},
 	{"DiscordGuild.Flags.get", EntityGetFlags<DiscordGuild>},
-	{"DiscordGuild.FlagsExtra.get", guild_GetFlagsExtra},
+	{"DiscordGuild.FlagsExtra.get", EntityGetInt<DiscordGuild, uint16_t, &DiscordGuild::GetFlagsExtra>},
 	{"DiscordGuild.GetInvites", guild_GetInvites},
 	{"DiscordGuild.GetWebhooks", guild_GetWebhooks},
 	{"DiscordGuild.GetAfkChannelId", guild_GetAfkChannelId},
@@ -786,23 +964,38 @@ extern const sp_nativeinfo_t guild_natives[] = {
 	{"DiscordGuild.HasPermission", guild_HasPermission},
 	{"DiscordGuild.HasPermissionInChannel", guild_HasPermissionInChannel},
 	{"DiscordGuild.Modify", guild_Modify},
-	{"DiscordGuild.RoleCount.get", guild_GetRoleCount},
-	{"DiscordGuild.ChannelCount.get", guild_GetChannelCount},
-	{"DiscordGuild.ThreadCount.get", guild_GetThreadCount},
-	{"DiscordGuild.EmojiCount.get", guild_GetEmojiCount},
-	{"DiscordGuild.VoiceMemberCount.get", guild_GetVoiceMemberCount},
+	{"DiscordGuild.RoleCount.get", EntityGetInt<DiscordGuild, size_t, &DiscordGuild::GetRoleCount>},
+	{"DiscordGuild.GetRoles", guild_GetRoles},
+	{"DiscordGuild.ChannelCount.get", EntityGetInt<DiscordGuild, size_t, &DiscordGuild::GetChannelCount>},
+	{"DiscordGuild.ThreadCount.get", EntityGetInt<DiscordGuild, size_t, &DiscordGuild::GetThreadCount>},
+	{"DiscordGuild.EmojiCount.get", EntityGetInt<DiscordGuild, size_t, &DiscordGuild::GetEmojiCount>},
+	{"DiscordGuild.VoiceMemberCount.get", EntityGetInt<DiscordGuild, size_t, &DiscordGuild::GetVoiceMemberCount>},
 	{"DiscordGuild.GetMember", guild_GetMember},
 	{"DiscordGuild.GetMembers", guild_GetMembers},
 	{"DiscordGuild.SearchMembers", guild_SearchMembers},
 	{"DiscordGuild.GetActiveThreads", guild_GetActiveThreads},
+	{"DiscordGuild.GetChannels", guild_GetChannels},
 	{"DiscordGuild.GetBans", guild_GetBans},
 	{"DiscordGuild.CreateEmoji", guild_CreateEmoji},
+	{"DiscordGuild.GetEmoji", guild_GetEmoji},
+	{"DiscordGuild.GetAllEmojis", guild_GetAllEmojis},
 	{"DiscordGuild.CreateSticker", guild_CreateSticker},
 	{"DiscordGuild.CreateScheduledEvent", guild_CreateScheduledEvent},
 	{"DiscordGuild.CreateExternalScheduledEvent", guild_CreateExternalScheduledEvent},
+	{"DiscordGuild.GetScheduledEvents", guild_GetScheduledEvents},
+	{"DiscordGuild.GetScheduledEvent", guild_GetScheduledEvent},
+	{"DiscordGuild.GetScheduledEventUsers", guild_GetScheduledEventUsers},
+	{"DiscordGuild.BanUser", guild_BanUser},
 	{"DiscordGuild.UnbanUser", guild_UnbanUser},
 	{"DiscordGuild.CreateRole", guild_CreateRole},
 	{"DiscordGuild.CreateRoleFromObject", guild_CreateRoleFromObject},
 	{"DiscordGuild.BulkDeleteCommands", guild_BulkDeleteCommands},
+	{"DiscordGuild.GetCommands", guild_GetCommands},
+	{"DiscordGuild.GetCommand", guild_GetCommand},
+	{"DiscordGuild.ModifyCurrentMember", guild_ModifyCurrentMember},
+	{"DiscordGuild.GetPruneCount", guild_GetPruneCount},
+	{"DiscordGuild.BeginPrune", guild_BeginPrune},
+	{"DiscordGuild.EditRolePositions", guild_EditRolePositions},
+	{"DiscordGuild.EditChannelPositions", guild_EditChannelPositions},
 	{nullptr, nullptr}
 };

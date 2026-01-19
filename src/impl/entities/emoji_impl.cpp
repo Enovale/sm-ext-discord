@@ -21,19 +21,28 @@
 #include "entities/discord_emoji.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
+#include "core/callback_helpers.h"
 
-void DiscordEmoji::Delete() {
-	if (!m_client || m_guild_id == 0) return;
-	m_client->GetCluster()->guild_emoji_delete(m_guild_id, m_emoji.id, [id = m_emoji.id](const dpp::confirmation_callback_t& cb) {
-		if (cb.is_error()) { Log.Error("Failed to delete emoji %" PRIu64 ": %s", id, cb.get_error().human_readable.c_str()); }
-	});
+void DiscordEmoji::Delete(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
+	if (!m_client || guild_id == 0) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Emojis().Delete(guild_id, m_emoji.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		});
+	} else {
+		m_client->Emojis().Delete(guild_id, m_emoji.id);
+	}
 }
 
-void DiscordEmoji::Edit(const char* name) {
-	if (!m_client || m_guild_id == 0 || !name) return;
-	dpp::emoji edited = m_emoji;
-	edited.name = name;
-	m_client->GetCluster()->guild_emoji_edit(m_guild_id, edited, [id = m_emoji.id](const dpp::confirmation_callback_t& cb) {
-		if (cb.is_error()) { Log.Error("Failed to edit emoji %" PRIu64 ": %s", id, cb.get_error().human_readable.c_str()); }
-	});
+void DiscordEmoji::Edit(dpp::snowflake guild_id, const char* name, IPluginFunction* callback, cell_t data) {
+	if (!m_client || guild_id == 0 || !name) return;
+	if (callback) {
+		Handle_t client_handle = m_client->GetHandle();
+		m_client->Emojis().Modify(guild_id, m_emoji.id, name, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
+			PushResult<DiscordEmoji>(client_handle, client, callback, data, cb);
+		});
+	} else {
+		m_client->Emojis().Modify(guild_id, m_emoji.id, name);
+	}
 }

@@ -42,6 +42,11 @@ void ThreadOperations::CreateInForum(dpp::snowflake channel_id, const char* name
 	m_cluster->thread_create_in_forum(name, channel_id, msg, static_cast<dpp::auto_archive_duration_t>(auto_archive), rate_limit, tag_ids, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create forum thread"); });
 }
 
+void ThreadOperations::CreateInForumWithMessage(dpp::snowflake channel_id, const char* name, const dpp::message& message, const std::vector<dpp::snowflake>& tag_ids, uint16_t auto_archive, uint16_t rate_limit, Callback callback) {
+	if (!IsValid() || !name) return;
+	m_cluster->thread_create_in_forum(name, channel_id, message, static_cast<dpp::auto_archive_duration_t>(auto_archive), rate_limit, tag_ids, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create forum thread"); });
+}
+
 void ThreadOperations::GetActive(dpp::snowflake guild_id, Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->threads_get_active(guild_id, callback);

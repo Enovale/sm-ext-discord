@@ -31,8 +31,9 @@ static cell_t forumtag_Create(IPluginContext* pContext, const cell_t* params)
 	bool moderated = params[3];
 
 	DiscordForumTag* pForumTag = new DiscordForumTag(name, emoji ? emoji : "", moderated);
-
-	return Handles.Create(pContext, pForumTag, HandleId::DiscordForumTag);
+	Handle_t handle = Handles.Create(pContext, pForumTag, HandleId::DiscordForumTag);
+	if (!handle) return 0;
+	return handle;
 }
 
 static cell_t forumtag_GetId(IPluginContext* pContext, const cell_t* params)

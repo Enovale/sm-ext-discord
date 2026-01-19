@@ -50,7 +50,7 @@ methodmap DiscordInvite < Handle
    * @param buffer      Buffer to store the username
    * @param maxlength   Maximum length of the buffer
    */
-  public native void GetInviterUsername(char[] buffer, int maxlength);
+  public native void GetInviterUserName(char[] buffer, int maxlength);
 
   /**
    * Gets the avatar URL of the user who created this invite
@@ -183,4 +183,15 @@ methodmap DiscordInvite < Handle
    * Deletes this invite
    */
   public native void Delete();
+
+  /**
+   * Gets an invite by its code (static method)
+   *
+   * @param discord     Discord client instance
+   * @param code        Invite code (e.g., "abc123")
+   * @param callback    Callback function to receive the invite
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "invite" (DiscordInvite handle)
+   */
+  public static native void Get(Discord discord, const char[] code, DiscordResultCallback callback, any data = 0);
 }

@@ -139,6 +139,12 @@ template<> struct HandleTraits<DiscordThreadMember> {
 	static constexpr const char* key = "thread_member";
 };
 
+template<> struct HandleTraits<DiscordSlashCommand> {
+	using DppType = dpp::slashcommand;
+	static constexpr DiscordResultType type = DiscordResultType::SlashCommand;
+	static constexpr const char* key = "command";
+};
+
 // Explicit DppType versions for types that need them
 template<> struct HandleTraits<DiscordMessage, dpp::message> : HandleTraits<DiscordMessage> {};
 template<> struct HandleTraits<DiscordGuild, dpp::guild> : HandleTraits<DiscordGuild> {};
@@ -154,3 +160,4 @@ template<> struct HandleTraits<DiscordAttachment, dpp::attachment> : HandleTrait
 template<> struct HandleTraits<DiscordReaction, dpp::reaction> : HandleTraits<DiscordReaction> {};
 template<> struct HandleTraits<DiscordBan, dpp::ban> : HandleTraits<DiscordBan> {};
 template<> struct HandleTraits<DiscordThreadMember, dpp::thread_member> : HandleTraits<DiscordThreadMember> {};
+template<> struct HandleTraits<DiscordSlashCommand, dpp::slashcommand> : HandleTraits<DiscordSlashCommand> {};

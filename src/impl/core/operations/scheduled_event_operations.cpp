@@ -19,7 +19,49 @@
  */
 
 #include "core/operations/scheduled_event_operations.h"
+#include "entities/discord_scheduled_event.h"
 #include "utils/discord_common.h"
+
+void ScheduledEventOperations::GetAll(dpp::snowflake guild_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->guild_events_get(guild_id, callback);
+}
+
+void ScheduledEventOperations::Get(dpp::snowflake guild_id, dpp::snowflake event_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->guild_event_get(guild_id, event_id, callback);
+}
+
+void ScheduledEventOperations::GetUsers(dpp::snowflake guild_id, dpp::snowflake event_id, uint16_t limit, dpp::snowflake before, dpp::snowflake after, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->guild_event_users_get(guild_id, event_id, callback, static_cast<uint8_t>(limit), before, after);
+}
+
+void ScheduledEventOperations::Create(dpp::snowflake guild_id, const char* name, const char* description, dpp::snowflake channel_id, time_t start_time, time_t end_time, dpp::event_entity_type type, Callback callback) {
+	if (!IsValid() || !name) return;
+	dpp::scheduled_event ev;
+	ev.guild_id = guild_id;
+	ev.name = name;
+	if (description) ev.description = description;
+	ev.channel_id = channel_id;
+	ev.scheduled_start_time = start_time;
+	if (end_time > 0) ev.scheduled_end_time = end_time;
+	ev.entity_type = type;
+	m_cluster->guild_event_create(ev, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create scheduled event"); });
+}
+
+void ScheduledEventOperations::CreateExternal(dpp::snowflake guild_id, const char* name, const char* description, const char* location, time_t start_time, time_t end_time, Callback callback) {
+	if (!IsValid() || !name || !location) return;
+	dpp::scheduled_event ev;
+	ev.guild_id = guild_id;
+	ev.name = name;
+	if (description) ev.description = description;
+	ev.entity_metadata.location = location;
+	ev.scheduled_start_time = start_time;
+	ev.scheduled_end_time = end_time;
+	ev.entity_type = dpp::eet_external;
+	m_cluster->guild_event_create(ev, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create external scheduled event"); });
+}
 
 void ScheduledEventOperations::Modify(dpp::snowflake guild_id, dpp::snowflake event_id, const char* name, const char* description, time_t start_time, time_t end_time, Callback callback) {
 	if (!IsValid()) return;
@@ -31,6 +73,11 @@ void ScheduledEventOperations::Modify(dpp::snowflake guild_id, dpp::snowflake ev
 	if (start_time > 0) ev.scheduled_start_time = start_time;
 	if (end_time > 0) ev.scheduled_end_time = end_time;
 	m_cluster->guild_event_edit(ev, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to modify scheduled event"); });
+}
+
+void ScheduledEventOperations::ModifyFromObject(const DiscordScheduledEvent* event_obj, Callback callback) {
+	if (!IsValid() || !event_obj) return;
+	m_cluster->guild_event_edit(event_obj->GetDPPEvent(), callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to modify scheduled event"); });
 }
 
 void ScheduledEventOperations::Delete(dpp::snowflake guild_id, dpp::snowflake event_id, Callback callback) {

@@ -18,26 +18,8 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "natives/natives_common.h"
+#include "natives/entity_natives_common.h"
 #include "entities/discord_scheduled_event.h"
-
-static cell_t event_GetId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	pContext->StringToLocal(params[2], params[3], event->GetId().c_str());
-	return 1;
-}
-
-static cell_t event_GetGuildId(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	pContext->StringToLocal(params[2], params[3], event->GetGuildId().c_str());
-	return 1;
-}
 
 static cell_t event_GetChannelId(IPluginContext* pContext, const cell_t* params)
 {
@@ -57,15 +39,6 @@ static cell_t event_GetCreatorId(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t event_GetName(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	pContext->StringToLocal(params[2], params[3], event->GetName());
-	return 1;
-}
-
 static cell_t event_SetName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
@@ -74,15 +47,6 @@ static cell_t event_SetName(IPluginContext* pContext, const cell_t* params)
 	char* name;
 	pContext->LocalToString(params[2], &name);
 	event->SetName(name);
-	return 1;
-}
-
-static cell_t event_GetDescription(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	pContext->StringToLocal(params[2], params[3], event->GetDescription());
 	return 1;
 }
 
@@ -97,14 +61,6 @@ static cell_t event_SetDescription(IPluginContext* pContext, const cell_t* param
 	return 1;
 }
 
-static cell_t event_GetScheduledStartTime(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	return static_cast<cell_t>(event->GetScheduledStartTime());
-}
-
 static cell_t event_SetScheduledStartTime(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
@@ -114,14 +70,6 @@ static cell_t event_SetScheduledStartTime(IPluginContext* pContext, const cell_t
 	return 1;
 }
 
-static cell_t event_GetScheduledEndTime(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	return static_cast<cell_t>(event->GetScheduledEndTime());
-}
-
 static cell_t event_SetScheduledEndTime(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
@@ -129,30 +77,6 @@ static cell_t event_SetScheduledEndTime(IPluginContext* pContext, const cell_t* 
 
 	event->SetEndTime(static_cast<time_t>(params[2]));
 	return 1;
-}
-
-static cell_t event_GetPrivacyLevel(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	return static_cast<cell_t>(event->GetPrivacyLevel());
-}
-
-static cell_t event_GetStatus(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	return static_cast<cell_t>(event->GetStatus());
-}
-
-static cell_t event_GetEntityType(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	return static_cast<cell_t>(event->GetEntityType());
 }
 
 static cell_t event_GetEntityId(IPluginContext* pContext, const cell_t* params)
@@ -184,14 +108,6 @@ static cell_t event_SetLocation(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t event_GetUserCount(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
-	if (!event) return 0;
-
-	return static_cast<cell_t>(event->GetUserCount());
-}
-
 static cell_t event_GetCreatorUserId(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
@@ -201,12 +117,12 @@ static cell_t event_GetCreatorUserId(IPluginContext* pContext, const cell_t* par
 	return 1;
 }
 
-static cell_t event_GetCreatorUsername(IPluginContext* pContext, const cell_t* params)
+static cell_t event_GetCreatorUserName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	pContext->StringToLocal(params[2], params[3], event->GetCreatorUsername());
+	pContext->StringToLocal(params[2], params[3], event->GetCreatorUserName());
 	return 1;
 }
 
@@ -226,7 +142,10 @@ static cell_t event_Delete(IPluginContext* pContext, const cell_t* params)
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->Delete();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	event->Delete(callback, data);
 	return 1;
 }
 
@@ -235,7 +154,10 @@ static cell_t event_Edit(IPluginContext* pContext, const cell_t* params)
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->Edit();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	event->Edit(callback, data);
 	return 1;
 }
 
@@ -244,7 +166,10 @@ static cell_t event_Start(IPluginContext* pContext, const cell_t* params)
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->Start();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	event->Start(callback, data);
 	return 1;
 }
 
@@ -253,7 +178,10 @@ static cell_t event_End(IPluginContext* pContext, const cell_t* params)
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->End();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	event->End(callback, data);
 	return 1;
 }
 
@@ -262,32 +190,35 @@ static cell_t event_Cancel(IPluginContext* pContext, const cell_t* params)
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->Cancel();
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+
+	cell_t data = params[3];
+	event->Cancel(callback, data);
 	return 1;
 }
 
 extern const sp_nativeinfo_t scheduled_event_natives[] = {
-	{"DiscordScheduledEvent.GetId", event_GetId},
-	{"DiscordScheduledEvent.GetGuildId", event_GetGuildId},
+	{"DiscordScheduledEvent.GetId", EntityGetId<DiscordScheduledEvent>},
+	{"DiscordScheduledEvent.GetGuildId", EntityGetGuildId<DiscordScheduledEvent>},
 	{"DiscordScheduledEvent.GetChannelId", event_GetChannelId},
 	{"DiscordScheduledEvent.GetCreatorId", event_GetCreatorId},
-	{"DiscordScheduledEvent.GetName", event_GetName},
+	{"DiscordScheduledEvent.GetName", EntityGetName<DiscordScheduledEvent>},
 	{"DiscordScheduledEvent.SetName", event_SetName},
-	{"DiscordScheduledEvent.GetDescription", event_GetDescription},
+	{"DiscordScheduledEvent.GetDescription", EntityGetDescription<DiscordScheduledEvent>},
 	{"DiscordScheduledEvent.SetDescription", event_SetDescription},
-	{"DiscordScheduledEvent.ScheduledStartTime.get", event_GetScheduledStartTime},
+	{"DiscordScheduledEvent.ScheduledStartTime.get", EntityGetInt<DiscordScheduledEvent, time_t, &DiscordScheduledEvent::GetScheduledStartTime>},
 	{"DiscordScheduledEvent.ScheduledStartTime.set", event_SetScheduledStartTime},
-	{"DiscordScheduledEvent.ScheduledEndTime.get", event_GetScheduledEndTime},
+	{"DiscordScheduledEvent.ScheduledEndTime.get", EntityGetInt<DiscordScheduledEvent, time_t, &DiscordScheduledEvent::GetScheduledEndTime>},
 	{"DiscordScheduledEvent.ScheduledEndTime.set", event_SetScheduledEndTime},
-	{"DiscordScheduledEvent.PrivacyLevel.get", event_GetPrivacyLevel},
-	{"DiscordScheduledEvent.Status.get", event_GetStatus},
-	{"DiscordScheduledEvent.EntityType.get", event_GetEntityType},
+	{"DiscordScheduledEvent.PrivacyLevel.get", EntityGetInt<DiscordScheduledEvent, uint8_t, &DiscordScheduledEvent::GetPrivacyLevel>},
+	{"DiscordScheduledEvent.Status.get", EntityGetInt<DiscordScheduledEvent, uint8_t, &DiscordScheduledEvent::GetStatus>},
+	{"DiscordScheduledEvent.EntityType.get", EntityGetInt<DiscordScheduledEvent, uint8_t, &DiscordScheduledEvent::GetEntityType>},
 	{"DiscordScheduledEvent.GetEntityId", event_GetEntityId},
 	{"DiscordScheduledEvent.GetLocation", event_GetLocation},
 	{"DiscordScheduledEvent.SetLocation", event_SetLocation},
-	{"DiscordScheduledEvent.UserCount.get", event_GetUserCount},
+	{"DiscordScheduledEvent.UserCount.get", EntityGetInt<DiscordScheduledEvent, uint32_t, &DiscordScheduledEvent::GetUserCount>},
 	{"DiscordScheduledEvent.GetCreatorUserId", event_GetCreatorUserId},
-	{"DiscordScheduledEvent.GetCreatorUsername", event_GetCreatorUsername},
+	{"DiscordScheduledEvent.GetCreatorUserName", event_GetCreatorUserName},
 	{"DiscordScheduledEvent.SetChannelId", event_SetChannelId},
 	{"DiscordScheduledEvent.Delete", event_Delete},
 	{"DiscordScheduledEvent.Edit", event_Edit},

@@ -144,7 +144,7 @@ methodmap DiscordScheduledEvent < Handle
    * @param buffer       Buffer to store the username
    * @param maxlength    Maximum length of the buffer
    */
-  public native void GetCreatorUsername(char[] buffer, int maxlength);
+  public native void GetCreatorUserName(char[] buffer, int maxlength);
 
   /**
    * Sets the channel ID
@@ -155,26 +155,41 @@ methodmap DiscordScheduledEvent < Handle
 
   /**
    * Deletes this scheduled event
+   *
+   * @param callback  Optional callback to receive confirmation
+   * @param data      Optional data to pass to callback
    */
-  public native void Delete();
+  public native void Delete(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Edits this scheduled event (applies all changes)
+   *
+   * @param callback  Optional callback to receive the updated event
+   * @param data      Optional data to pass to callback
    */
-  public native void Edit();
+  public native void Edit(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Starts this scheduled event
+   *
+   * @param callback  Optional callback to receive the updated event
+   * @param data      Optional data to pass to callback
    */
-  public native void Start();
+  public native void Start(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Ends this scheduled event
+   *
+   * @param callback  Optional callback to receive the updated event
+   * @param data      Optional data to pass to callback
    */
-  public native void End();
+  public native void End(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Cancels this scheduled event
+   *
+   * @param callback  Optional callback to receive the updated event
+   * @param data      Optional data to pass to callback
    */
-  public native void Cancel();
+  public native void Cancel(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 }

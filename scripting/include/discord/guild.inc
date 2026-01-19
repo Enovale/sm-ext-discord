@@ -29,6 +29,7 @@ methodmap DiscordGuild < Handle
    *                    - If bot is currently online: cache is up-to-date
    *                    - If bot was online but disconnected: cache remains at last-known state
    *
+   * @note              Caller is responsible for closing the returned handle
    * @error             Invalid guild ID format
    */
   public static native DiscordGuild FindGuild(Discord discord, const char[] guild_id);
@@ -97,7 +98,7 @@ methodmap DiscordGuild < Handle
    *
    * @return             Verification level (0-4)
    */
-  property GuildVerificationLevel VerificationLevel {
+  property DiscordGuildVerificationLevel VerificationLevel {
     public native get();
   }
 
@@ -106,7 +107,7 @@ methodmap DiscordGuild < Handle
    *
    * @return             Premium tier (0-3)
    */
-  property GuildPremiumTier PremiumTier {
+  property DiscordGuildPremiumTier PremiumTier {
     public native get();
   }
 
@@ -207,35 +208,35 @@ methodmap DiscordGuild < Handle
   /**
    * Gets the explicit content filter level
    */
-  property GuildExplicitContentFilter ExplicitContentFilter {
+  property DiscordGuildExplicitContentFilter ExplicitContentFilter {
     public native get();
   }
 
   /**
    * Gets the MFA level required for moderation actions
    */
-  property GuildMfaLevel MfaLevel {
+  property DiscordGuildMfaLevel MfaLevel {
     public native get();
   }
 
   /**
    * Gets the NSFW level of the guild
    */
-  property GuildNsfwLevel NsfwLevel {
+  property DiscordGuildNsfwLevel NsfwLevel {
     public native get();
   }
 
   /**
    * Gets the AFK timeout in seconds
    */
-  property GuildAfkTimeout AfkTimeout {
+  property DiscordGuildAfkTimeout AfkTimeout {
     public native get();
   }
 
   /**
    * Gets the default message notification level
    */
-  property GuildDefaultMessageNotifications DefaultMessageNotifications {
+  property DiscordGuildDefaultMessageNotifications DefaultMessageNotifications {
     public native get();
   }
 
@@ -249,14 +250,14 @@ methodmap DiscordGuild < Handle
   /**
    * Gets the guild flags bitmask
    */
-  property GuildFlags Flags {
+  property DiscordGuildFlags Flags {
     public native get();
   }
 
   /**
    * Gets the additional guild flags bitmask
    */
-  property GuildFlagsExtra FlagsExtra {
+  property DiscordGuildFlagsExtra FlagsExtra {
     public native get();
   }
 
@@ -306,6 +307,16 @@ methodmap DiscordGuild < Handle
   property int RoleCount {
     public native get();
   }
+
+  /**
+   * Gets all roles in this guild
+   *
+   * @param callback    Callback function to receive roles
+   * @param data        User data to pass to callback
+   * @note              Roles are returned asynchronously via callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordRole), "count" (int)
+   */
+  public native void GetRoles(DiscordResultCallback callback, any data = 0);
 
   /**
    * Gets the number of channels in the guild
@@ -404,8 +415,12 @@ methodmap DiscordGuild < Handle
 
   /**
    * Modifies the guild, syncing local changes to Discord
+   *
+   * @param callback  Optional callback to receive the updated guild
+   * @param data      Optional data to pass to callback
+   * @note            Result contains: "guild" (DiscordGuild handle)
    */
-  public native void Modify();
+  public native void Modify(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Gets all invites for this guild
@@ -473,6 +488,15 @@ methodmap DiscordGuild < Handle
   public native void GetActiveThreads(DiscordResultCallback callback, any data = 0);
 
   /**
+   * Gets all channels in this guild
+   *
+   * @param callback    Callback function to receive the channels
+   * @param data        User data to pass to callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordChannel), "count" (int)
+   */
+  public native void GetChannels(DiscordResultCallback callback, any data = 0);
+
+  /**
    * Gets the list of banned users in this guild
    *
    * @param callback    Callback function to receive the bans
@@ -489,9 +513,31 @@ methodmap DiscordGuild < Handle
    *
    * @param name        Name of the emoji
    * @param image_path  Path to the image file
-   * @param type        Image type (ImageType_PNG, ImageType_GIF, etc.)
+   * @param type        Image type (Image_PNG, Image_GIF, etc.)
+   * @param callback    Optional callback to receive the created emoji
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "emoji" (DiscordEmoji handle)
    */
-  public native void CreateEmoji(const char[] name, const char[] image_path, ImageType type = ImageType_PNG);
+  public native void CreateEmoji(const char[] name, const char[] image_path, DiscordImageType type = Image_PNG, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Gets a specific emoji from this guild
+   *
+   * @param emoji_id    ID of the emoji to get
+   * @param callback    Callback to receive the emoji
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "emoji" (DiscordEmoji handle)
+   */
+  public native void GetEmoji(const char[] emoji_id, DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Gets all emojis from this guild
+   *
+   * @param callback    Callback to receive the emoji list
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordEmoji), "count" (int)
+   */
+  public native void GetAllEmojis(DiscordResultCallback callback, any data = 0);
 
   /**
    * Creates a sticker in this guild
@@ -501,8 +547,11 @@ methodmap DiscordGuild < Handle
    * @param tags        Autocomplete/suggestion tags for the sticker (comma-separated)
    * @param file_path   Path to the sticker file
    * @param format      Sticker format type
+   * @param callback    Optional callback to receive the created sticker
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "sticker" (DiscordSticker handle)
    */
-  public native void CreateSticker(const char[] name, const char[] description, const char[] tags, const char[] file_path, StickerFormat format = StickerFormat_PNG);
+  public native void CreateSticker(const char[] name, const char[] description, const char[] tags, const char[] file_path, DiscordStickerFormat format = StickerFormat_PNG, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Creates a scheduled event in this guild
@@ -513,8 +562,11 @@ methodmap DiscordGuild < Handle
    * @param start_time  Unix timestamp for event start
    * @param end_time    Unix timestamp for event end (0 for no end time)
    * @param type        Event entity type (voice, stage, etc.)
+   * @param callback    Optional callback to receive the created event
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "event" (DiscordScheduledEvent handle)
    */
-  public native void CreateScheduledEvent(const char[] name, const char[] description, const char[] channel_id, int start_time, int end_time = 0, EventEntityType type = EventEntityType_Voice);
+  public native void CreateScheduledEvent(const char[] name, const char[] description, const char[] channel_id, int start_time, int end_time = 0, DiscordEventEntityType type = EventEntityType_Voice, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Creates an external scheduled event in this guild
@@ -524,15 +576,65 @@ methodmap DiscordGuild < Handle
    * @param location    Location string for the external event
    * @param start_time  Unix timestamp for event start
    * @param end_time    Unix timestamp for event end
+   * @param callback    Optional callback to receive the created event
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "event" (DiscordScheduledEvent handle)
    */
-  public native void CreateExternalScheduledEvent(const char[] name, const char[] description, const char[] location, int start_time, int end_time);
+  public native void CreateExternalScheduledEvent(const char[] name, const char[] description, const char[] location, int start_time, int end_time, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Gets all scheduled events in this guild
+   *
+   * @param callback    Callback to receive the events list
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordScheduledEvent), "count" (int)
+   */
+  public native void GetScheduledEvents(DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Gets a specific scheduled event by ID
+   *
+   * @param event_id    Event ID to fetch
+   * @param callback    Callback to receive the event
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "event" (DiscordScheduledEvent handle)
+   */
+  public native void GetScheduledEvent(const char[] event_id, DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Gets users subscribed to a scheduled event
+   *
+   * @param event_id    Event ID to get users for
+   * @param limit       Maximum number of users to return (1-100)
+   * @param before      Get users before this user ID (for pagination)
+   * @param after       Get users after this user ID (for pagination)
+   * @param callback    Callback to receive the users list
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordUser), "count" (int)
+   */
+  public native void GetScheduledEventUsers(const char[] event_id, int limit, const char[] before, const char[] after, DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Bans a user from this guild
+   *
+   * @param user_id                 User ID to ban
+   * @param delete_message_seconds  Seconds of messages to delete (0-604800)
+   * @param reason                  Optional reason for the ban
+   * @param callback                Optional callback to receive confirmation
+   * @param data                    Optional data to pass to callback
+   * @note                          Result contains confirmation of ban
+   */
+  public native void BanUser(const char[] user_id, int delete_message_seconds = 0, const char[] reason = NULL_STRING, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Unbans a user from this guild
    *
    * @param user_id     User ID to unban
+   * @param callback    Optional callback to receive confirmation
+   * @param data        Optional data to pass to callback
+   * @note              Result contains confirmation of unban
    */
-  public native void UnbanUser(const char[] user_id);
+  public native void UnbanUser(const char[] user_id, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Creates a new role in this guild
@@ -562,7 +664,80 @@ methodmap DiscordGuild < Handle
   /**
    * Bulk deletes all slash commands in this guild
    *
-   * @note                This will remove all guild-specific slash commands
+   * @param callback    Optional callback to receive confirmation
+   * @param data        Optional data to pass to callback
+   * @note              This will remove all guild-specific slash commands
+   * @note              Result contains confirmation of deletion
    */
-  public native void BulkDeleteCommands();
+  public native void BulkDeleteCommands(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Gets all slash commands registered to this guild
+   *
+   * @param callback    Callback to receive the commands list
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordSlashCommand), "count" (int)
+   */
+  public native void GetCommands(DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Gets a specific slash command by ID from this guild
+   *
+   * @param command_id  Command ID to fetch
+   * @param callback    Callback to receive the command
+   * @param data        Optional data to pass to callback
+   * @note              Result contains: "command" (DiscordSlashCommand handle)
+   */
+  public native void GetCommand(const char[] command_id, DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Modifies the current bot member's nickname in this guild
+   *
+   * @param nickname    New nickname for the bot (empty string to remove)
+   * @param callback    Optional callback to receive confirmation
+   * @param data        Optional data to pass to callback
+   */
+  public native void ModifyCurrentMember(const char[] nickname, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Gets the number of members that would be removed in a prune operation
+   *
+   * @param days        Number of days of inactivity required (1-30)
+   * @param callback    Callback to receive the prune count
+   * @param data        Optional data to pass to callback
+   * @note              Result contains prune count information
+   */
+  public native void GetPruneCount(int days, DiscordResultCallback callback, any data = 0);
+
+  /**
+   * Begins pruning inactive members from this guild
+   *
+   * @param days        Number of days of inactivity required (1-30)
+   * @param callback    Optional callback to receive confirmation
+   * @param data        Optional data to pass to callback
+   * @note              Members without roles who have been inactive for the specified days will be removed
+   */
+  public native void BeginPrune(int days, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Edits the positions of multiple roles in this guild
+   *
+   * @param roles       Array of DiscordRole handles with positions set
+   * @param count       Number of roles in the array
+   * @param callback    Optional callback to receive confirmation
+   * @param data        Optional data to pass to callback
+   * @note              Each role in the array should have its position property set before calling
+   */
+  public native void EditRolePositions(const DiscordRole[] roles, int count, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Edits the positions of multiple channels in this guild
+   *
+   * @param channels    Array of DiscordChannel handles with positions set
+   * @param count       Number of channels in the array
+   * @param callback    Optional callback to receive confirmation
+   * @param data        Optional data to pass to callback
+   * @note              Each channel in the array should have its position property set before calling
+   */
+  public native void EditChannelPositions(const DiscordChannel[] channels, int count, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 }

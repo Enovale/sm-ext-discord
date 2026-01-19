@@ -31,8 +31,9 @@ public:
 	void Modify(dpp::snowflake guild_id, dpp::snowflake user_id, const std::string& nickname = "", Callback callback = nullptr);
 	void AddRole(dpp::snowflake guild_id, dpp::snowflake user_id, dpp::snowflake role_id, Callback callback = nullptr);
 	void RemoveRole(dpp::snowflake guild_id, dpp::snowflake user_id, dpp::snowflake role_id, Callback callback = nullptr);
-	void Kick(dpp::snowflake guild_id, dpp::snowflake user_id, Callback callback = nullptr);
-	void Ban(dpp::snowflake guild_id, dpp::snowflake user_id, const char* reason = nullptr, int delete_message_days = 0, Callback callback = nullptr);
+	void Kick(dpp::snowflake guild_id, dpp::snowflake user_id, const char* reason = nullptr, Callback callback = nullptr);
+	void Ban(dpp::snowflake guild_id, dpp::snowflake user_id, const char* reason = nullptr, uint32_t delete_message_seconds = 0, Callback callback = nullptr);
+	void Unban(dpp::snowflake guild_id, dpp::snowflake user_id, Callback callback = nullptr);
 	void Timeout(dpp::snowflake guild_id, dpp::snowflake user_id, time_t timeout_until, Callback callback = nullptr);
 	void RemoveTimeout(dpp::snowflake guild_id, dpp::snowflake user_id, Callback callback = nullptr);
 };

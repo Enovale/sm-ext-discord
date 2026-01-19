@@ -58,7 +58,7 @@ public:
 
 	// Creator info
 	std::string GetCreatorUserId() const { return m_event.creator.id.str(); }
-	const char* GetCreatorUsername() const { return m_event.creator.username.c_str(); }
+	const char* GetCreatorUserName() const { return m_event.creator.username.c_str(); }
 
 	// Image
 	std::string GetImageUrl(uint16_t size = 0) const {
@@ -69,11 +69,11 @@ public:
 	}
 
 	// Management methods (require client)
-	void Delete();
-	void Edit();
-	void Start();
-	void End();
-	void Cancel();
+	void Delete(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Edit(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Start(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void End(IPluginFunction* callback = nullptr, cell_t data = 0);
+	void Cancel(IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Setters for building/editing
 	void SetName(const char* name) { if (name) m_event.set_name(name); }

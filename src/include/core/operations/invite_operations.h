@@ -32,4 +32,5 @@ public:
 	void CreateFromObject(dpp::snowflake channel_id, const DiscordInvite* invite, Callback callback = nullptr);
 	void CreateWithChannel(const dpp::channel& channel, const dpp::invite& invite, Callback callback = nullptr);
 	void Delete(const char* code, const char* reason = nullptr, Callback callback = nullptr);
+	void Get(const char* code, Callback callback);
 };

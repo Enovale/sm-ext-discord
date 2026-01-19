@@ -23,7 +23,25 @@ methodmap DiscordGuildMember < Handle
    * @param buffer       Buffer to store the nickname
    * @param maxlength    Maximum length of the buffer
    */
-  public native void GetNickname(char[] buffer, int maxlength);
+  public native void GetNickName(char[] buffer, int maxlength);
+
+  /**
+   * Gets the member's username (from cache)
+   *
+   * @param buffer       Buffer to store the username
+   * @param maxlength    Maximum length of the buffer
+   * @note               Returns empty string if user is not in cache
+   */
+  public native void GetUserName(char[] buffer, int maxlength);
+
+  /**
+   * Gets the member's global display name (from cache)
+   *
+   * @param buffer       Buffer to store the global name
+   * @param maxlength    Maximum length of the buffer
+   * @note               Returns empty string if user is not in cache
+   */
+  public native void GetGlobalName(char[] buffer, int maxlength);
 
   /**
    * Gets the member's guild avatar hash
@@ -150,6 +168,15 @@ methodmap DiscordGuildMember < Handle
   public native void GetRoleId(int index, char[] buffer, int maxlength);
 
   /**
+   * Gets all role IDs as a DiscordHandleArray
+   *
+   * @return             DiscordHandleArray containing role ID strings
+   * @note               Use DiscordHandleArray.GetStringAt() to access role IDs
+   * @note               Caller is responsible for closing the returned handle
+   */
+  public native DiscordHandleArray GetRoles();
+
+  /**
    * Checks if the member has a specific role
    *
    * @param role_id      Role ID to check
@@ -172,6 +199,19 @@ methodmap DiscordGuildMember < Handle
    * @return             True if the member has the permission
    */
   public native bool HasPermission(const char[] permission);
+
+  /**
+   * Checks if the member has a specific permission (enum version)
+   *
+   * @param permission  Permission to check from DiscordPermission enum
+   * @return            True if user has permission, false otherwise
+   */
+  public bool HasPermissionEnum(DiscordPermission permission)
+  {
+    char permStr[SNOWFLAKE_SIZE];
+    DiscordPermissionToString(permission, permStr, sizeof(permStr));
+    return this.HasPermission(permStr);
+  }
 
   /**
    * Adds a role to the member
@@ -198,12 +238,12 @@ methodmap DiscordGuildMember < Handle
    * @param callback     Optional callback to receive confirmation
    * @param data         Optional data to pass to callback
    */
-  public native void SetNickname(const char[] nickname, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void SetNickName(const char[] nickname, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Kicks the member from the guild
    *
-   * @param reason       Reason for the kick (optional)
+   * @param reason       optional reason for the kick
    * @param callback     Optional callback to receive confirmation
    * @param data         Optional data to pass to callback
    */
@@ -213,9 +253,9 @@ methodmap DiscordGuildMember < Handle
    * Bans the member from the guild
    *
    * @param delete_message_seconds  Seconds of messages to delete (0-604800)
-   * @param reason                  Reason for the ban (optional)
-   * @param callback                Optional callback to receive confirmation
-   * @param data                    Optional data to pass to callback
+   * @param reason       Optional reason for the ban
+   * @param callback     Optional callback to receive confirmation
+   * @param data         Optional data to pass to callback
    */
   public native void Ban(int delete_message_seconds = 0, const char[] reason = NULL_STRING, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
@@ -235,4 +275,39 @@ methodmap DiscordGuildMember < Handle
    * @param data         Optional data to pass to callback
    */
   public native void RemoveTimeout(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Moves the member to a voice channel
+   *
+   * @param channel_id   Voice channel ID to move to
+   * @param callback     Optional callback to receive confirmation
+   * @param data         Optional data to pass to callback
+   */
+  public native void MoveToVoiceChannel(const char[] channel_id, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Disconnects the member from voice
+   *
+   * @param callback     Optional callback to receive confirmation
+   * @param data         Optional data to pass to callback
+   */
+  public native void DisconnectFromVoice(DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Sets the member's mute state in voice
+   *
+   * @param mute         True to mute, false to unmute
+   * @param callback     Optional callback to receive confirmation
+   * @param data         Optional data to pass to callback
+   */
+  public native void SetMute(bool mute, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+
+  /**
+   * Sets the member's deaf state in voice
+   *
+   * @param deaf         True to deafen, false to undeafen
+   * @param callback     Optional callback to receive confirmation
+   * @param data         Optional data to pass to callback
+   */
+  public native void SetDeaf(bool deaf, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 }

@@ -39,44 +39,24 @@ static cell_t sticker_GetTags(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t sticker_GetType(IPluginContext* pContext, const cell_t* params)
+static cell_t sticker_GetUserName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordSticker* sticker = Handles.GetPointer<DiscordSticker>(pContext, params[1]);
 	if (!sticker) return 0;
 
-	return static_cast<cell_t>(sticker->GetType());
+	pContext->StringToLocal(params[2], params[3], sticker->GetUserName());
+	return 1;
 }
 
-static cell_t sticker_GetFormatType(IPluginContext* pContext, const cell_t* params)
+static cell_t sticker_Delete(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordSticker* sticker = Handles.GetPointer<DiscordSticker>(pContext, params[1]);
 	if (!sticker) return 0;
 
-	return static_cast<cell_t>(sticker->GetFormatType());
-}
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
 
-static cell_t sticker_IsAvailable(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordSticker* sticker = Handles.GetPointer<DiscordSticker>(pContext, params[1]);
-	if (!sticker) return 0;
-
-	return sticker->IsAvailable();
-}
-
-static cell_t sticker_GetSortValue(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordSticker* sticker = Handles.GetPointer<DiscordSticker>(pContext, params[1]);
-	if (!sticker) return 0;
-
-	return static_cast<cell_t>(sticker->GetSortValue());
-}
-
-static cell_t sticker_GetUsername(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordSticker* sticker = Handles.GetPointer<DiscordSticker>(pContext, params[1]);
-	if (!sticker) return 0;
-
-	pContext->StringToLocal(params[2], params[3], sticker->GetUsername());
+	cell_t data = params[3];
+	sticker->Delete(callback, data);
 	return 1;
 }
 
@@ -90,7 +70,10 @@ static cell_t sticker_Edit(IPluginContext* pContext, const cell_t* params)
 	pContext->LocalToString(params[3], &description);
 	pContext->LocalToString(params[4], &tags);
 
-	sticker->Edit(name, description, tags);
+	IPluginFunction* callback = pContext->GetFunctionById(params[5]);
+
+	cell_t data = params[6];
+	sticker->Edit(name, description, tags, callback, data);
 	return 1;
 }
 
@@ -101,14 +84,14 @@ extern const sp_nativeinfo_t sticker_natives[] = {
 	{"DiscordSticker.GetDescription", EntityGetDescription<DiscordSticker>},
 	{"DiscordSticker.GetTags", sticker_GetTags},
 	{"DiscordSticker.GetGuildId", EntityGetGuildId<DiscordSticker>},
-	{"DiscordSticker.Type.get", sticker_GetType},
-	{"DiscordSticker.FormatType.get", sticker_GetFormatType},
-	{"DiscordSticker.Available.get", sticker_IsAvailable},
-	{"DiscordSticker.SortValue.get", sticker_GetSortValue},
+	{"DiscordSticker.Type.get", EntityGetInt<DiscordSticker, uint8_t, &DiscordSticker::GetType>},
+	{"DiscordSticker.FormatType.get", EntityGetInt<DiscordSticker, uint8_t, &DiscordSticker::GetFormatType>},
+	{"DiscordSticker.Available.get", EntityGetBool<DiscordSticker, &DiscordSticker::IsAvailable>},
+	{"DiscordSticker.SortValue.get", EntityGetInt<DiscordSticker, uint8_t, &DiscordSticker::GetSortValue>},
 	{"DiscordSticker.GetUserId", EntityGetUserId<DiscordSticker>},
-	{"DiscordSticker.GetUsername", sticker_GetUsername},
+	{"DiscordSticker.GetUserName", sticker_GetUserName},
 	{"DiscordSticker.GetUrl", EntityGetUrl<DiscordSticker>},
-	{"DiscordSticker.Delete", EntityDelete<DiscordSticker>},
+	{"DiscordSticker.Delete", sticker_Delete},
 	{"DiscordSticker.Edit", sticker_Edit},
 	{nullptr, nullptr}
 };

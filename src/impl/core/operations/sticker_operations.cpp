@@ -21,6 +21,18 @@
 #include "core/operations/sticker_operations.h"
 #include "utils/discord_common.h"
 
+void StickerOperations::Create(dpp::snowflake guild_id, const char* name, const char* description, const char* tags, const char* file_path, dpp::sticker_format format, Callback callback) {
+	if (!IsValid() || !name || !tags || !file_path) return;
+	dpp::sticker st;
+	st.guild_id = guild_id;
+	st.name = name;
+	if (description) st.description = description;
+	st.tags = tags;
+	st.format_type = format;
+	st.set_filename(file_path);
+	m_cluster->guild_sticker_create(st, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create sticker"); });
+}
+
 void StickerOperations::Modify(dpp::snowflake guild_id, dpp::snowflake sticker_id, const char* name, const char* description, const char* tags, Callback callback) {
 	if (!IsValid()) return;
 	dpp::sticker st;

@@ -29,35 +29,19 @@ void RoleOperations::GetAll(dpp::snowflake guild_id, Callback callback) {
 	m_cluster->roles_get(guild_id, callback);
 }
 
-void RoleOperations::Create(dpp::snowflake guild_id, const char* name, uint32_t color, bool hoist, bool mentionable, uint64_t permissions, IPluginFunction* callback, cell_t data) {
+void RoleOperations::Create(dpp::snowflake guild_id, const char* name, uint32_t color, bool hoist, bool mentionable, uint64_t permissions, Callback callback) {
 	if (!IsValid() || !name) return;
 	dpp::role role; role.guild_id = guild_id; role.name = name; role.colour = color;
 	role.flags = (hoist ? dpp::r_hoist : 0) | (mentionable ? dpp::r_mentionable : 0);
 	role.permissions = permissions;
-
-	Handle_t client_handle = m_client->GetHandle();
-	m_cluster->role_create(role, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		if (callback) {
-			PushResult<DiscordRole>(client_handle, client, callback, data, cb);
-		} else {
-			Log.DppError(cb, "Failed to create role");
-		}
-	});
+	m_cluster->role_create(role, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create role"); });
 }
 
-void RoleOperations::CreateFromObject(dpp::snowflake guild_id, const DiscordRole* role_obj, IPluginFunction* callback, cell_t data) {
+void RoleOperations::CreateFromObject(dpp::snowflake guild_id, const DiscordRole* role_obj, Callback callback) {
 	if (!IsValid() || !role_obj) return;
 	dpp::role role = role_obj->GetDPPRole();
 	role.guild_id = guild_id; role.id = 0;
-
-	Handle_t client_handle = m_client->GetHandle();
-	m_cluster->role_create(role, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		if (callback) {
-			PushResult<DiscordRole>(client_handle, client, callback, data, cb);
-		} else {
-			Log.DppError(cb, "Failed to create role");
-		}
-	});
+	m_cluster->role_create(role, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create role"); });
 }
 
 void RoleOperations::Modify(dpp::snowflake guild_id, dpp::snowflake role_id, const std::string& name, uint32_t color, bool hoist, bool mentionable, uint64_t permissions, Callback callback) {
@@ -70,7 +54,19 @@ void RoleOperations::Modify(dpp::snowflake guild_id, dpp::snowflake role_id, con
 	m_cluster->role_edit(role, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to modify role"); });
 }
 
+void RoleOperations::ModifyFromObject(const DiscordRole* role_obj, Callback callback) {
+	if (!IsValid() || !role_obj) return;
+	dpp::role role = role_obj->GetDPPRole();
+	role.guild_id = role_obj->GetGuildId();
+	m_cluster->role_edit(role, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to modify role"); });
+}
+
 void RoleOperations::Delete(dpp::snowflake guild_id, dpp::snowflake role_id, Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->role_delete(guild_id, role_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to delete role"); });
+}
+
+void RoleOperations::EditPositions(dpp::snowflake guild_id, const std::vector<dpp::role>& roles, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->roles_edit_position(guild_id, roles, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to edit role positions"); });
 }

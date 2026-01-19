@@ -31,6 +31,16 @@ void CommandOperations::RegisterGlobal(const dpp::slashcommand& command, Callbac
 	m_cluster->global_command_create(command, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to register global slash command"); });
 }
 
+void CommandOperations::BulkCreateGuild(dpp::snowflake guild_id, const std::vector<dpp::slashcommand>& commands, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->guild_bulk_command_create(commands, guild_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to bulk create guild commands"); });
+}
+
+void CommandOperations::BulkCreateGlobal(const std::vector<dpp::slashcommand>& commands, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->global_bulk_command_create(commands, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to bulk create global commands"); });
+}
+
 void CommandOperations::ModifyGuild(dpp::snowflake guild_id, const dpp::slashcommand& command, Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->guild_command_edit(command, guild_id, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to modify guild command"); });
@@ -79,4 +89,14 @@ void CommandOperations::GetGuildCommands(dpp::snowflake guild_id, Callback callb
 void CommandOperations::GetGlobalCommands(Callback callback) {
 	if (!IsValid()) return;
 	m_cluster->global_commands_get(callback);
+}
+
+void CommandOperations::GetGuildCommand(dpp::snowflake guild_id, dpp::snowflake command_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->guild_command_get(guild_id, command_id, callback);
+}
+
+void CommandOperations::GetGlobalCommand(dpp::snowflake command_id, Callback callback) {
+	if (!IsValid()) return;
+	m_cluster->global_command_get(command_id, callback);
 }
