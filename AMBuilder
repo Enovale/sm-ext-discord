@@ -1,10 +1,8 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
-if builder.host.platform == 'linux':
-  dpp = builder.Build('third_party/DPP/src/dpp/AMBuilder')
-
-libz = builder.Build('third_party/zlib/AMBuilder')
+dpp = builder.Build('third_party/DPP.AMBuilder')
+libz = builder.Build('third_party/zlib.AMBuilder')
 
 for cxx in builder.targets:
   binary = Extension.Library(builder, cxx, 'discord.ext')
@@ -12,28 +10,109 @@ for cxx in builder.targets:
 
   binary.sources += [
     'src/extension.cpp',
-    'src/discord.cpp',
+    # Core managers
+    'src/impl/core/handle_manager.cpp',
+    'src/impl/core/discord_client_ref.cpp',
+    'src/impl/core/natives_manager.cpp',
+    'src/impl/core/task_manager.cpp',
+    'src/impl/core/async_callback.cpp',
+    'src/impl/core/discord_event_impl.cpp',
+    'src/impl/core/logger.cpp',
+    # Implementation files
+    'src/impl/core/discord_client_impl.cpp',
+    'src/impl/core/event_handler_impl.cpp',
+    'src/impl/core/discord_result_impl.cpp',
+    'src/impl/core/discord_handle_array_impl.cpp',
+    # Operations
+    'src/impl/core/operations/message_operations.cpp',
+    'src/impl/core/operations/webhook_operations.cpp',
+    'src/impl/core/operations/command_operations.cpp',
+    'src/impl/core/operations/channel_operations.cpp',
+    'src/impl/core/operations/role_operations.cpp',
+    'src/impl/core/operations/member_operations.cpp',
+    'src/impl/core/operations/guild_operations.cpp',
+    'src/impl/core/operations/thread_operations.cpp',
+    'src/impl/core/operations/invite_operations.cpp',
+    'src/impl/core/operations/emoji_operations.cpp',
+    'src/impl/core/operations/sticker_operations.cpp',
+    'src/impl/core/operations/scheduled_event_operations.cpp',
+    'src/impl/core/operations/voice_operations.cpp',
+    'src/impl/core/operations/http_operations.cpp',
+    'src/impl/core/operations/user_operations.cpp',
+    'src/impl/core/operations/interaction_operations.cpp',
+    # Entity Implementation
+    'src/impl/entities/user_impl.cpp',
+    'src/impl/entities/message_impl.cpp',
+    'src/impl/entities/channel_impl.cpp',
+    'src/impl/entities/guild_impl.cpp',
+    'src/impl/entities/guild_member_impl.cpp',
+    'src/impl/entities/role_impl.cpp',
+    'src/impl/entities/emoji_impl.cpp',
+    'src/impl/entities/sticker_impl.cpp',
+    'src/impl/entities/scheduled_event_impl.cpp',
+    'src/impl/features/webhook_impl.cpp',
+    'src/impl/features/slashcommand_impl.cpp',
+    'src/impl/features/invite_impl.cpp',
+    'src/impl/features/interaction_impl.cpp',
+    # Core natives
+    'src/natives/core/discord_client_natives.cpp',
+    'src/natives/core/discord_event_natives.cpp',
+    'src/natives/core/discord_result_natives.cpp',
+    'src/natives/core/discord_handle_array_natives.cpp',
+    # Entity natives
+    'src/natives/entities/user_natives.cpp',
+    'src/natives/entities/message_natives.cpp',
+    'src/natives/entities/channel_natives.cpp',
+    'src/natives/entities/guild_natives.cpp',
+    'src/natives/entities/role_natives.cpp',
+    'src/natives/entities/guild_member_natives.cpp',
+    'src/natives/entities/emoji_natives.cpp',
+    'src/natives/entities/sticker_natives.cpp',
+    'src/natives/entities/scheduled_event_natives.cpp',
+    'src/natives/entities/attachment_natives.cpp',
+    'src/natives/entities/reaction_natives.cpp',
+    'src/natives/entities/ban_natives.cpp',
+    'src/natives/entities/thread_member_natives.cpp',
+    # Feature natives
+    'src/natives/features/webhook_natives.cpp',
+    'src/natives/features/interaction_natives.cpp',
+    'src/natives/features/invite_natives.cpp',
+    'src/natives/features/slashcommand_natives.cpp',
+    'src/natives/features/button_interaction_natives.cpp',
+    'src/natives/features/select_interaction_natives.cpp',
+    'src/natives/features/modal_interaction_natives.cpp',
+    # Utility natives
+    'src/natives/utils/embed_natives.cpp',
+    'src/natives/utils/http_natives.cpp',
+    'src/natives/utils/forum_natives.cpp',
+    'src/natives/utils/component_natives.cpp',
+    'src/natives/utils/modal_natives.cpp',
+    'src/natives/utils/poll_natives.cpp',
     os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp'),
   ]
 
+  binary.compiler.defines += ['DPP_STATIC']
+  if binary.compiler.target.platform == 'linux':
+    binary.compiler.defines += ['_TIME_BITS=64', '_FILE_OFFSET_BITS=64'] # not sure if these are necessary but just in case
+
   binary.compiler.includes += [
     os.path.join(builder.sourcePath, 'src'),
-    os.path.join(builder.sourcePath, 'third_party', 'zlib'),
+    os.path.join(builder.sourcePath, 'src', 'include'),
     os.path.join(builder.sourcePath, 'third_party', 'DPP', 'include'),
   ]
 
   if binary.compiler.target.platform == 'linux':
-    binary.compiler.postlink += [
-      '-lssl',
-      dpp[arch].binary,
-    ]
+    binary.compiler.postlink += ['-lssl']
   elif binary.compiler.target.platform == 'windows':
-    binary.compiler.cxxflags += ['/wd4251', '/wd4101']  # Disable C4251: class needs dll-interface warning and C4101: unreferenced local variable warning
+    binary.compiler.cxxflags += ['/bigobj']
+    binary.sources += ['src/version.rc']
     binary.compiler.postlink += [
-      os.path.join(builder.sourcePath, 'third_party', 'DPP', 'lib', 'dpp_{}.lib'.format(arch)),
-		]
-    
+      os.path.join(builder.sourcePath, 'third_party', 'openssl', 'lib', 'libssl_static_{}.lib'.format(arch)),
+      os.path.join(builder.sourcePath, 'third_party', 'openssl', 'lib', 'libcrypto_static_{}.lib'.format(arch)),
+    ]
+
   binary.compiler.postlink += [
+    dpp[arch].binary,
     libz[arch].binary,
   ]
 

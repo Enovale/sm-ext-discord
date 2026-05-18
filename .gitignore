@@ -1,3 +1,4 @@
 build/
 .vscode/
-sm-ext-discord.zip
+.codeplane-go/
+*.zip
