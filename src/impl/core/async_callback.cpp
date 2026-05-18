@@ -21,6 +21,20 @@
 #include "core/async_callback.h"
 #include "core/discord_client.h"
 
+// SourceMod 1.12 expects sp_context_t*, while newer SDKs accept IPluginContext*.
+// Prefer the new API when available and fall back to the 1.12 GetContext() path.
+template <typename PluginManager, typename Context>
+static auto FindPluginByParentContext(PluginManager* plugins, Context* context, int)
+	-> decltype(plugins->FindPluginByContext(context)) {
+	return plugins->FindPluginByContext(context);
+}
+
+template <typename PluginManager, typename Context>
+static auto FindPluginByParentContext(PluginManager* plugins, Context* context, long)
+	-> decltype(plugins->FindPluginByContext(context->GetContext())) {
+	return plugins->FindPluginByContext(context->GetContext());
+}
+
 AsyncCallbackTracker& AsyncCallbackTracker::Instance() {
 	static AsyncCallbackTracker tracker;
 	return tracker;
@@ -105,7 +119,7 @@ void AsyncCallback::Set(Handle_t clientHandle, IPluginFunction* function, cell_t
 	IPluginContext* context = function->GetParentContext();
 	if (!context) return;
 
-	SourceMod::IPlugin* plugin = plsys->FindPluginByContext(context->GetContext());
+	SourceMod::IPlugin* plugin = FindPluginByParentContext(plsys, context, 0);
 	if (!plugin) return;
 
 	m_clientHandle = clientHandle;

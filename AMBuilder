@@ -104,6 +104,7 @@ for cxx in builder.targets:
   if binary.compiler.target.platform == 'linux':
     binary.compiler.postlink += ['-lssl']
   elif binary.compiler.target.platform == 'windows':
+    binary.compiler.cxxflags += ['/bigobj']
     binary.sources += ['src/version.rc']
     binary.compiler.postlink += [
       os.path.join(builder.sourcePath, 'third_party', 'openssl', 'lib', 'libssl_static_{}.lib'.format(arch)),
