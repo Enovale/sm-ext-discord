@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -66,7 +66,12 @@ static cell_t event_SetScheduledStartTime(IPluginContext* pContext, const cell_t
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->SetStartTime(static_cast<time_t>(params[2]));
+	char* timestamp_str;
+	pContext->LocalToString(params[2], &timestamp_str);
+	time_t timestamp;
+	if (!ParseTimestamp(pContext, timestamp_str, "Scheduled event start timestamp", false, timestamp)) return 0;
+
+	event->SetStartTime(timestamp);
 	return 1;
 }
 
@@ -75,7 +80,12 @@ static cell_t event_SetScheduledEndTime(IPluginContext* pContext, const cell_t* 
 	DiscordScheduledEvent* event = Handles.GetPointer<DiscordScheduledEvent>(pContext, params[1]);
 	if (!event) return 0;
 
-	event->SetEndTime(static_cast<time_t>(params[2]));
+	char* timestamp_str;
+	pContext->LocalToString(params[2], &timestamp_str);
+	time_t timestamp;
+	if (!ParseOptionalTimestamp(pContext, timestamp_str, "Scheduled event end timestamp", timestamp)) return 0;
+
+	event->SetEndTime(timestamp);
 	return 1;
 }
 
@@ -206,10 +216,10 @@ extern const sp_nativeinfo_t scheduled_event_natives[] = {
 	{"DiscordScheduledEvent.SetName", event_SetName},
 	{"DiscordScheduledEvent.GetDescription", EntityGetDescription<DiscordScheduledEvent>},
 	{"DiscordScheduledEvent.SetDescription", event_SetDescription},
-	{"DiscordScheduledEvent.ScheduledStartTime.get", EntityGetInt<DiscordScheduledEvent, time_t, &DiscordScheduledEvent::GetScheduledStartTime>},
-	{"DiscordScheduledEvent.ScheduledStartTime.set", event_SetScheduledStartTime},
-	{"DiscordScheduledEvent.ScheduledEndTime.get", EntityGetInt<DiscordScheduledEvent, time_t, &DiscordScheduledEvent::GetScheduledEndTime>},
-	{"DiscordScheduledEvent.ScheduledEndTime.set", event_SetScheduledEndTime},
+	{"DiscordScheduledEvent.GetScheduledStartTime", EntityGetTimestampString<DiscordScheduledEvent, &DiscordScheduledEvent::GetScheduledStartTime>},
+	{"DiscordScheduledEvent.SetScheduledStartTime", event_SetScheduledStartTime},
+	{"DiscordScheduledEvent.GetScheduledEndTime", EntityGetTimestampString<DiscordScheduledEvent, &DiscordScheduledEvent::GetScheduledEndTime>},
+	{"DiscordScheduledEvent.SetScheduledEndTime", event_SetScheduledEndTime},
 	{"DiscordScheduledEvent.PrivacyLevel.get", EntityGetInt<DiscordScheduledEvent, uint8_t, &DiscordScheduledEvent::GetPrivacyLevel>},
 	{"DiscordScheduledEvent.Status.get", EntityGetInt<DiscordScheduledEvent, uint8_t, &DiscordScheduledEvent::GetStatus>},
 	{"DiscordScheduledEvent.EntityType.get", EntityGetInt<DiscordScheduledEvent, uint8_t, &DiscordScheduledEvent::GetEntityType>},

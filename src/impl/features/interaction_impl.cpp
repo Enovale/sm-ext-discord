@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -46,7 +46,7 @@ Handle_t DiscordInteraction::GetUserHandle() const {
 
 DiscordUser* DiscordInteraction::GetUser() const {
 	if (!m_client) return nullptr;
-	return new DiscordUser(m_interaction.command.usr, m_client);
+	return new DiscordUser(m_interaction.command.usr, m_client.Get());
 }
 
 std::string DiscordInteraction::GetUserId() const {
@@ -220,7 +220,7 @@ Handle_t DiscordAutocompleteInteraction::GetUserHandle() const {
 
 DiscordUser* DiscordAutocompleteInteraction::GetUser() const {
 	if (!m_client) return nullptr;
-	return new DiscordUser(m_command.usr, m_client);
+	return new DiscordUser(m_command.usr, m_client.Get());
 }
 
 std::string DiscordAutocompleteInteraction::GetUserNickName() const {

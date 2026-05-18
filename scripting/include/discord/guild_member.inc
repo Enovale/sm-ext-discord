@@ -69,24 +69,27 @@ methodmap DiscordGuildMember < Handle
 
   /**
    * Gets the timestamp when the member joined the guild
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int JoinedAt {
-    public native get();
-  }
+  public native void GetJoinedAt(char[] buffer, int maxlength);
 
   /**
    * Gets the timestamp when the member started boosting
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int PremiumSince {
-    public native get();
-  }
+  public native void GetPremiumSince(char[] buffer, int maxlength);
 
   /**
    * Gets the timestamp when the timeout expires
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int CommunicationDisabledUntil {
-    public native get();
-  }
+  public native void GetCommunicationDisabledUntil(char[] buffer, int maxlength);
 
   /**
    * Whether the member is deafened
@@ -262,11 +265,11 @@ methodmap DiscordGuildMember < Handle
   /**
    * Times out the member
    *
-   * @param until        Unix timestamp when the timeout expires
+   * @param until        Unix timestamp string when the timeout expires
    * @param callback     Optional callback to receive confirmation
    * @param data         Optional data to pass to callback
    */
-  public native void Timeout(int until, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void Timeout(const char[] until, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Removes the member's timeout

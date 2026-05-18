@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -70,28 +70,36 @@ static cell_t user_FetchUser(IPluginContext* pContext, const cell_t* params)
 	if (!ParseSnowflake(pContext, userId, userFlake)) return 0;
 
 	Handle_t client_handle = discord->GetHandle();
+	AsyncCallback async(client_handle, callback, data);
 
 	dpp::user* cached_user = dpp::find_user(userFlake);
 	if (cached_user) {
 		DiscordUser* user = new DiscordUser(*cached_user, discord);
-		PushCachedResult<DiscordUser>(client_handle, discord, callback, data, user);
+		async.CachedResult<DiscordUser>(user);
 		return 1;
 	}
 
-	discord->Members().GetUser(userFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
+	discord->Members().GetUser(userFlake, [callback = async](const dpp::confirmation_callback_t& confirmation) {
 		if (confirmation.is_error()) {
-			PushError(client_handle, discord, callback, data, confirmation.get_error().human_readable, DiscordResultType::User);
+			callback.Error(confirmation.get_error().human_readable, DiscordResultType::User);
 			return;
 		}
-		DiscordUser* user = nullptr;
+		dpp::user user;
 		if (std::holds_alternative<dpp::user>(confirmation.value)) {
-			user = new DiscordUser(std::get<dpp::user>(confirmation.value), discord);
+			user = std::get<dpp::user>(confirmation.value);
 		} else if (std::holds_alternative<dpp::user_identified>(confirmation.value)) {
-			user = new DiscordUser(std::get<dpp::user_identified>(confirmation.value), discord);
+			user = std::get<dpp::user_identified>(confirmation.value);
 		} else {
-			user = new DiscordUser(confirmation.get<dpp::user>(), discord);
+			user = confirmation.get<dpp::user>();
 		}
-		PushCachedResult<DiscordUser>(client_handle, discord, callback, data, user);
+
+		callback.ResultCustom(DiscordResultType::User, [user](DiscordResult& result, DiscordClient* client) {
+			result.SetSuccess(true);
+
+			auto discordUser = std::make_unique<DiscordUser>(user, client);
+			Handle_t userHandle = Handles.CreateCallback(discordUser.release(), HandleId::DiscordUser);
+			result.SetHandle("user", userHandle);
+		});
 	});
 
 	return 1;

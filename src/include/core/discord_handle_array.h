@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -64,10 +64,15 @@ public:
 
 	const std::string& GetStringAt(size_t index) const {
 		static const std::string empty;
-		if (auto* vec = std::get_if<std::vector<std::string>>(&m_data)) {
-			return index < vec->size() ? (*vec)[index] : empty;
-		}
+		if (const std::string* str = TryGetStringAt(index)) return *str;
 		return empty;
+	}
+
+	const std::string* TryGetStringAt(size_t index) const {
+		if (auto* vec = std::get_if<std::vector<std::string>>(&m_data)) {
+			return index < vec->size() ? &(*vec)[index] : nullptr;
+		}
+		return nullptr;
 	}
 
 	// Unified size method

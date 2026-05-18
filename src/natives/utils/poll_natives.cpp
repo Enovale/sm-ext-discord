@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #include "core/handle_manager.h"
 #include "utils/discord_poll.h"
+#include <cstdio>
 
 static cell_t poll_Create(IPluginContext* pContext, const cell_t* params)
 {
@@ -90,7 +91,15 @@ static cell_t poll_GetExpiry(IPluginContext* pContext, const cell_t* params)
 	DiscordPoll* poll = Handles.GetPointer<DiscordPoll>(pContext, params[1]);
 	if (!poll) return 0;
 
-	return sp_ftoc(poll->GetExpiry());
+	if (params[3] <= 0) {
+		pContext->ReportError("Poll expiry buffer size must be positive");
+		return 0;
+	}
+
+	char buffer[64];
+	std::snprintf(buffer, sizeof(buffer), "%.0f", poll->GetExpiry());
+	pContext->StringToLocal(params[2], params[3], buffer);
+	return 1;
 }
 
 static cell_t poll_IsMultiSelect(IPluginContext* pContext, const cell_t* params)
@@ -173,7 +182,7 @@ extern const sp_nativeinfo_t poll_natives[] = {
 	{"DiscordPoll.MultiSelect.set", poll_SetMultiSelect},
 	{"DiscordPoll.AddAnswer", poll_AddAnswer},
 	{"DiscordPoll.GetQuestion", poll_GetQuestion},
-	{"DiscordPoll.Expiry.get", poll_GetExpiry},
+	{"DiscordPoll.GetExpiry", poll_GetExpiry},
 	{"DiscordPoll.MultiSelect.get", poll_IsMultiSelect},
 	{"DiscordPoll.Finalized.get", poll_IsFinalized},
 	{"DiscordPoll.AnswerCount.get", poll_GetAnswerCount},

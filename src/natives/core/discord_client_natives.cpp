@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -26,12 +26,27 @@
 #include "utils/discord_embed.h"
 #include "utils/discord_http.h"
 
+#include <exception>
+
 static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* params)
 {
 	char* token;
 	pContext->LocalToString(params[1], &token);
 
-	DiscordClient* pDiscordClient = new DiscordClient(token, static_cast<uint32_t>(params[2]));
+	uint32_t intents;
+	if (!GetNativeUInt32(pContext, params[2], 0xFFFFFFFFu, "Gateway intents", intents)) return 0;
+
+	DiscordClient* pDiscordClient = nullptr;
+	try {
+		pDiscordClient = new DiscordClient(token, intents);
+	} catch (const std::exception& e) {
+		pContext->ReportError("Could not create Discord client: %s", e.what());
+		return 0;
+	} catch (...) {
+		pContext->ReportError("Could not create Discord client");
+		return 0;
+	}
+
 	Handle_t handle = Handles.Create(pContext, pDiscordClient, HandleId::Discord);
 	if (!handle) return 0;
 	pDiscordClient->SetHandle(handle);
@@ -122,7 +137,10 @@ static cell_t discord_SetPresence(IPluginContext* pContext, const cell_t* params
 	char* status_text;
 	pContext->LocalToString(params[4], &status_text);
 
-	dpp::presence presence(static_cast<dpp::presence_status>(params[2]), static_cast<dpp::activity_type>(params[3]), status_text);
+	dpp::presence_status status = static_cast<dpp::presence_status>(params[2]);
+	dpp::activity_type activity = static_cast<dpp::activity_type>(params[3]);
+
+	dpp::presence presence(status, activity, status_text);
 	discord->SetPresence(presence);
 	return 1;
 }
@@ -145,8 +163,8 @@ static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().Send(channel, message, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, discord, callback, data, cb);
+		discord->Messages().Send(channel, message, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		discord->Messages().Send(channel, message);
@@ -175,8 +193,8 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().SendEmbed(channel, message, embed, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, discord, callback, data, cb);
+		discord->Messages().SendEmbed(channel, message, embed, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		discord->Messages().SendEmbed(channel, message, embed);
@@ -197,8 +215,8 @@ static cell_t discord_SendDiscordMessage(IPluginContext* pContext, const cell_t*
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().SendObject(message, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, discord, callback, data, cb);
+		discord->Messages().SendObject(message, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		discord->Messages().SendObject(message);
@@ -225,8 +243,8 @@ static cell_t discord_SendDiscordMessageToChannel(IPluginContext* pContext, cons
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().SendObjectToChannel(channel, message, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, discord, callback, data, cb);
+		discord->Messages().SendObjectToChannel(channel, message, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		discord->Messages().SendObjectToChannel(channel, message);
@@ -262,8 +280,8 @@ static cell_t discord_EditMessage(IPluginContext* pContext, const cell_t* params
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().Edit(channel, message, content, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, discord, callback, data, cb);
+		discord->Messages().Edit(channel, message, content, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		discord->Messages().Edit(channel, message, content);
@@ -294,8 +312,8 @@ static cell_t discord_EditMessageEmbed(IPluginContext* pContext, const cell_t* p
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().EditEmbed(channel, message, content, embed, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, discord, callback, data, cb);
+		discord->Messages().EditEmbed(channel, message, content, embed, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		discord->Messages().EditEmbed(channel, message, content, embed);
@@ -322,8 +340,8 @@ static cell_t discord_DeleteMessage(IPluginContext* pContext, const cell_t* para
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().Delete(channel, message, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, discord, callback, data, cb, DiscordResultType::Delete);
+		discord->Messages().Delete(channel, message, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		discord->Messages().Delete(channel, message);
@@ -340,14 +358,10 @@ static cell_t discord_DeleteMessageBulk(IPluginContext* pContext, const cell_t* 
 	pContext->LocalToString(params[2], &channelId);
 
 	cell_t* messageIds;
-	pContext->LocalToPhysAddr(params[3], &messageIds);
+	if (!GetNativeArray(pContext, params[3], &messageIds, "message ID")) return 0;
 
-	unsigned int count = params[4];
-
-	if (count < 2 || count > 100) {
-		pContext->ReportError("Bulk delete requires between 2 and 100 message IDs (got %u)", count);
-		return 0;
-	}
+	int count;
+	if (!GetNativeIntInRange(pContext, params[4], 2, 100, "Bulk delete message count", count)) return 0;
 
 	dpp::snowflake channel;
 	if (!ParseSnowflake(pContext, channelId, channel)) return 0;
@@ -355,13 +369,12 @@ static cell_t discord_DeleteMessageBulk(IPluginContext* pContext, const cell_t* 
 	std::vector<dpp::snowflake> message_vec;
 	message_vec.reserve(count);
 
-	for (unsigned int i = 0; i < count; i++) {
+	for (int i = 0; i < count; i++) {
 		char* msgId;
 		pContext->LocalToString(messageIds[i], &msgId);
 		dpp::snowflake msg;
-		if (ParseSnowflake(pContext, msgId, msg)) {
-			message_vec.push_back(msg);
-		}
+		if (!ParseSnowflake(pContext, msgId, msg)) return 0;
+		message_vec.push_back(msg);
 	}
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[5]);
@@ -369,8 +382,8 @@ static cell_t discord_DeleteMessageBulk(IPluginContext* pContext, const cell_t* 
 
 	if (callback) {
 		Handle_t client_handle = discord->GetHandle();
-		discord->Messages().DeleteBulk(channel, message_vec, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, discord, callback, data, cb, DiscordResultType::Delete);
+		discord->Messages().DeleteBulk(channel, message_vec, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		discord->Messages().DeleteBulk(channel, message_vec);
@@ -392,7 +405,8 @@ static cell_t discord_GetMessages(IPluginContext* pContext, const cell_t* params
 		return 0;
 	}
 
-	uint32_t limit = static_cast<uint32_t>(params[4]);
+	uint32_t limit;
+	if (!GetNativeUInt32(pContext, params[4], 100, "Message limit", limit)) return 0;
 
 	char* around_str;
 	char* before_str;
@@ -403,15 +417,15 @@ static cell_t discord_GetMessages(IPluginContext* pContext, const cell_t* params
 
 	dpp::snowflake channelFlake, around = 0, before = 0, after = 0;
 	if (!ParseSnowflake(pContext, channelId, channelFlake)) return 0;
-	if (around_str && around_str[0] != '\0') ParseSnowflake(around_str, around);
-	if (before_str && before_str[0] != '\0') ParseSnowflake(before_str, before);
-	if (after_str && after_str[0] != '\0') ParseSnowflake(after_str, after);
+	if (!ParseOptionalSnowflake(pContext, around_str, around)) return 0;
+	if (!ParseOptionalSnowflake(pContext, before_str, before)) return 0;
+	if (!ParseOptionalSnowflake(pContext, after_str, after)) return 0;
 
 	cell_t data = params[8];
 	Handle_t client_handle = discord->GetHandle();
 
-	discord->Messages().GetMultiple(channelFlake, around, before, after, limit, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordMessage, dpp::message_map>(client_handle, discord, callback, data, cb, DiscordResultType::Messages);
+	discord->Messages().GetMultiple(channelFlake, around, before, after, limit, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordMessage, dpp::message_map>(cb, DiscordResultType::Messages);
 	});
 
 	return 1;
@@ -437,8 +451,8 @@ static cell_t discord_CreateDMChannel(IPluginContext* pContext, const cell_t* pa
 	cell_t data = params[4];
 	Handle_t client_handle = discord->GetHandle();
 
-	discord->Channels().CreateDM(userFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordChannel>(client_handle, discord, callback, data, cb);
+	discord->Channels().CreateDM(userFlake, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordChannel>(cb);
 	});
 
 	return 1;
@@ -458,8 +472,8 @@ static cell_t discord_FetchCurrentUser(IPluginContext* pContext, const cell_t* p
 	cell_t data = params[3];
 	Handle_t client_handle = discord->GetHandle();
 
-	discord->Users().GetCurrent([client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordUser, dpp::user_identified>(client_handle, discord, callback, data, cb);
+	discord->Users().GetCurrent([callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordUser, dpp::user_identified>(cb);
 	});
 
 	return 1;
@@ -500,8 +514,8 @@ static cell_t discord_FetchThread(IPluginContext* pContext, const cell_t* params
 	cell_t data = params[4];
 	Handle_t client_handle = discord->GetHandle();
 
-	discord->Threads().Get(threadFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordChannel, dpp::thread>(client_handle, discord, callback, data, cb);
+	discord->Threads().Get(threadFlake, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordChannel, dpp::thread>(cb);
 	});
 
 	return 1;
@@ -533,7 +547,11 @@ static cell_t discord_HttpRequest(IPluginContext* pContext, const cell_t* params
 	pContext->LocalToString(params[5], &body);
 	pContext->LocalToString(params[6], &content_type);
 
-	HttpHeaders* headers = Handles.GetPointer<HttpHeaders>(pContext, params[7]);
+	HttpHeaders* headers = nullptr;
+	if (params[7]) {
+		headers = Handles.GetPointer<HttpHeaders>(pContext, params[7]);
+		if (!headers) return 0;
+	}
 	cell_t data = params[8];
 
 	std::string request_body = body && body[0] ? body : "";
@@ -545,30 +563,23 @@ static cell_t discord_HttpRequest(IPluginContext* pContext, const cell_t* params
 	}
 
 	Handle_t client_handle = discord->GetHandle();
-	discord->Http().Request(url, method, [client_handle, discord, callback, data](const dpp::http_request_completion_t& completion) {
-		Tasks.Push([client_handle, discord, callback, data, completion]() {
-			DiscordResult* result = new DiscordResult(DiscordResultType::Http, discord);
-
+	discord->Http().Request(url, method, [callback = AsyncCallback(client_handle, callback, data)](const dpp::http_request_completion_t& completion) {
+		callback.ResultCustom(DiscordResultType::Http, [completion](DiscordResult& result, DiscordClient*) {
 			if (completion.error == dpp::h_success) {
-				result->SetSuccess(true);
-				result->SetInt("status", completion.status);
-				result->SetString("body", completion.body);
-				result->SetInt("body_length", static_cast<int>(completion.body.length()));
-				auto* httpCompletion = new HttpCompletion(completion);
-				Handle_t completionHandle = Handles.CreateCallback(httpCompletion, HandleId::HttpCompletion);
-				result->SetHandle("completion", completionHandle);
+				result.SetSuccess(true);
+				result.SetInt("status", completion.status);
+					result.SetString("body", completion.body);
+					result.SetInt("body_length", static_cast<int>(completion.body.length()));
+					auto httpCompletion = std::make_unique<HttpCompletion>(completion);
+					Handle_t completionHandle = Handles.CreateCallback(httpCompletion.release(), HandleId::HttpCompletion);
+					if (completionHandle) {
+						result.SetHandle("completion", completionHandle);
+					} else {
+						result.SetError("Failed to create HTTP completion handle");
+					}
 			} else {
-				result->SetError(completion.body.empty() ? "HTTP request failed" : completion.body);
+				result.SetError(completion.body.empty() ? "HTTP request failed" : completion.body);
 			}
-
-			Handle_t resultHandle = Handles.CreateCallback(result, HandleId::DiscordResult);
-
-			callback->PushCell(client_handle);
-			callback->PushCell(resultHandle);
-			callback->PushCell(data);
-			callback->Execute(nullptr);
-
-			Handles.FreeHandle(resultHandle);
 		});
 	}, request_body, mime_type, dpp_headers);
 
@@ -583,8 +594,8 @@ static cell_t discord_RegisterEvent(IPluginContext* pContext, const cell_t* para
 	char* eventName;
 	pContext->LocalToString(params[2], &eventName);
 
-	const EventMeta* meta = GetEventMeta(eventName);
-	if (!meta) {
+	const CallbackId* id = GetEventId(eventName);
+	if (!id) {
 		pContext->ReportError("Unknown event: %s", eventName);
 		return 0;
 	}
@@ -607,7 +618,7 @@ static cell_t discord_RegisterEvent(IPluginContext* pContext, const cell_t* para
 		return 0;
 	}
 
-	discord->Callbacks().Set(meta->id, forward, params[4]);
+	discord->Callbacks().Set(*id, discord->GetHandle(), forward, callback, params[4]);
 	return 1;
 }
 
@@ -619,13 +630,13 @@ static cell_t discord_UnregisterEvent(IPluginContext* pContext, const cell_t* pa
 	char* eventName;
 	pContext->LocalToString(params[2], &eventName);
 
-	const EventMeta* meta = GetEventMeta(eventName);
-	if (!meta) {
+	const CallbackId* id = GetEventId(eventName);
+	if (!id) {
 		pContext->ReportError("Unknown event: %s", eventName);
 		return 0;
 	}
 
-	discord->Events().UnregisterEvent(meta->id);
+	discord->Callbacks().Clear(*id);
 	return 1;
 }
 
@@ -642,8 +653,8 @@ static cell_t discord_GetGlobalCommands(IPluginContext* pContext, const cell_t* 
 	cell_t data = params[3];
 
 	Handle_t client_handle = discord->GetHandle();
-	discord->Commands().GetGlobalCommands([client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordSlashCommand, dpp::slashcommand_map>(client_handle, discord, callback, data, cb, DiscordResultType::SlashCommands);
+	discord->Commands().GetGlobalCommands([callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordSlashCommand, dpp::slashcommand_map>(cb, DiscordResultType::SlashCommands);
 	});
 	return 1;
 }
@@ -668,8 +679,8 @@ static cell_t discord_GetGlobalCommand(IPluginContext* pContext, const cell_t* p
 	cell_t data = params[4];
 
 	Handle_t client_handle = discord->GetHandle();
-	discord->Commands().GetGlobalCommand(command_id, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordSlashCommand>(client_handle, discord, callback, data, cb);
+	discord->Commands().GetGlobalCommand(command_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordSlashCommand>(cb);
 	});
 	return 1;
 }

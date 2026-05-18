@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -191,7 +191,8 @@ static cell_t member_Ban(IPluginContext* pContext, const cell_t* params)
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
 
-	uint32_t delete_message_seconds = params[2];
+	uint32_t delete_message_seconds;
+	if (!GetNativeUInt32(pContext, params[2], 604800, "Delete message seconds", delete_message_seconds)) return 0;
 	char* reason;
 	pContext->LocalToString(params[3], &reason);
 
@@ -207,10 +208,25 @@ static cell_t member_Timeout(IPluginContext* pContext, const cell_t* params)
 	DiscordGuildMember* member = Handles.GetPointer<DiscordGuildMember>(pContext, params[1]);
 	if (!member) return 0;
 
+	char* until_str;
+	pContext->LocalToString(params[2], &until_str);
+	time_t until;
+	if (!ParseTimestamp(pContext, until_str, "Timeout expiration timestamp", false, until)) return 0;
+
+	time_t now = std::time(nullptr);
+	if (until <= now) {
+		pContext->ReportError("Timeout expiration timestamp must be in the future");
+		return 0;
+	}
+	if (until > now + 2419200) {
+		pContext->ReportError("Timeout expiration timestamp cannot be more than 28 days in the future");
+		return 0;
+	}
+
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
 
 	cell_t data = params[4];
-	member->Timeout(static_cast<time_t>(params[2]), callback, data);
+	member->Timeout(until, callback, data);
 	return 1;
 }
 
@@ -291,9 +307,9 @@ extern const sp_nativeinfo_t guild_member_natives[] = {
 	{"DiscordGuildMember.GetAvatarHash", member_GetAvatarHash},
 	{"DiscordGuildMember.GetAvatarUrl", member_GetAvatarUrl},
 	{"DiscordGuildMember.HasAnimatedGuildAvatar.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::HasAnimatedGuildAvatar>},
-	{"DiscordGuildMember.JoinedAt.get", EntityGetInt<DiscordGuildMember, time_t, &DiscordGuildMember::GetJoinedAt>},
-	{"DiscordGuildMember.PremiumSince.get", EntityGetInt<DiscordGuildMember, time_t, &DiscordGuildMember::GetPremiumSince>},
-	{"DiscordGuildMember.CommunicationDisabledUntil.get", EntityGetInt<DiscordGuildMember, time_t, &DiscordGuildMember::GetCommunicationDisabledUntil>},
+	{"DiscordGuildMember.GetJoinedAt", EntityGetTimestampString<DiscordGuildMember, &DiscordGuildMember::GetJoinedAt>},
+	{"DiscordGuildMember.GetPremiumSince", EntityGetTimestampString<DiscordGuildMember, &DiscordGuildMember::GetPremiumSince>},
+	{"DiscordGuildMember.GetCommunicationDisabledUntil", EntityGetTimestampString<DiscordGuildMember, &DiscordGuildMember::GetCommunicationDisabledUntil>},
 	{"DiscordGuildMember.Deaf.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsDeaf>},
 	{"DiscordGuildMember.Muted.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsMuted>},
 	{"DiscordGuildMember.Pending.get", EntityGetBool<DiscordGuildMember, &DiscordGuildMember::IsPending>},

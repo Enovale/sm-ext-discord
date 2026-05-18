@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,7 +21,7 @@
 #include "entities/discord_scheduled_event.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
 
 void DiscordScheduledEvent::SetChannelId(const char* channel_id) {
 	if (!channel_id) return;
@@ -35,8 +35,8 @@ void DiscordScheduledEvent::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().Delete(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		m_client->ScheduledEvents().Delete(m_event.guild_id, m_event.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		m_client->ScheduledEvents().Delete(m_event.guild_id, m_event.id);
@@ -47,8 +47,8 @@ void DiscordScheduledEvent::Edit(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+		m_client->ScheduledEvents().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordScheduledEvent>(cb);
 		});
 	} else {
 		m_client->ScheduledEvents().ModifyFromObject(this);
@@ -59,8 +59,8 @@ void DiscordScheduledEvent::Start(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().Start(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+		m_client->ScheduledEvents().Start(m_event.guild_id, m_event.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordScheduledEvent>(cb);
 		});
 	} else {
 		m_client->ScheduledEvents().Start(m_event.guild_id, m_event.id);
@@ -71,8 +71,8 @@ void DiscordScheduledEvent::End(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().End(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+		m_client->ScheduledEvents().End(m_event.guild_id, m_event.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordScheduledEvent>(cb);
 		});
 	} else {
 		m_client->ScheduledEvents().End(m_event.guild_id, m_event.id);
@@ -83,8 +83,8 @@ void DiscordScheduledEvent::Cancel(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().Cancel(m_event.guild_id, m_event.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+		m_client->ScheduledEvents().Cancel(m_event.guild_id, m_event.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordScheduledEvent>(cb);
 		});
 	} else {
 		m_client->ScheduledEvents().Cancel(m_event.guild_id, m_event.id);

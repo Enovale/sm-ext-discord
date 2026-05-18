@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -178,7 +178,12 @@ static cell_t embed_SetTimestamp(IPluginContext* pContext, const cell_t* params)
 	DiscordEmbed* embed = Handles.GetPointer<DiscordEmbed>(pContext, params[1]);
 	if (!embed) return 0;
 
-	embed->SetTimestamp(params[2]);
+	char* timestamp_str;
+	pContext->LocalToString(params[2], &timestamp_str);
+	time_t timestamp;
+	if (!ParseTimestamp(pContext, timestamp_str, "Embed timestamp", true, timestamp)) return 0;
+
+	embed->SetTimestamp(timestamp);
 	return 1;
 }
 
@@ -305,18 +310,7 @@ static cell_t embed_GetTimestamp(IPluginContext* pContext, const cell_t* params)
 	DiscordEmbed* embed = Handles.GetPointer<DiscordEmbed>(pContext, params[1]);
 	if (!embed) return 0;
 
-	return static_cast<cell_t>(embed->GetTimestamp());
-}
-
-static cell_t embed_GetTimestamp64(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordEmbed* embed = Handles.GetPointer<DiscordEmbed>(pContext, params[1]);
-	if (!embed) return 0;
-
-	char buffer[32];
-	FormatInt64(static_cast<int64_t>(embed->GetTimestamp()), buffer, sizeof(buffer));
-	pContext->StringToLocal(params[2], params[3], buffer);
-	return 1;
+	return WriteTimestampString(pContext, params[2], params[3], embed->GetTimestamp());
 }
 
 static cell_t embed_GetAuthorProxyIconUrl(IPluginContext* pContext, const cell_t* params)
@@ -598,9 +592,8 @@ extern const sp_nativeinfo_t embed_natives[] = {
 	{"DiscordEmbed.GetProviderName", embed_GetProviderName},
 	{"DiscordEmbed.GetProviderUrl", embed_GetProviderUrl},
 	{"DiscordEmbed.GetType", embed_GetType},
-	{"DiscordEmbed.Timestamp.get", embed_GetTimestamp},
-	{"DiscordEmbed.GetTimestamp", embed_GetTimestamp64},
-	{"DiscordEmbed.Timestamp.set", embed_SetTimestamp},
+		{"DiscordEmbed.GetTimestamp", embed_GetTimestamp},
+		{"DiscordEmbed.SetTimestamp", embed_SetTimestamp},
 	{"DiscordEmbed.FieldCount.get", embed_GetFieldCount},
 	{"DiscordEmbed.GetFieldName", embed_GetFieldName},
 	{"DiscordEmbed.GetFieldValue", embed_GetFieldValue},

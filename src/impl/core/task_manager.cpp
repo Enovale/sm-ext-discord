@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -19,21 +19,40 @@
  */
 
 #include "core/task_manager.h"
+#include "core/logger.h"
 
 TaskManager& TaskManager::Instance() {
 	static TaskManager instance;
 	return instance;
 }
 
-void TaskManager::Push(std::function<void()> task) {
+void TaskManager::PushTask(Task task) {
 	std::lock_guard<std::mutex> lock(m_mutex);
+	if (!m_accepting) return;
+	if (m_maxQueueSize > 0 && m_queue.size() >= m_maxQueueSize) {
+		++m_droppedTasks;
+		if (m_droppedTasks == 1 || (m_droppedTasks % 1024) == 0) {
+			Log.Error("Discord task queue is full (%zu pending); dropped %zu task(s)", m_queue.size(), m_droppedTasks);
+		}
+		return;
+	}
 	m_queue.push(std::move(task));
 }
 
-void TaskManager::ProcessFrame(int maxTasks) {
-	std::function<void()> task;
-	int count = 0;
-	while (count < maxTasks) {
+void TaskManager::ProcessFrame(size_t maxTasks) {
+	size_t limit = maxTasks;
+	if (limit == 0) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_queue.empty()) return;
+		limit = m_queue.size();
+		if (m_maxTasksPerFrame > 0 && limit > m_maxTasksPerFrame) {
+			limit = m_maxTasksPerFrame;
+		}
+	}
+
+	Task task;
+	size_t count = 0;
+	while (count < limit) {
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			if (m_queue.empty()) break;
@@ -46,6 +65,25 @@ void TaskManager::ProcessFrame(int maxTasks) {
 }
 
 void TaskManager::Clear() {
+	std::queue<Task> pending;
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		std::swap(m_queue, pending);
+		m_droppedTasks = 0;
+	}
+}
+
+void TaskManager::SetAccepting(bool accepting) {
 	std::lock_guard<std::mutex> lock(m_mutex);
-	m_queue = std::queue<std::function<void()>>();
+	m_accepting = accepting;
+}
+
+void TaskManager::SetMaxTasksPerFrame(size_t maxTasks) {
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_maxTasksPerFrame = maxTasks;
+}
+
+void TaskManager::SetMaxQueueSize(size_t maxQueueSize) {
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_maxQueueSize = maxQueueSize;
 }

@@ -21,12 +21,22 @@
 #pragma once
 
 #include "smsdk_ext.h"
+#include <cstddef>
 
-class DiscordExtension : public SDKExtension
-{
+class DiscordClient;
+
+class DiscordClientRef {
 public:
-	virtual bool SDK_OnLoad(char* error, size_t maxlength, bool late);
-	virtual void SDK_OnUnload();
-};
+	DiscordClientRef() = default;
+	DiscordClientRef(std::nullptr_t) {}
+	DiscordClientRef(DiscordClient* client);
 
-extern DiscordExtension g_DiscordExt;
+	DiscordClient* Get() const;
+	Handle_t GetHandle() const { return m_handle; }
+
+	explicit operator bool() const { return Get() != nullptr; }
+	DiscordClient* operator->() const { return Get(); }
+
+private:
+	Handle_t m_handle{BAD_HANDLE};
+};

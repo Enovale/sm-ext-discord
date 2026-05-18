@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -42,8 +42,10 @@ static cell_t handle_array_GetStringAt(IPluginContext* pContext, const cell_t* p
 	DiscordHandleArray* arr = Handles.GetPointer<DiscordHandleArray>(pContext, params[1]);
 	if (!arr) return 0;
 
-	const std::string& str = arr->GetStringAt(static_cast<size_t>(params[2]));
-	pContext->StringToLocal(params[3], params[4], str.c_str());
+	const std::string* str = arr->TryGetStringAt(static_cast<size_t>(params[2]));
+	if (!str) return 0;
+
+	pContext->StringToLocal(params[3], params[4], str->c_str());
 	return 1;
 }
 

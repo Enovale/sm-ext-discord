@@ -44,6 +44,8 @@ methodmap DiscordScheduledEvent < Handle
   /**
    * Sets the event name
    *
+   * @note               Must call Edit() after to sync changes to Discord
+   *
    * @param name         New name for the event
    */
   public native void SetName(const char[] name);
@@ -59,25 +61,43 @@ methodmap DiscordScheduledEvent < Handle
   /**
    * Sets the event description
    *
+   * @note               Must call Edit() after to sync changes to Discord
+   *
    * @param description  New description for the event
    */
   public native void SetDescription(const char[] description);
 
   /**
-   * Gets or sets the scheduled start time
+   * Gets the scheduled start time
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int ScheduledStartTime {
-    public native get();
-    public native set(int value);
-  }
+  public native void GetScheduledStartTime(char[] buffer, int maxlength);
 
   /**
-   * Gets or sets the scheduled end time
+   * Sets the scheduled start time
+   *
+   * @param value       Unix timestamp string
+   * @note              Must call Edit() after to sync changes to Discord
    */
-  property int ScheduledEndTime {
-    public native get();
-    public native set(int value);
-  }
+  public native void SetScheduledStartTime(const char[] value);
+
+  /**
+   * Gets the scheduled end time
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetScheduledEndTime(char[] buffer, int maxlength);
+
+  /**
+   * Sets the scheduled end time
+   *
+   * @param value       Unix timestamp string, or empty to clear
+   * @note              Must call Edit() after to sync changes to Discord
+   */
+  public native void SetScheduledEndTime(const char[] value);
 
   /**
    * Gets the privacy level
@@ -119,6 +139,8 @@ methodmap DiscordScheduledEvent < Handle
   /**
    * Sets the event location
    *
+   * @note               Must call Edit() after to sync changes to Discord
+   *
    * @param location     New location for the event
    */
   public native void SetLocation(const char[] location);
@@ -148,6 +170,8 @@ methodmap DiscordScheduledEvent < Handle
 
   /**
    * Sets the channel ID
+   *
+   * @note               Must call Edit() after to sync changes to Discord
    *
    * @param channel_id   New channel ID for the event
    */

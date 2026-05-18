@@ -159,10 +159,11 @@ methodmap DiscordMessage < Handle
   }
 
   /**
-   * Gets number of characters in the content
-   * @note            not including any null-termination
+   * Gets the UTF-8 byte length of the message content
+   * @note            This is the encoded string length, not the number of Unicode code points
+   *                  or user-visible characters. It does not include the null terminator
    *
-   * @return          Length of the message content
+   * @return          UTF-8 byte length of the message content
    */
   property int ContentLength {
     public native get();
@@ -234,7 +235,7 @@ methodmap DiscordMessage < Handle
   /**
    * Adds a reaction to this message
    *
-   * @param emoji     Emoji to add (e.g., "👍" or "custom:123456789")
+   * @param emoji     Emoji to add (e.g., "👍" or "emoji_name:123456789")
    * @param callback  Optional callback to receive confirmation
    * @param data      Optional data to pass to callback
    */
@@ -265,30 +266,16 @@ methodmap DiscordMessage < Handle
     public native set(DiscordMessageFlags flags);
   }
 
-  /**
-   * Gets when this message was sent (timestamp)
-   */
-  property int Timestamp {
-    public native get();
-  }
-
-  /**
-   * Gets when this message was edited (timestamp, 0 if never edited)
-   */
-  property int EditedTimestamp {
-    public native get();
-  }
-
-  /**
-   * Gets when this message was sent as a 64-bit timestamp string
+ /**
+   * Gets when this message was sent as a Unix timestamp string
    *
    * @param buffer      Buffer to store the timestamp
    * @param maxlength   Maximum length of the buffer
    */
   public native void GetTimestamp(char[] buffer, int maxlength);
 
-  /**
-   * Gets when this message was edited as a 64-bit timestamp string
+ /**
+   * Gets when this message was edited as a Unix timestamp string
    *
    * @param buffer      Buffer to store the timestamp
    * @param maxlength   Maximum length of the buffer
@@ -617,7 +604,7 @@ methodmap DiscordMessage < Handle
   /**
    * Gets the users who voted for a specific poll answer
    *
-   * @param answer_id   The answer ID to get voters for (1-based index)
+   * @param answer_id   Discord poll answer ID, usually from DiscordPoll.GetAnswerId()
    * @param callback    Callback function to receive the voters
    * @param data        Optional data to pass to callback
    * @note              Result contains: "items" (DiscordHandleArray of DiscordUser), "count" (int)

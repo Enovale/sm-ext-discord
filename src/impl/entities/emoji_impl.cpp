@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,14 +21,14 @@
 #include "entities/discord_emoji.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
 
 void DiscordEmoji::Delete(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || guild_id == 0) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Emojis().Delete(guild_id, m_emoji.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		m_client->Emojis().Delete(guild_id, m_emoji.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		m_client->Emojis().Delete(guild_id, m_emoji.id);
@@ -39,8 +39,8 @@ void DiscordEmoji::Edit(dpp::snowflake guild_id, const char* name, IPluginFuncti
 	if (!m_client || guild_id == 0 || !name) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Emojis().Modify(guild_id, m_emoji.id, name, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordEmoji>(client_handle, client, callback, data, cb);
+		m_client->Emojis().Modify(guild_id, m_emoji.id, name, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordEmoji>(cb);
 		});
 	} else {
 		m_client->Emojis().Modify(guild_id, m_emoji.id, name);

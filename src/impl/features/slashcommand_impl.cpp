@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,15 +21,15 @@
 #include "features/discord_slashcommand.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
 
 void DiscordSlashCommand::RegisterToGuild(dpp::snowflake guild_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	m_command.set_application_id(m_client->GetBotIdSnowflake());
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Commands().RegisterGuild(guild_id, m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandRegister);
+		m_client->Commands().RegisterGuild(guild_id, m_command, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::CommandRegister);
 		});
 	} else {
 		m_client->Commands().RegisterGuild(guild_id, m_command);
@@ -41,8 +41,8 @@ void DiscordSlashCommand::RegisterGlobally(IPluginFunction* callback, cell_t dat
 	m_command.set_application_id(m_client->GetBotIdSnowflake());
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Commands().RegisterGlobal(m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandRegister);
+		m_client->Commands().RegisterGlobal(m_command, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::CommandRegister);
 		});
 	} else {
 		m_client->Commands().RegisterGlobal(m_command);
@@ -57,8 +57,8 @@ bool DiscordSlashCommand::Update(dpp::snowflake guild_id, IPluginFunction* callb
 	if (target_guild != 0) {
 		if (callback) {
 			Handle_t client_handle = m_client->GetHandle();
-			m_client->Commands().ModifyGuild(target_guild, m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandUpdate);
+			m_client->Commands().ModifyGuild(target_guild, m_command, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Confirm(cb, DiscordResultType::CommandUpdate);
 			});
 		} else {
 			m_client->Commands().ModifyGuild(target_guild, m_command);
@@ -66,8 +66,8 @@ bool DiscordSlashCommand::Update(dpp::snowflake guild_id, IPluginFunction* callb
 	} else {
 		if (callback) {
 			Handle_t client_handle = m_client->GetHandle();
-			m_client->Commands().ModifyGlobal(m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandUpdate);
+			m_client->Commands().ModifyGlobal(m_command, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Confirm(cb, DiscordResultType::CommandUpdate);
 			});
 		} else {
 			m_client->Commands().ModifyGlobal(m_command);
@@ -83,8 +83,8 @@ void DiscordSlashCommand::Delete(dpp::snowflake guild_id, IPluginFunction* callb
 	if (target_guild != 0) {
 		if (callback) {
 			Handle_t client_handle = m_client->GetHandle();
-			m_client->Commands().DeleteGuild(target_guild, m_command.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandDelete);
+			m_client->Commands().DeleteGuild(target_guild, m_command.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Confirm(cb, DiscordResultType::CommandDelete);
 			});
 		} else {
 			m_client->Commands().DeleteGuild(target_guild, m_command.id);
@@ -92,8 +92,8 @@ void DiscordSlashCommand::Delete(dpp::snowflake guild_id, IPluginFunction* callb
 	} else {
 		if (callback) {
 			Handle_t client_handle = m_client->GetHandle();
-			m_client->Commands().DeleteGlobal(m_command.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandDelete);
+			m_client->Commands().DeleteGlobal(m_command.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Confirm(cb, DiscordResultType::CommandDelete);
 			});
 		} else {
 			m_client->Commands().DeleteGlobal(m_command.id);
@@ -109,8 +109,8 @@ bool DiscordSlashCommand::ApplyPermissionOverrides(dpp::snowflake guild_id, IPlu
 	m_command.permissions = m_permissions;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Commands().SetPermissions(target_guild, m_command, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandPermission);
+		m_client->Commands().SetPermissions(target_guild, m_command, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::CommandPermission);
 		});
 	} else {
 		m_client->Commands().SetPermissions(target_guild, m_command);
@@ -122,8 +122,8 @@ void DiscordSlashCommand::BulkDeleteGlobal(DiscordClient* client, IPluginFunctio
 	if (!client) return;
 	if (callback) {
 		Handle_t client_handle = client->GetHandle();
-		client->Commands().BulkDeleteGlobal([client_handle, client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::CommandBulkDelete);
+		client->Commands().BulkDeleteGlobal([callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::CommandBulkDelete);
 		});
 	} else {
 		client->Commands().BulkDeleteGlobal();

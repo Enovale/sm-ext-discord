@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,8 +21,10 @@
 #pragma once
 
 #include "smsdk_ext.h"
+#include "async_callback.h"
 #include <array>
 #include <functional>
+#include <utility>
 
 enum class CallbackId {
 	// Connection events
@@ -124,15 +126,17 @@ enum class CallbackId {
 	Count
 };
 
+class DiscordEvent;
+
 // Unified callback data - all events use same signature: (Discord, DiscordEvent, any)
 struct CallbackData {
 	IChangeableForward* forward = nullptr;
-	cell_t data = 0;
+	AsyncCallback callback;
 
-	void Set(IChangeableForward* fwd, cell_t d = 0) {
+	void Set(Handle_t clientHandle, IChangeableForward* fwd, IPluginFunction* func, cell_t d = 0) {
 		Release();
 		forward = fwd;
-		data = d;
+		callback = AsyncCallback(clientHandle, func, d);
 	}
 
 	void Release() {
@@ -140,17 +144,31 @@ struct CallbackData {
 			forwards->ReleaseForward(forward);
 			forward = nullptr;
 		}
+		callback = AsyncCallback();
 	}
 
 	bool IsValid() const {
-		return forward && forward->GetFunctionCount() > 0;
+		return forward && callback.GetFunction() && forward->GetFunctionCount() > 0;
+	}
+
+	bool IsForPlugin(unsigned int pluginSerial) const {
+		return callback.IsForPlugin(pluginSerial);
 	}
 };
+
+bool DispatchCallbackEvent(CallbackData& callback, DiscordEvent* event);
 
 class CallbackManager {
 private:
 	std::array<CallbackData, static_cast<size_t>(CallbackId::Count)> m_callbacks;
 	std::function<void(CallbackId)> m_onRegister;
+	std::function<void(CallbackId)> m_onClear;
+
+	void ReleaseAll() {
+		for (auto& callback : m_callbacks) {
+			callback.Release();
+		}
+	}
 
 public:
 	~CallbackManager() {
@@ -161,6 +179,10 @@ public:
 		m_onRegister = std::move(cb);
 	}
 
+	void SetClearCallback(std::function<void(CallbackId)> cb) {
+		m_onClear = std::move(cb);
+	}
+
 	CallbackData& Get(CallbackId id) {
 		return m_callbacks[static_cast<size_t>(id)];
 	}
@@ -169,14 +191,23 @@ public:
 		return m_callbacks[static_cast<size_t>(id)];
 	}
 
-	void Set(CallbackId id, IChangeableForward* fwd, cell_t d = 0) {
-		m_callbacks[static_cast<size_t>(id)].Set(fwd, d);
+	void Set(CallbackId id, Handle_t clientHandle, IChangeableForward* fwd, IPluginFunction* func, cell_t d = 0) {
+		m_callbacks[static_cast<size_t>(id)].Set(clientHandle, fwd, func, d);
 		if (m_onRegister) m_onRegister(id);
 	}
 
-	void ReleaseAll() {
-		for (auto& callback : m_callbacks) {
-			callback.Release();
+	void Clear(CallbackId id) {
+		if (m_onClear) m_onClear(id);
+		m_callbacks[static_cast<size_t>(id)].Release();
+	}
+
+	void ClearForPlugin(unsigned int pluginSerial) {
+		if (!pluginSerial) return;
+
+		for (size_t i = 0; i < m_callbacks.size(); ++i) {
+			if (m_callbacks[i].IsForPlugin(pluginSerial)) {
+				Clear(static_cast<CallbackId>(i));
+			}
 		}
 	}
 };

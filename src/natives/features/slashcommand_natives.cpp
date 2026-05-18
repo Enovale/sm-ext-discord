@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -154,12 +154,16 @@ static cell_t slashcommand_AddOption(IPluginContext* pContext, const cell_t* par
 	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[4]);
 	bool required = params[5];
 	bool autocomplete = params[6];
+	if (autocomplete && type != dpp::co_string && type != dpp::co_integer && type != dpp::co_number) {
+		pContext->ReportError("Autocomplete is only valid for string, integer, or number options");
+		return 0;
+	}
 
 	command->AddOption(name, description, type, required, autocomplete);
 	return 1;
 }
 
-static cell_t slashcommand_AddChoiceOption(IPluginContext* pContext, const cell_t* params)
+static cell_t slashcommand_AddStringOptionWithChoices(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
@@ -170,10 +174,43 @@ static cell_t slashcommand_AddChoiceOption(IPluginContext* pContext, const cell_
 	char* description;
 	pContext->LocalToString(params[3], &description);
 
-	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[4]);
-	bool required = params[5];
+	bool required = params[4];
 
-	command->AddChoiceOption(name, description, type, required);
+	command->AddStringOptionWithChoices(name, description, required);
+	return 1;
+}
+
+static cell_t slashcommand_AddIntOptionWithChoices(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
+	if (!command) return 0;
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	char* description;
+	pContext->LocalToString(params[3], &description);
+
+	bool required = params[4];
+
+	command->AddIntOptionWithChoices(name, description, required);
+	return 1;
+}
+
+static cell_t slashcommand_AddFloatOptionWithChoices(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
+	if (!command) return 0;
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	char* description;
+	pContext->LocalToString(params[3], &description);
+
+	bool required = params[4];
+
+	command->AddFloatOptionWithChoices(name, description, required);
 	return 1;
 }
 
@@ -188,7 +225,10 @@ static cell_t slashcommand_AddStringChoice(IPluginContext* pContext, const cell_
 	char* choice_value;
 	pContext->LocalToString(params[3], &choice_value);
 
-	command->AddStringChoice(choice_name, choice_value);
+	if (!command->AddStringChoice(choice_name, choice_value)) {
+		pContext->ReportError("AddStringChoice requires the last option to be created with AddStringOptionWithChoices()");
+		return 0;
+	}
 	return 1;
 }
 
@@ -201,8 +241,43 @@ static cell_t slashcommand_AddIntChoice(IPluginContext* pContext, const cell_t* 
 	pContext->LocalToString(params[2], &choice_name);
 
 	int64_t choice_value = static_cast<int64_t>(params[3]);
+	if (!IsInt32Range(choice_value)) {
+		pContext->ReportError("Command integer choice value exceeds 32-bit range. Use AddInt64Choice() instead.");
+		return 0;
+	}
 
-	command->AddIntChoice(choice_name, choice_value);
+	if (!command->AddIntChoice(choice_name, choice_value)) {
+		pContext->ReportError("AddIntChoice requires the last option to be created with AddIntOptionWithChoices()");
+		return 0;
+	}
+	return 1;
+}
+
+static cell_t slashcommand_AddInt64Choice(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
+	if (!command) return 0;
+
+	char* choice_name;
+	pContext->LocalToString(params[2], &choice_name);
+
+	char* choice_value_str;
+	pContext->LocalToString(params[3], &choice_value_str);
+
+	int64_t choice_value;
+	if (!ParseInt64(choice_value_str, choice_value)) {
+		const char* display_value = "(null)";
+		if (choice_value_str) {
+			display_value = choice_value_str;
+		}
+		pContext->ReportError("Invalid command integer choice value: %s", display_value);
+		return 0;
+	}
+
+	if (!command->AddIntChoice(choice_name, choice_value)) {
+		pContext->ReportError("AddInt64Choice requires the last option to be created with AddIntOptionWithChoices()");
+		return 0;
+	}
 	return 1;
 }
 
@@ -216,7 +291,10 @@ static cell_t slashcommand_AddFloatChoice(IPluginContext* pContext, const cell_t
 
 	double choice_value = sp_ctof(params[3]);
 
-	command->AddFloatChoice(choice_name, choice_value);
+	if (!command->AddFloatChoice(choice_name, choice_value)) {
+		pContext->ReportError("AddFloatChoice requires the last option to be created with AddFloatOptionWithChoices()");
+		return 0;
+	}
 	return 1;
 }
 
@@ -297,13 +375,12 @@ static cell_t slashcommand_AddPermissionOverride(IPluginContext* pContext, const
 	char* targetId;
 	pContext->LocalToString(params[2], &targetId);
 
-	int type = params[3];
+	dpp::command_permission_type type = static_cast<dpp::command_permission_type>(params[3]);
 	bool permission = params[4] != 0;
 
 	dpp::snowflake target;
 	if (!ParseSnowflake(pContext, targetId, target)) return 0;
-	dpp::command_permission_type cmd_type = static_cast<dpp::command_permission_type>(type);
-	command->AddPermissionOverride(target, cmd_type, permission);
+	command->AddPermissionOverride(target, type, permission);
 	return 1;
 }
 
@@ -315,12 +392,11 @@ static cell_t slashcommand_RemovePermissionOverride(IPluginContext* pContext, co
 	char* targetId;
 	pContext->LocalToString(params[2], &targetId);
 
-	int type = params[3];
+	dpp::command_permission_type type = static_cast<dpp::command_permission_type>(params[3]);
 
 	dpp::snowflake target;
 	if (!ParseSnowflake(pContext, targetId, target)) return 0;
-	dpp::command_permission_type cmd_type = static_cast<dpp::command_permission_type>(type);
-	command->RemovePermissionOverride(target, cmd_type);
+	command->RemovePermissionOverride(target, type);
 	return 1;
 }
 
@@ -346,7 +422,13 @@ static cell_t slashcommand_GetPermissionOverride(IPluginContext* pContext, const
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	int index = params[2];
+	int count = static_cast<int>(command->GetPermissionOverrideCount());
+	if (count <= 0) {
+		pContext->ReportError("No permission overrides are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Permission override index", index)) return 0;
 
 	dpp::snowflake target_id;
 	dpp::command_permission_type type;
@@ -361,11 +443,11 @@ static cell_t slashcommand_GetPermissionOverride(IPluginContext* pContext, const
 	pContext->StringToLocal(params[3], params[4], targetStr);
 
 	cell_t* typePtr;
-	pContext->LocalToPhysAddr(params[5], &typePtr);
+	if (!GetNativeArray(pContext, params[5], &typePtr, "permission type output")) return 0;
 	*typePtr = static_cast<cell_t>(type);
 
 	cell_t* permPtr;
-	pContext->LocalToPhysAddr(params[6], &permPtr);
+	if (!GetNativeArray(pContext, params[6], &permPtr, "permission value output")) return 0;
 	*permPtr = permission;
 
 	return 1;
@@ -393,8 +475,7 @@ static cell_t slashcommand_SetContextMenuType(IPluginContext* pContext, const ce
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	int type = params[2];
-	dpp::slashcommand_contextmenu_type contextType = static_cast<dpp::slashcommand_contextmenu_type>(type);
+	dpp::slashcommand_contextmenu_type contextType = static_cast<dpp::slashcommand_contextmenu_type>(params[2]);
 	command->SetContextMenuType(contextType);
 	return 1;
 }
@@ -465,13 +546,16 @@ static cell_t slashcommand_SetInteractionContexts(IPluginContext* pContext, cons
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	cell_t* contexts_array;
-	pContext->LocalToPhysAddr(params[2], &contexts_array);
-	int numContexts = params[3];
+	cell_t* contexts_array = nullptr;
+	int numContexts;
+	if (!GetNativeIntInRange(pContext, params[3], 0, 3, "Interaction context count", numContexts)) return 0;
+	if (numContexts > 0 && !GetNativeArray(pContext, params[2], &contexts_array, "interaction context")) return 0;
 
 	std::vector<dpp::interaction_context_type> contexts;
+	contexts.reserve(numContexts);
 	for (int i = 0; i < numContexts; i++) {
-		contexts.push_back(static_cast<dpp::interaction_context_type>(contexts_array[i]));
+		dpp::interaction_context_type context = static_cast<dpp::interaction_context_type>(contexts_array[i]);
+		contexts.push_back(context);
 	}
 
 	command->SetInteractionContexts(contexts);
@@ -483,13 +567,16 @@ static cell_t slashcommand_SetIntegrationTypes(IPluginContext* pContext, const c
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	cell_t* types_array;
-	pContext->LocalToPhysAddr(params[2], &types_array);
-	int numTypes = params[3];
+	cell_t* types_array = nullptr;
+	int numTypes;
+	if (!GetNativeIntInRange(pContext, params[3], 0, 2, "Integration type count", numTypes)) return 0;
+	if (numTypes > 0 && !GetNativeArray(pContext, params[2], &types_array, "integration type")) return 0;
 
 	std::vector<dpp::application_integration_types> types;
+	types.reserve(numTypes);
 	for (int i = 0; i < numTypes; i++) {
-		types.push_back(static_cast<dpp::application_integration_types>(types_array[i]));
+		dpp::application_integration_types type = static_cast<dpp::application_integration_types>(types_array[i]);
+		types.push_back(type);
 	}
 
 	command->SetIntegrationTypes(types);
@@ -521,7 +608,8 @@ static cell_t slashcommand_SetOptionMinLength(IPluginContext* pContext, const ce
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	int min_length = params[2];
+	int min_length;
+	if (!GetNativeIntInRange(pContext, params[2], 0, 6000, "Option minimum length", min_length)) return 0;
 	command->SetLastOptionMinLength(static_cast<int64_t>(min_length));
 	return 1;
 }
@@ -531,7 +619,8 @@ static cell_t slashcommand_SetOptionMaxLength(IPluginContext* pContext, const ce
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	int max_length = params[2];
+	int max_length;
+	if (!GetNativeIntInRange(pContext, params[2], 1, 6000, "Option maximum length", max_length)) return 0;
 	command->SetLastOptionMaxLength(static_cast<int64_t>(max_length));
 	return 1;
 }
@@ -541,8 +630,9 @@ static cell_t slashcommand_AddOptionChannelType(IPluginContext* pContext, const 
 	DiscordSlashCommand* command = Handles.GetPointer<DiscordSlashCommand>(pContext, params[1]);
 	if (!command) return 0;
 
-	int channel_type = params[2];
-	command->AddLastOptionChannelType(static_cast<dpp::channel_type>(channel_type));
+	dpp::channel_type channel_type = static_cast<dpp::channel_type>(params[2]);
+
+	command->AddLastOptionChannelType(channel_type);
 	return 1;
 }
 
@@ -599,9 +689,12 @@ extern const sp_nativeinfo_t slashcommand_natives[] = {
 	{"DiscordSlashCommand.GetDescription", slashcommand_GetDescription},
 	{"DiscordSlashCommand.GetDefaultPermissions", slashcommand_GetDefaultPermissions},
 	{"DiscordSlashCommand.AddOption", slashcommand_AddOption},
-	{"DiscordSlashCommand.AddChoiceOption", slashcommand_AddChoiceOption},
+	{"DiscordSlashCommand.AddStringOptionWithChoices", slashcommand_AddStringOptionWithChoices},
+	{"DiscordSlashCommand.AddIntOptionWithChoices", slashcommand_AddIntOptionWithChoices},
+	{"DiscordSlashCommand.AddFloatOptionWithChoices", slashcommand_AddFloatOptionWithChoices},
 	{"DiscordSlashCommand.AddStringChoice", slashcommand_AddStringChoice},
 	{"DiscordSlashCommand.AddIntChoice", slashcommand_AddIntChoice},
+	{"DiscordSlashCommand.AddInt64Choice", slashcommand_AddInt64Choice},
 	{"DiscordSlashCommand.AddFloatChoice", slashcommand_AddFloatChoice},
 	{"DiscordSlashCommand.RegisterToGuild", slashcommand_RegisterToGuild},
 	{"DiscordSlashCommand.RegisterGlobally", slashcommand_RegisterGlobally},

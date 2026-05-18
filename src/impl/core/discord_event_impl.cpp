@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -18,8 +18,10 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "core/callback_manager.h"
 #include "core/discord_event.h"
 #include "core/handle_manager.h"
+#include <memory>
 
 DiscordEvent::DiscordEvent(const std::string& name, DiscordClient* client, bool autoFree)
 	: m_name(name), m_client(client), m_autoFreeHandles(autoFree) {}
@@ -33,6 +35,29 @@ DiscordEvent::~DiscordEvent() {
 			}
 		}
 	}
+}
+
+bool DispatchCallbackEvent(CallbackData& callback, DiscordEvent* event) {
+	std::unique_ptr<DiscordEvent> eventPtr(event);
+	if (!eventPtr || !callback.IsValid()) {
+		return false;
+	}
+
+	Handle_t clientHandle = callback.callback.GetClientHandle();
+	cell_t data = callback.callback.GetData();
+
+	Handle_t eventHandle = Handles.CreateCallback(eventPtr.release(), HandleId::DiscordEvent);
+	if (!eventHandle) {
+		return false;
+	}
+
+	callback.forward->PushCell(clientHandle);
+	callback.forward->PushCell(eventHandle);
+	callback.forward->PushCell(data);
+	callback.forward->Execute(nullptr);
+
+	Handles.FreeHandle(eventHandle);
+	return true;
 }
 
 int DiscordEvent::GetInt(const char* key, int defaultValue) const {

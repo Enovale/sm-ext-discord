@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -29,8 +29,8 @@ public:
 	void Get(dpp::snowflake thread_id, Callback callback);
 	void Create(dpp::snowflake channel_id, const char* name, dpp::channel_type type = dpp::CHANNEL_PUBLIC_THREAD, uint16_t auto_archive = 1440, bool invitable = true, uint16_t rate_limit = 0, Callback callback = nullptr);
 	void CreateWithMessage(dpp::snowflake channel_id, dpp::snowflake message_id, const char* name, uint16_t auto_archive = 1440, uint16_t rate_limit = 0, Callback callback = nullptr);
-	void CreateInForum(dpp::snowflake channel_id, const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids = {}, uint16_t auto_archive = 1440, uint16_t rate_limit = 0, Callback callback = nullptr);
-	void CreateInForumWithMessage(dpp::snowflake channel_id, const char* name, const dpp::message& message, const std::vector<dpp::snowflake>& tag_ids = {}, uint16_t auto_archive = 1440, uint16_t rate_limit = 0, Callback callback = nullptr);
+	void CreateInForum(dpp::snowflake channel_id, const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids = {}, dpp::auto_archive_duration_t auto_archive = dpp::arc_1_day, uint16_t rate_limit = 0, Callback callback = nullptr);
+	void CreateInForumWithMessage(dpp::snowflake channel_id, const char* name, const dpp::message& message, const std::vector<dpp::snowflake>& tag_ids = {}, dpp::auto_archive_duration_t auto_archive = dpp::arc_1_day, uint16_t rate_limit = 0, Callback callback = nullptr);
 	void GetActive(dpp::snowflake guild_id, Callback callback);
 	void Join(dpp::snowflake thread_id, Callback callback = nullptr);
 	void Leave(dpp::snowflake thread_id, Callback callback = nullptr);

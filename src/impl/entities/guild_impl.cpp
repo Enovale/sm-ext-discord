@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -33,9 +33,12 @@
 #include "core/discord_handle_array.h"
 #include "core/discord_client.h"
 #include "core/handle_manager.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
+#include "core/logger.h"
 #include "core/task_manager.h"
+#include <string>
 
+static constexpr std::streamoff kMaxEmojiImageBytes = 256 * 1024;
 
 bool DiscordGuild::HasPermission(dpp::snowflake user_id, const char* permission) const {
 	uint64_t perm;
@@ -55,8 +58,8 @@ void DiscordGuild::Modify(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Guilds().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordGuild>(client_handle, client, callback, data, cb);
+		m_client->Guilds().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordGuild>(cb);
 		});
 	} else {
 		m_client->Guilds().ModifyFromObject(this);
@@ -66,8 +69,8 @@ void DiscordGuild::Modify(IPluginFunction* callback, cell_t data) {
 bool DiscordGuild::GetInvites(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Guilds().GetInvites(m_guild.id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordInvite, dpp::invite_map>(client_handle, client, callback, data, cb, DiscordResultType::Invites);
+	m_client->Guilds().GetInvites(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordInvite, dpp::invite_map>(cb, DiscordResultType::Invites);
 	});
 	return true;
 }
@@ -75,8 +78,8 @@ bool DiscordGuild::GetInvites(IPluginFunction* callback, cell_t data) {
 bool DiscordGuild::GetWebhooks(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Guilds().GetWebhooks(m_guild.id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordWebhook, dpp::webhook_map>(client_handle, client, callback, data, cb, DiscordResultType::Webhooks);
+	m_client->Guilds().GetWebhooks(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordWebhook, dpp::webhook_map>(cb, DiscordResultType::Webhooks);
 	});
 	return true;
 }
@@ -85,8 +88,8 @@ bool DiscordGuild::GetRoles(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
 	dpp::snowflake guild_id = m_guild.id;
-	m_client->Roles().GetAll(m_guild.id, [client = m_client, client_handle, callback, data, guild_id](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordRole, dpp::role_map>(client_handle, client, callback, data, cb, DiscordResultType::Roles, [guild_id](const dpp::role& r) { return std::make_pair(r, guild_id); });
+	m_client->Roles().GetAll(m_guild.id, [callback = AsyncCallback(client_handle, callback, data), guild_id](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordRole, dpp::role_map>(cb, DiscordResultType::Roles, [guild_id](const dpp::role& r) { return std::make_pair(r, guild_id); });
 	});
 	return true;
 }
@@ -113,8 +116,8 @@ uint64_t DiscordGuild::GetPermissionsInChannel(dpp::snowflake user_id, dpp::snow
 bool DiscordGuild::GetMember(dpp::snowflake user_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Members().Get(m_guild.id, user_id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordGuildMember>(client_handle, client, callback, data, cb);
+	m_client->Members().Get(m_guild.id, user_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordGuildMember>(cb);
 	});
 	return true;
 }
@@ -122,8 +125,8 @@ bool DiscordGuild::GetMember(dpp::snowflake user_id, IPluginFunction* callback, 
 bool DiscordGuild::GetMembers(uint16_t limit, dpp::snowflake after, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Guilds().GetMembers(m_guild.id, limit, after, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordGuildMember, dpp::guild_member_map>(client_handle, client, callback, data, cb, DiscordResultType::Members);
+	m_client->Guilds().GetMembers(m_guild.id, limit, after, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordGuildMember, dpp::guild_member_map>(cb, DiscordResultType::Members);
 	});
 	return true;
 }
@@ -131,8 +134,8 @@ bool DiscordGuild::GetMembers(uint16_t limit, dpp::snowflake after, IPluginFunct
 bool DiscordGuild::SearchMembers(const char* query, uint16_t limit, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback || !query) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Guilds().SearchMembers(m_guild.id, query, limit, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordGuildMember, dpp::guild_member_map>(client_handle, client, callback, data, cb, DiscordResultType::Members);
+	m_client->Guilds().SearchMembers(m_guild.id, query, limit, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordGuildMember, dpp::guild_member_map>(cb, DiscordResultType::Members);
 	});
 	return true;
 }
@@ -140,8 +143,8 @@ bool DiscordGuild::SearchMembers(const char* query, uint16_t limit, IPluginFunct
 bool DiscordGuild::GetActiveThreads(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Threads().GetActive(m_guild.id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordChannel, dpp::active_threads>(client_handle, client, callback, data, cb, DiscordResultType::Threads,
+	m_client->Threads().GetActive(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordChannel, dpp::active_threads>(cb, DiscordResultType::Threads,
 			[](const auto& item) { return item.active_thread; });
 	});
 	return true;
@@ -150,37 +153,49 @@ bool DiscordGuild::GetActiveThreads(IPluginFunction* callback, cell_t data) {
 bool DiscordGuild::GetBans(dpp::snowflake before, dpp::snowflake after, uint16_t limit, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Guilds().GetBans(m_guild.id, before, after, limit, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordBan, dpp::ban_map>(client_handle, client, callback, data, cb, DiscordResultType::Bans);
+	m_client->Guilds().GetBans(m_guild.id, before, after, limit, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordBan, dpp::ban_map>(cb, DiscordResultType::Bans);
 	});
 	return true;
 }
 
 void DiscordGuild::CreateEmoji(const char* name, const char* image_path, dpp::image_type type, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !name || !image_path) return;
+
+	std::string imageData;
+	std::string error;
+	if (!ReadBinaryFile(image_path, kMaxEmojiImageBytes, "emoji image file", imageData, error)) {
+		if (callback) {
+			AsyncCallback(m_client->GetHandle(), callback, data).Error(error, DiscordResultType::Emoji);
+		} else {
+			Log.Error("CreateEmoji: %s", error.c_str());
+		}
+		return;
+	}
+
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Emojis().Create(m_guild.id, name, image_path, type, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordEmoji>(client_handle, client, callback, data, cb);
+		m_client->Emojis().Create(m_guild.id, name, imageData, type, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordEmoji>(cb);
 		});
 	} else {
-		m_client->Emojis().Create(m_guild.id, name, image_path, type);
+		m_client->Emojis().Create(m_guild.id, name, imageData, type);
 	}
 }
 
 void DiscordGuild::GetEmoji(dpp::snowflake emoji_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Emojis().Get(m_guild.id, emoji_id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordEmoji>(client_handle, client, callback, data, cb);
+	m_client->Emojis().Get(m_guild.id, emoji_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordEmoji>(cb);
 	});
 }
 
 void DiscordGuild::GetAllEmojis(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Emojis().GetAll(m_guild.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordEmoji, dpp::emoji_map>(client_handle, client, callback, data, cb, DiscordResultType::Emojis);
+	m_client->Emojis().GetAll(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordEmoji, dpp::emoji_map>(cb, DiscordResultType::Emojis);
 	});
 }
 
@@ -188,8 +203,8 @@ void DiscordGuild::CreateSticker(const char* name, const char* description, cons
 	if (!m_client || !m_client->GetCluster() || !name || !tags || !file_path) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Stickers().Create(m_guild.id, name, description, tags, file_path, format, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordSticker>(client_handle, client, callback, data, cb);
+		m_client->Stickers().Create(m_guild.id, name, description, tags, file_path, format, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordSticker>(cb);
 		});
 	} else {
 		m_client->Stickers().Create(m_guild.id, name, description, tags, file_path, format);
@@ -200,8 +215,8 @@ void DiscordGuild::CreateScheduledEvent(const char* name, const char* descriptio
 	if (!m_client || !m_client->GetCluster() || !name) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().Create(m_guild.id, name, description, channel_id, start_time, end_time, type, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+		m_client->ScheduledEvents().Create(m_guild.id, name, description, channel_id, start_time, end_time, type, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordScheduledEvent>(cb);
 		});
 	} else {
 		m_client->ScheduledEvents().Create(m_guild.id, name, description, channel_id, start_time, end_time, type);
@@ -212,8 +227,8 @@ void DiscordGuild::CreateExternalScheduledEvent(const char* name, const char* de
 	if (!m_client || !m_client->GetCluster() || !name || !location) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->ScheduledEvents().CreateExternal(m_guild.id, name, description, location, start_time, end_time, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+		m_client->ScheduledEvents().CreateExternal(m_guild.id, name, description, location, start_time, end_time, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordScheduledEvent>(cb);
 		});
 	} else {
 		m_client->ScheduledEvents().CreateExternal(m_guild.id, name, description, location, start_time, end_time);
@@ -223,24 +238,24 @@ void DiscordGuild::CreateExternalScheduledEvent(const char* name, const char* de
 void DiscordGuild::GetScheduledEvents(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->ScheduledEvents().GetAll(m_guild.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordScheduledEvent, dpp::scheduled_event_map>(client_handle, client, callback, data, cb, DiscordResultType::ScheduledEvents);
+	m_client->ScheduledEvents().GetAll(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordScheduledEvent, dpp::scheduled_event_map>(cb, DiscordResultType::ScheduledEvents);
 	});
 }
 
 void DiscordGuild::GetScheduledEvent(dpp::snowflake event_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->ScheduledEvents().Get(m_guild.id, event_id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordScheduledEvent>(client_handle, client, callback, data, cb);
+	m_client->ScheduledEvents().Get(m_guild.id, event_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordScheduledEvent>(cb);
 	});
 }
 
 void DiscordGuild::GetScheduledEventUsers(dpp::snowflake event_id, uint16_t limit, dpp::snowflake before, dpp::snowflake after, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->ScheduledEvents().GetUsers(m_guild.id, event_id, limit, before, after, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordUser, dpp::event_member_map>(client_handle, client, callback, data, cb, DiscordResultType::Users, [](const dpp::event_member& em) { return em.user; });
+	m_client->ScheduledEvents().GetUsers(m_guild.id, event_id, limit, before, after, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordUser, dpp::event_member_map>(cb, DiscordResultType::Users, [](const dpp::event_member& em) { return em.user; });
 	});
 }
 
@@ -248,8 +263,8 @@ void DiscordGuild::BanUser(dpp::snowflake user_id, uint32_t delete_message_secon
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Members().Ban(m_guild.id, user_id, reason ? reason : "", delete_message_seconds, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Ban);
+		m_client->Members().Ban(m_guild.id, user_id, reason ? reason : "", delete_message_seconds, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Ban);
 		});
 	} else {
 		m_client->Members().Ban(m_guild.id, user_id, reason ? reason : "", delete_message_seconds);
@@ -260,8 +275,8 @@ void DiscordGuild::UnbanUser(dpp::snowflake user_id, IPluginFunction* callback, 
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Members().Unban(m_guild.id, user_id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Unban);
+		m_client->Members().Unban(m_guild.id, user_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Unban);
 		});
 	} else {
 		m_client->Members().Unban(m_guild.id, user_id);
@@ -271,16 +286,16 @@ void DiscordGuild::UnbanUser(dpp::snowflake user_id, IPluginFunction* callback, 
 void DiscordGuild::CreateRole(const char* name, uint32_t color, bool hoist, bool mentionable, uint64_t permissions, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !name || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Roles().Create(m_guild.id, name, color, hoist, mentionable, permissions, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordRole>(client_handle, client, callback, data, cb);
+	m_client->Roles().Create(m_guild.id, name, color, hoist, mentionable, permissions, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordRole>(cb);
 	});
 }
 
 void DiscordGuild::CreateRoleFromObject(DiscordRole* role_obj, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !role_obj || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Roles().CreateFromObject(m_guild.id, role_obj, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordRole>(client_handle, client, callback, data, cb);
+	m_client->Roles().CreateFromObject(m_guild.id, role_obj, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordRole>(cb);
 	});
 }
 
@@ -288,8 +303,8 @@ void DiscordGuild::BulkDeleteCommands(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Guilds().BulkDeleteCommands(m_guild.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		m_client->Guilds().BulkDeleteCommands(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		m_client->Guilds().BulkDeleteCommands(m_guild.id);
@@ -299,24 +314,24 @@ void DiscordGuild::BulkDeleteCommands(IPluginFunction* callback, cell_t data) {
 void DiscordGuild::GetCommands(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Commands().GetGuildCommands(m_guild.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordSlashCommand, dpp::slashcommand_map>(client_handle, client, callback, data, cb, DiscordResultType::SlashCommands);
+	m_client->Commands().GetGuildCommands(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordSlashCommand, dpp::slashcommand_map>(cb, DiscordResultType::SlashCommands);
 	});
 }
 
 void DiscordGuild::GetCommand(dpp::snowflake command_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Commands().GetGuildCommand(m_guild.id, command_id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordSlashCommand>(client_handle, client, callback, data, cb);
+	m_client->Commands().GetGuildCommand(m_guild.id, command_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordSlashCommand>(cb);
 	});
 }
 
 bool DiscordGuild::GetChannels(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Channels().GetChannels(m_guild.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordChannel, dpp::channel_map>(client_handle, client, callback, data, cb, DiscordResultType::Channels);
+	m_client->Channels().GetChannels(m_guild.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordChannel, dpp::channel_map>(cb, DiscordResultType::Channels);
 	});
 	return true;
 }
@@ -325,8 +340,8 @@ void DiscordGuild::EditChannelPositions(const std::vector<dpp::channel>& channel
 	if (!m_client || !m_client->GetCluster()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().EditPositions(channels, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Channels().EditPositions(channels, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Channels().EditPositions(channels);
@@ -337,8 +352,8 @@ void DiscordGuild::EditRolePositions(const std::vector<dpp::role>& roles, IPlugi
 	if (!m_client || !m_client->GetCluster()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Roles().EditPositions(m_guild.id, roles, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Roles().EditPositions(m_guild.id, roles, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Roles().EditPositions(m_guild.id, roles);
@@ -349,8 +364,8 @@ void DiscordGuild::ModifyCurrentMember(const char* nickname, IPluginFunction* ca
 	if (!m_client || !m_client->GetCluster()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Guilds().ModifyCurrentMember(m_guild.id, nickname, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Guilds().ModifyCurrentMember(m_guild.id, nickname, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Guilds().ModifyCurrentMember(m_guild.id, nickname);
@@ -360,8 +375,8 @@ void DiscordGuild::ModifyCurrentMember(const char* nickname, IPluginFunction* ca
 void DiscordGuild::GetPruneCount(uint16_t days, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->GetCluster() || !callback) return;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Guilds().GetPruneCount(m_guild.id, days, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushConfirm(client_handle, client, callback, data, cb);
+	m_client->Guilds().GetPruneCount(m_guild.id, days, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Confirm(cb);
 	});
 }
 
@@ -369,8 +384,8 @@ void DiscordGuild::BeginPrune(uint16_t days, IPluginFunction* callback, cell_t d
 	if (!m_client || !m_client->GetCluster()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Guilds().BeginPrune(m_guild.id, days, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Guilds().BeginPrune(m_guild.id, days, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Guilds().BeginPrune(m_guild.id, days);

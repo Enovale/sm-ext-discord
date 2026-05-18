@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -550,27 +550,6 @@ static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, 
 	return 1;
 }
 
-static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const cell_t* params)
-{
-	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
-	if (!interaction) return 0;
-
-	char* name;
-	pContext->LocalToString(params[2], &name);
-
-	dpp::command_value value;
-	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[3]);
-
-	if (type == dpp::co_number) {
-		value = static_cast<double>(sp_ctof(params[4]));
-	} else {
-		value = static_cast<int64_t>(params[4]);
-	}
-
-	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, value));
-	return 1;
-}
-
 static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
@@ -583,6 +562,61 @@ static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext,
 	pContext->LocalToString(params[3], &str_value);
 
 	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
+	return 1;
+}
+
+static cell_t autocomplete_AddAutocompleteChoiceInt(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	int64_t value = static_cast<int64_t>(params[3]);
+	if (!IsInt32Range(value)) {
+		pContext->ReportError("Autocomplete integer choice value exceeds 32-bit range. Use AddAutocompleteChoiceInt64() instead.");
+		return 0;
+	}
+
+	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, value));
+	return 1;
+}
+
+static cell_t autocomplete_AddAutocompleteChoiceInt64(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	char* value_str;
+	pContext->LocalToString(params[3], &value_str);
+
+	int64_t value;
+	if (!ParseInt64(value_str, value)) {
+		const char* display_value = "(null)";
+		if (value_str) {
+			display_value = value_str;
+		}
+		pContext->ReportError("Invalid autocomplete integer choice value: %s", display_value);
+		return 0;
+	}
+
+	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, value));
+	return 1;
+}
+
+static cell_t autocomplete_AddAutocompleteChoiceFloat(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = Handles.GetPointer<DiscordAutocompleteInteraction>(pContext, params[1]);
+	if (!interaction) return 0;
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	interaction->GetResponse().add_autocomplete_choice(dpp::command_option_choice(name, static_cast<double>(sp_ctof(params[3]))));
 	return 1;
 }
 
@@ -711,8 +745,10 @@ extern const sp_nativeinfo_t interaction_natives[] = {
 	{"DiscordAutocompleteInteraction.GetOptionValueFloat", autocomplete_GetOptionValueFloat},
 	{"DiscordAutocompleteInteraction.GetOptionValueBool", autocomplete_GetOptionValueBool},
 	{"DiscordAutocompleteInteraction.CreateAutocompleteResponse", autocomplete_CreateAutocompleteResponse},
-	{"DiscordAutocompleteInteraction.AddAutocompleteChoice", autocomplete_AddAutocompleteChoice},
 	{"DiscordAutocompleteInteraction.AddAutocompleteChoiceString", autocomplete_AddAutocompleteChoiceString},
+	{"DiscordAutocompleteInteraction.AddAutocompleteChoiceInt", autocomplete_AddAutocompleteChoiceInt},
+	{"DiscordAutocompleteInteraction.AddAutocompleteChoiceInt64", autocomplete_AddAutocompleteChoiceInt64},
+	{"DiscordAutocompleteInteraction.AddAutocompleteChoiceFloat", autocomplete_AddAutocompleteChoiceFloat},
 	{"DiscordAutocompleteInteraction.GetFocusedOptionName", autocomplete_GetFocusedOptionName},
 	{"DiscordAutocompleteInteraction.FocusedOptionType.get", autocomplete_GetFocusedOptionType},
 	{"DiscordAutocompleteInteraction.GetFocusedOptionValue", autocomplete_GetFocusedOptionValue},

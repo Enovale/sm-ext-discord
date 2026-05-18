@@ -11,7 +11,7 @@
 #define MAX_DISCORD_CHANNEL_NAME_LENGTH  101
 #define MAX_COMMAND_NAME                 33
 
-// Limits found here: https://discordjs.guide/popular-topics/embeds.html#notes
+// Limits found here: https://discordjs.guide/legacy/popular-topics/embeds#embed-limits
 #define DISCORD_TITLE_LENGTH  257
 #define DISCORD_DESC_LENGTH   4097
 #define DISCORD_FIELD_LENGTH  1025

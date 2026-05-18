@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -101,6 +101,14 @@ static cell_t EntityGetInt(IPluginContext* pContext, const cell_t* params) {
 	if (!entity) return 0;
 
 	return static_cast<cell_t>((entity->*Getter)());
+}
+
+template<typename T, time_t (T::*Getter)() const>
+static cell_t EntityGetTimestampString(IPluginContext* pContext, const cell_t* params) {
+	T* entity = Handles.GetPointer<T>(pContext, params[1]);
+	if (!entity) return 0;
+
+	return WriteTimestampString(pContext, params[2], params[3], (entity->*Getter)());
 }
 
 // Get mention as string (for entities with GetMention() returning std::string)

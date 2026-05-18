@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_embed.h"
 #include "utils/discord_poll.h"
 #include "discord_user.h"
@@ -31,7 +32,7 @@ class DiscordMessage
 {
 private:
 	dpp::message m_message;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	mutable CachedHandle<DiscordUser> m_authorHandle;
 	mutable CachedHandle<DiscordPoll> m_pollHandle;
 
@@ -59,7 +60,7 @@ public:
 
 	DiscordUser* GetAuthor() const {
 		if (!m_client) return nullptr;
-		return new DiscordUser(m_message.author, m_client);
+		return new DiscordUser(m_message.author, m_client.Get());
 	}
 	const char* GetContent() const { return m_message.content.c_str(); }
 	size_t GetContentLength() const { return m_message.content.length(); }
@@ -146,7 +147,7 @@ public:
 	void ReplyEmbed(const char* content, const class DiscordEmbed* embed, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void ReplyFromObject(const DiscordMessage* reply_message, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void Crosspost();
-	void CreateThread(const char* name, int auto_archive_duration = 60, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateThread(const char* name, uint16_t auto_archive_duration = 60, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Message management methods
 	void Edit(const char* new_content, IPluginFunction* callback = nullptr, cell_t data = 0);

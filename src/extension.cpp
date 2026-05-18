@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -19,6 +19,8 @@
  */
 
 #include "extension.h"
+#include "core/async_callback.h"
+#include "core/discord_client.h"
 #include "core/handle_manager.h"
 #include "core/natives_manager.h"
 #include "core/task_manager.h"
@@ -35,8 +37,10 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late) {
 		return false;
 	}
 
+	Tasks.SetAccepting(true);
 	Natives.Initialize();
-  sharesys->RegisterLibrary(myself, "discord");
+	AsyncCallbackTracker::Instance().Register();
+	sharesys->RegisterLibrary(myself, "discord");
 
 	smutils->AddGameFrameHook(&OnGameFrame);
 	return true;
@@ -44,6 +48,9 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late) {
 
 void DiscordExtension::SDK_OnUnload() {
 	smutils->RemoveGameFrameHook(&OnGameFrame);
+	Tasks.SetAccepting(false);
+	DiscordClient::StopAll();
 	Tasks.Clear();
+	AsyncCallbackTracker::Instance().Unregister();
 	Handles.Shutdown();
 }

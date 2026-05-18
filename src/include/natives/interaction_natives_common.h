@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -200,9 +200,10 @@ static cell_t ComponentShowModal(IPluginContext* pContext, const cell_t* params)
 	char* title;
 	pContext->LocalToString(params[3], &title);
 
-	cell_t* components_addr;
-	pContext->LocalToPhysAddr(params[4], &components_addr);
-	int component_count = params[5];
+	int component_count;
+	if (!GetNativeIntInRange(pContext, params[5], 0, 5, "Modal component count", component_count)) return 0;
+	cell_t* components_addr = nullptr;
+	if (component_count > 0 && !GetNativeArray(pContext, params[4], &components_addr, "modal component")) return 0;
 
 	std::vector<dpp::component> components;
 	for (int i = 0; i < component_count; i++) {

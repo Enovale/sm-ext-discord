@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,7 +20,6 @@
 
 #include "core/operations/role_operations.h"
 #include "utils/discord_common.h"
-#include "core/callback_helpers.h"
 #include "core/discord_client.h"
 #include "entities/discord_role.h"
 

@@ -255,15 +255,8 @@ methodmap DiscordChannel < Handle
    */
   public native void GetLastMessageId(char[] buffer, int maxlength);
 
-  /**
-   * Gets the last pin timestamp
-   */
-  property int LastPinTimestamp {
-    public native get();
-  }
-
-  /**
-   * Gets the last pin timestamp as a 64-bit timestamp string
+ /**
+   * Gets the last pin timestamp as a Unix timestamp string
    *
    * @param buffer      Buffer to store the timestamp
    * @param maxlength   Maximum length of the buffer
@@ -447,13 +440,13 @@ methodmap DiscordChannel < Handle
    * Edits permission overwrites for a user or role in this channel
    *
    * @param overwrite_id  ID of the user or role to edit permissions for
-   * @param allow         Permissions to allow (bitfield)
-   * @param deny          Permissions to deny (bitfield)
+   * @param allow         Permissions to allow as string
+   * @param deny          Permissions to deny as string
    * @param is_member     True if overwrite_id is a user, false if it's a role
    * @param callback      Optional callback to receive confirmation
    * @param data          Optional data to pass to callback
    */
-  public native void EditPermissions(const char[] overwrite_id, int allow, int deny, bool is_member, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void EditPermissions(const char[] overwrite_id, const char[] allow, const char[] deny, bool is_member, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Gets user permissions in this channel
@@ -461,7 +454,7 @@ methodmap DiscordChannel < Handle
    * @param user_id   User ID to get permissions for
    * @param buffer    Buffer to store the permissions
    * @param maxlength Maximum length of the buffer
-   * @note            if user not found, buffer will be set to "-1"
+   * @note            If user is not found, buffer will be set to an empty string
    */
   public native void GetUserPermissions(const char[] user_id, char[] buffer, int maxlength);
 
@@ -791,13 +784,13 @@ methodmap DiscordChannel < Handle
    * Gets archived threads from this channel
    *
    * @param is_private        True to get private archived threads, false for public
-   * @param before            Get threads archived before this timestamp (0 for no filter)
+   * @param before            Unix timestamp string to get threads archived before, or empty for no filter
    * @param limit             Maximum number of threads to return (0 for default)
    * @param callback          Callback function to receive the threads
    * @param data              Optional data to pass to callback
    * @note                    Result contains: "items" (DiscordHandleArray of DiscordChannel), "count" (int)
    */
-  public native void GetArchivedThreads(bool is_private, int before = 0, int limit = 0, DiscordResultCallback callback, any data = 0);
+  public native void GetArchivedThreads(bool is_private, const char[] before = NULL_STRING, int limit = 0, DiscordResultCallback callback, any data = 0);
 
   /**
    * Gets all members of this thread

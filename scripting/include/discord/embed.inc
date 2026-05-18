@@ -106,21 +106,20 @@ methodmap DiscordEmbed < Handle
     public native set(int color);
   }
 
-  /**
-   * Gets or sets the embed timestamp (Unix timestamp)
-   */
-  property int Timestamp {
-    public native get();
-    public native set(int timestamp);
-  }
-
-  /**
-   * Gets the embed timestamp as a 64-bit timestamp string
+ /**
+   * Gets the embed timestamp as a Unix timestamp string
    *
    * @param buffer      Buffer to store the timestamp
    * @param maxlength   Maximum length of the buffer
    */
   public native void GetTimestamp(char[] buffer, int maxlength);
+
+  /**
+   * Sets the embed timestamp from a Unix timestamp string
+   *
+   * @param timestamp   Unix timestamp string
+   */
+  public native void SetTimestamp(const char[] timestamp);
 
   /**
    * Gets the embed type

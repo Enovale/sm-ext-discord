@@ -18,11 +18,11 @@ methodmap HttpHeaders < Handle {
   /**
    * Gets a header value
    *
-   * @param name      Header name (must be lowercase, e.g., "content-type", "user-agent")
+   * @param name      Header name
    * @param buffer    Buffer to store the value
-   * @param maxlength    Maximum length of the buffer
+   * @param maxlength Maximum length of the buffer
    * @return          True if header exists, false otherwise
-   * @note            HTTP headers are stored internally in lowercase
+   * @note            Header names are stored and looked up exactly as provided
    */
   public native bool GetHeader(const char[] name, char[] buffer, int maxlength);
 

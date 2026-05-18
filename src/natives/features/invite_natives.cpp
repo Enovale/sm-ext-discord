@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -189,7 +189,7 @@ static cell_t invite_GetCreatedAt(IPluginContext* pContext, const cell_t* params
 	DiscordInvite* invite = Handles.GetPointer<DiscordInvite>(pContext, params[1]);
 	if (!invite) return 0;
 
-	return static_cast<cell_t>(invite->GetCreatedAt());
+	return WriteTimestampString(pContext, params[2], params[3], invite->GetCreatedAt());
 }
 
 static cell_t invite_GetExpiresAt(IPluginContext* pContext, const cell_t* params)
@@ -197,7 +197,7 @@ static cell_t invite_GetExpiresAt(IPluginContext* pContext, const cell_t* params
 	DiscordInvite* invite = Handles.GetPointer<DiscordInvite>(pContext, params[1]);
 	if (!invite) return 0;
 
-	return static_cast<cell_t>(invite->GetExpiresAt());
+	return WriteTimestampString(pContext, params[2], params[3], invite->GetExpiresAt());
 }
 
 static cell_t invite_SetMaxAge(IPluginContext* pContext, const cell_t* params)
@@ -237,7 +237,10 @@ static cell_t invite_SetTargetType(IPluginContext* pContext, const cell_t* param
 	DiscordInvite* invite = Handles.GetPointer<DiscordInvite>(pContext, params[1]);
 	if (!invite) return 0;
 
-	invite->SetTargetType(params[2]);
+	dpp::invite_target_t type;
+	if (!GetNativeEnumInRange(pContext, params[2], dpp::itt_none, dpp::itt_embedded_application, "Invite target type", type)) return 0;
+
+	invite->SetTargetType(type);
 	return 1;
 }
 
@@ -299,8 +302,8 @@ static cell_t invite_Get(IPluginContext* pContext, const cell_t* params)
 	cell_t data = params[4];
 	Handle_t client_handle = discord->GetHandle();
 
-	discord->Invites().Get(code, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResult<DiscordInvite>(client_handle, discord, callback, data, cb);
+	discord->Invites().Get(code, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.Result<DiscordInvite>(cb);
 	});
 
 	return 1;
@@ -331,8 +334,8 @@ extern const sp_nativeinfo_t invite_natives[] = {
 	{"DiscordInvite.IsTemporary.set", invite_SetTemporary},
 	{"DiscordInvite.IsUnique.get", invite_IsUnique},
 	{"DiscordInvite.IsUnique.set", invite_SetUnique},
-	{"DiscordInvite.CreatedAt.get", invite_GetCreatedAt},
-	{"DiscordInvite.ExpiresAt.get", invite_GetExpiresAt},
+	{"DiscordInvite.GetCreatedAt", invite_GetCreatedAt},
+	{"DiscordInvite.GetExpiresAt", invite_GetExpiresAt},
 	{"DiscordInvite.SetTargetUserId", invite_SetTargetUserId},
 	{"DiscordInvite.Create", invite_Create},
 	{"DiscordInvite.Delete", invite_Delete},

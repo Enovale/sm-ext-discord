@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -24,117 +24,111 @@
 #include <string>
 #include <unordered_map>
 
-// Event metadata for unified event registration
-struct EventMeta {
-	CallbackId id;
-	bool hasObjectHandle;  // true if event provides a Handle (message, interaction, etc.)
-};
-
-// Event name to metadata mapping (names match DPP event names)
-inline const std::unordered_map<std::string, EventMeta>& GetEventRegistry() {
-	static const std::unordered_map<std::string, EventMeta> registry = {
+// Event name to id mapping (names match DPP event names)
+inline const std::unordered_map<std::string, CallbackId>& GetEventRegistry() {
+	static const std::unordered_map<std::string, CallbackId> registry = {
 		// Connection events
-		{"ready",                            {CallbackId::Ready,                       false}},
-		{"resumed",                          {CallbackId::Resumed,                     false}},
+		{"ready",                            CallbackId::Ready},
+		{"resumed",                          CallbackId::Resumed},
 		// Message events
-		{"message_create",                   {CallbackId::MessageCreate,               true}},
-		{"message_update",                   {CallbackId::MessageUpdate,               true}},
-		{"message_delete",                   {CallbackId::MessageDelete,               false}},
-		{"message_delete_bulk",              {CallbackId::MessageDeleteBulk,           false}},
-		{"message_reaction_add",             {CallbackId::MessageReactionAdd,          false}},
-		{"message_reaction_remove",          {CallbackId::MessageReactionRemove,       false}},
-		{"message_reaction_remove_all",      {CallbackId::MessageReactionRemoveAll,    false}},
-		{"message_reaction_remove_emoji",    {CallbackId::MessageReactionRemoveEmoji,  false}},
-		{"message_poll_vote_add",            {CallbackId::MessagePollVoteAdd,          false}},
-		{"message_poll_vote_remove",         {CallbackId::MessagePollVoteRemove,       false}},
+		{"message_create",                   CallbackId::MessageCreate},
+		{"message_update",                   CallbackId::MessageUpdate},
+		{"message_delete",                   CallbackId::MessageDelete},
+		{"message_delete_bulk",              CallbackId::MessageDeleteBulk},
+		{"message_reaction_add",             CallbackId::MessageReactionAdd},
+		{"message_reaction_remove",          CallbackId::MessageReactionRemove},
+		{"message_reaction_remove_all",      CallbackId::MessageReactionRemoveAll},
+		{"message_reaction_remove_emoji",    CallbackId::MessageReactionRemoveEmoji},
+		{"message_poll_vote_add",            CallbackId::MessagePollVoteAdd},
+		{"message_poll_vote_remove",         CallbackId::MessagePollVoteRemove},
 		// Channel events
-		{"channel_create",                   {CallbackId::ChannelCreate,               true}},
-		{"channel_update",                   {CallbackId::ChannelUpdate,               true}},
-		{"channel_delete",                   {CallbackId::ChannelDelete,               true}},
-		{"channel_pins_update",              {CallbackId::ChannelPinsUpdate,           false}},
+		{"channel_create",                   CallbackId::ChannelCreate},
+		{"channel_update",                   CallbackId::ChannelUpdate},
+		{"channel_delete",                   CallbackId::ChannelDelete},
+		{"channel_pins_update",              CallbackId::ChannelPinsUpdate},
 		// Thread events
-		{"thread_create",                    {CallbackId::ThreadCreate,                true}},
-		{"thread_update",                    {CallbackId::ThreadUpdate,                true}},
-		{"thread_delete",                    {CallbackId::ThreadDelete,                false}},
-		{"thread_list_sync",                 {CallbackId::ThreadListSync,              false}},
-		{"thread_member_update",             {CallbackId::ThreadMemberUpdate,          false}},
-		{"thread_members_update",            {CallbackId::ThreadMembersUpdate,         false}},
+		{"thread_create",                    CallbackId::ThreadCreate},
+		{"thread_update",                    CallbackId::ThreadUpdate},
+		{"thread_delete",                    CallbackId::ThreadDelete},
+		{"thread_list_sync",                 CallbackId::ThreadListSync},
+		{"thread_member_update",             CallbackId::ThreadMemberUpdate},
+		{"thread_members_update",            CallbackId::ThreadMembersUpdate},
 		// Guild events
-		{"guild_create",                     {CallbackId::GuildCreate,                 true}},
-		{"guild_update",                     {CallbackId::GuildUpdate,                 true}},
-		{"guild_delete",                     {CallbackId::GuildDelete,                 false}},
-		{"guild_ban_add",                    {CallbackId::GuildBanAdd,                 false}},
-		{"guild_ban_remove",                 {CallbackId::GuildBanRemove,              false}},
-		{"guild_emojis_update",              {CallbackId::GuildEmojisUpdate,           false}},
-		{"guild_stickers_update",            {CallbackId::GuildStickersUpdate,         false}},
-		{"guild_integrations_update",        {CallbackId::GuildIntegrationsUpdate,     false}},
-		{"guild_member_add",                 {CallbackId::GuildMemberAdd,              false}},
-		{"guild_member_remove",              {CallbackId::GuildMemberRemove,           false}},
-		{"guild_member_update",              {CallbackId::GuildMemberUpdate,           false}},
-		{"guild_members_chunk",              {CallbackId::GuildMembersChunk,           false}},
-		{"guild_role_create",                {CallbackId::GuildRoleCreate,             true}},
-		{"guild_role_update",                {CallbackId::GuildRoleUpdate,             true}},
-		{"guild_role_delete",                {CallbackId::GuildRoleDelete,             false}},
-		{"guild_scheduled_event_create",     {CallbackId::GuildScheduledEventCreate,   false}},
-		{"guild_scheduled_event_update",     {CallbackId::GuildScheduledEventUpdate,   false}},
-		{"guild_scheduled_event_delete",     {CallbackId::GuildScheduledEventDelete,   false}},
-		{"guild_scheduled_event_user_add",   {CallbackId::GuildScheduledEventUserAdd,  false}},
-		{"guild_scheduled_event_user_remove",{CallbackId::GuildScheduledEventUserRemove,false}},
-		{"guild_audit_log_entry_create",     {CallbackId::GuildAuditLogEntryCreate,    false}},
-		{"guild_join_request_delete",        {CallbackId::GuildJoinRequestDelete,      false}},
+		{"guild_create",                     CallbackId::GuildCreate},
+		{"guild_update",                     CallbackId::GuildUpdate},
+		{"guild_delete",                     CallbackId::GuildDelete},
+		{"guild_ban_add",                    CallbackId::GuildBanAdd},
+		{"guild_ban_remove",                 CallbackId::GuildBanRemove},
+		{"guild_emojis_update",              CallbackId::GuildEmojisUpdate},
+		{"guild_stickers_update",            CallbackId::GuildStickersUpdate},
+		{"guild_integrations_update",        CallbackId::GuildIntegrationsUpdate},
+		{"guild_member_add",                 CallbackId::GuildMemberAdd},
+		{"guild_member_remove",              CallbackId::GuildMemberRemove},
+		{"guild_member_update",              CallbackId::GuildMemberUpdate},
+		{"guild_members_chunk",              CallbackId::GuildMembersChunk},
+		{"guild_role_create",                CallbackId::GuildRoleCreate},
+		{"guild_role_update",                CallbackId::GuildRoleUpdate},
+		{"guild_role_delete",                CallbackId::GuildRoleDelete},
+		{"guild_scheduled_event_create",     CallbackId::GuildScheduledEventCreate},
+		{"guild_scheduled_event_update",     CallbackId::GuildScheduledEventUpdate},
+		{"guild_scheduled_event_delete",     CallbackId::GuildScheduledEventDelete},
+		{"guild_scheduled_event_user_add",   CallbackId::GuildScheduledEventUserAdd},
+		{"guild_scheduled_event_user_remove",CallbackId::GuildScheduledEventUserRemove},
+		{"guild_audit_log_entry_create",     CallbackId::GuildAuditLogEntryCreate},
+		{"guild_join_request_delete",        CallbackId::GuildJoinRequestDelete},
 		// Integration events
-		{"integration_create",               {CallbackId::IntegrationCreate,           false}},
-		{"integration_update",               {CallbackId::IntegrationUpdate,           false}},
-		{"integration_delete",               {CallbackId::IntegrationDelete,           false}},
+		{"integration_create",               CallbackId::IntegrationCreate},
+		{"integration_update",               CallbackId::IntegrationUpdate},
+		{"integration_delete",               CallbackId::IntegrationDelete},
 		// Invite events
-		{"invite_create",                    {CallbackId::InviteCreate,                true}},
-		{"invite_delete",                    {CallbackId::InviteDelete,                false}},
+		{"invite_create",                    CallbackId::InviteCreate},
+		{"invite_delete",                    CallbackId::InviteDelete},
 		// Interaction events
-		{"interaction_create",               {CallbackId::InteractionCreate,           true}},
-		{"slashcommand",                     {CallbackId::Slashcommand,                true}},
-		{"autocomplete",                     {CallbackId::Autocomplete,                true}},
-		{"button_click",                     {CallbackId::ButtonClick,                 true}},
-		{"select_click",                     {CallbackId::SelectClick,                 true}},
-		{"form_submit",                      {CallbackId::FormSubmit,                  true}},
-		{"user_context_menu",                {CallbackId::UserContextMenu,             true}},
-		{"message_context_menu",             {CallbackId::MessageContextMenu,          true}},
+		{"interaction_create",               CallbackId::InteractionCreate},
+		{"slashcommand",                     CallbackId::Slashcommand},
+		{"autocomplete",                     CallbackId::Autocomplete},
+		{"button_click",                     CallbackId::ButtonClick},
+		{"select_click",                     CallbackId::SelectClick},
+		{"form_submit",                      CallbackId::FormSubmit},
+		{"user_context_menu",                CallbackId::UserContextMenu},
+		{"message_context_menu",             CallbackId::MessageContextMenu},
 		// Voice events
-		{"voice_state_update",               {CallbackId::VoiceStateUpdate,            false}},
-		{"voice_server_update",              {CallbackId::VoiceServerUpdate,           false}},
-		{"voice_ready",                      {CallbackId::VoiceReady,                  false}},
-		{"voice_receive",                    {CallbackId::VoiceReceive,                false}},
-		{"voice_track_marker",               {CallbackId::VoiceTrackMarker,            false}},
-		{"voice_client_disconnect",          {CallbackId::VoiceClientDisconnect,       false}},
-		{"voice_client_speaking",            {CallbackId::VoiceClientSpeaking,         false}},
-		{"voice_buffer_send",                {CallbackId::VoiceBufferSend,             false}},
+		{"voice_state_update",               CallbackId::VoiceStateUpdate},
+		{"voice_server_update",              CallbackId::VoiceServerUpdate},
+		{"voice_ready",                      CallbackId::VoiceReady},
+		{"voice_receive",                    CallbackId::VoiceReceive},
+		{"voice_track_marker",               CallbackId::VoiceTrackMarker},
+		{"voice_client_disconnect",          CallbackId::VoiceClientDisconnect},
+		{"voice_client_speaking",            CallbackId::VoiceClientSpeaking},
+		{"voice_buffer_send",                CallbackId::VoiceBufferSend},
 		// Stage events
-		{"stage_instance_create",            {CallbackId::StageInstanceCreate,         false}},
-		{"stage_instance_update",            {CallbackId::StageInstanceUpdate,         false}},
-		{"stage_instance_delete",            {CallbackId::StageInstanceDelete,         false}},
+		{"stage_instance_create",            CallbackId::StageInstanceCreate},
+		{"stage_instance_update",            CallbackId::StageInstanceUpdate},
+		{"stage_instance_delete",            CallbackId::StageInstanceDelete},
 		// Presence events
-		{"presence_update",                  {CallbackId::PresenceUpdate,              false}},
-		{"typing_start",                     {CallbackId::TypingStart,                 false}},
-		{"user_update",                      {CallbackId::UserUpdate,                  true}},
+		{"presence_update",                  CallbackId::PresenceUpdate},
+		{"typing_start",                     CallbackId::TypingStart},
+		{"user_update",                      CallbackId::UserUpdate},
 		// Automod events
-		{"automod_rule_create",              {CallbackId::AutomodRuleCreate,           false}},
-		{"automod_rule_update",              {CallbackId::AutomodRuleUpdate,           false}},
-		{"automod_rule_delete",              {CallbackId::AutomodRuleDelete,           false}},
-		{"automod_rule_execute",             {CallbackId::AutomodRuleExecute,          false}},
+		{"automod_rule_create",              CallbackId::AutomodRuleCreate},
+		{"automod_rule_update",              CallbackId::AutomodRuleUpdate},
+		{"automod_rule_delete",              CallbackId::AutomodRuleDelete},
+		{"automod_rule_execute",             CallbackId::AutomodRuleExecute},
 		// Entitlement events
-		{"entitlement_create",               {CallbackId::EntitlementCreate,           false}},
-		{"entitlement_update",               {CallbackId::EntitlementUpdate,           false}},
-		{"entitlement_delete",               {CallbackId::EntitlementDelete,           false}},
+		{"entitlement_create",               CallbackId::EntitlementCreate},
+		{"entitlement_update",               CallbackId::EntitlementUpdate},
+		{"entitlement_delete",               CallbackId::EntitlementDelete},
 		// Webhook events
-		{"webhooks_update",                  {CallbackId::WebhooksUpdate,              false}},
+		{"webhooks_update",                  CallbackId::WebhooksUpdate},
 		// Misc events
-		{"log",                              {CallbackId::Log,                         false}},
-		{"shutdown",                         {CallbackId::Shutdown,                    false}},
+		{"log",                              CallbackId::Log},
+		{"shutdown",                         CallbackId::Shutdown},
 	};
 	return registry;
 }
 
-// Get event metadata by name (returns nullptr if not found)
-inline const EventMeta* GetEventMeta(const char* name) {
+// Get event id by name (returns nullptr if not found)
+inline const CallbackId* GetEventId(const char* name) {
 	const auto& registry = GetEventRegistry();
 	auto it = registry.find(name);
 	return it != registry.end() ? &it->second : nullptr;

@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -36,15 +36,15 @@ void ThreadOperations::CreateWithMessage(dpp::snowflake channel_id, dpp::snowfla
 	m_cluster->thread_create_with_message(name, channel_id, message_id, auto_archive, rate_limit, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create thread with message"); });
 }
 
-void ThreadOperations::CreateInForum(dpp::snowflake channel_id, const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids, uint16_t auto_archive, uint16_t rate_limit, Callback callback) {
+void ThreadOperations::CreateInForum(dpp::snowflake channel_id, const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids, dpp::auto_archive_duration_t auto_archive, uint16_t rate_limit, Callback callback) {
 	if (!IsValid() || !name || !message) return;
 	dpp::message msg(channel_id, message);
-	m_cluster->thread_create_in_forum(name, channel_id, msg, static_cast<dpp::auto_archive_duration_t>(auto_archive), rate_limit, tag_ids, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create forum thread"); });
+	m_cluster->thread_create_in_forum(name, channel_id, msg, auto_archive, rate_limit, tag_ids, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create forum thread"); });
 }
 
-void ThreadOperations::CreateInForumWithMessage(dpp::snowflake channel_id, const char* name, const dpp::message& message, const std::vector<dpp::snowflake>& tag_ids, uint16_t auto_archive, uint16_t rate_limit, Callback callback) {
+void ThreadOperations::CreateInForumWithMessage(dpp::snowflake channel_id, const char* name, const dpp::message& message, const std::vector<dpp::snowflake>& tag_ids, dpp::auto_archive_duration_t auto_archive, uint16_t rate_limit, Callback callback) {
 	if (!IsValid() || !name) return;
-	m_cluster->thread_create_in_forum(name, channel_id, message, static_cast<dpp::auto_archive_duration_t>(auto_archive), rate_limit, tag_ids, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create forum thread"); });
+	m_cluster->thread_create_in_forum(name, channel_id, message, auto_archive, rate_limit, tag_ids, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create forum thread"); });
 }
 
 void ThreadOperations::GetActive(dpp::snowflake guild_id, Callback callback) {
@@ -93,7 +93,7 @@ void ThreadOperations::Modify(dpp::snowflake thread_id, const std::string& name,
 	dpp::thread th;
 	th.id = thread_id;
 	if (!name.empty()) th.name = name;
-	if (auto_archive > 0) th.metadata.auto_archive_duration = static_cast<dpp::auto_archive_duration_t>(auto_archive);
+	if (auto_archive > 0) th.metadata.auto_archive_duration = auto_archive;
 	if (rate_limit > 0) th.rate_limit_per_user = rate_limit;
 	th.metadata.archived = archived;
 	th.metadata.locked = locked;

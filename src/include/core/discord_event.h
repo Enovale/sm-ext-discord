@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "smsdk_ext.h"
 #include <unordered_map>
 #include <variant>
@@ -33,7 +34,7 @@ class DiscordEvent {
 private:
 	std::string m_name;
 	std::unordered_map<std::string, EventValue> m_data;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	bool m_autoFreeHandles;
 
 public:
@@ -45,7 +46,7 @@ public:
 	void SetFloat(const char* key, float value) { m_data[key] = value; }
 	void SetBool(const char* key, bool value) { m_data[key] = value; }
 	void SetString(const char* key, const std::string& value) { m_data[key] = value; }
-	void SetHandle(const char* key, Handle_t value) { m_data[key] = value; }
+	void SetHandle(const char* key, Handle_t value) { if (value) m_data[key] = value; }
 
 	// Getters
 	int GetInt(const char* key, int defaultValue = 0) const;
@@ -56,7 +57,7 @@ public:
 	bool HasKey(const char* key) const;
 
 	const std::string& GetName() const { return m_name; }
-	DiscordClient* GetClient() const { return m_client; }
+	DiscordClient* GetClient() const { return m_client.Get(); }
 	void SetAutoFreeHandles(bool autoFree) { m_autoFreeHandles = autoFree; }
 	bool GetAutoFreeHandles() const { return m_autoFreeHandles; }
 };

@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -35,10 +35,10 @@ public:
 	dpp::component& GetComponent() { return m_component; }
 	const dpp::component& GetComponent() const { return m_component; }
 
-	void SetType(uint8_t type) { m_component.set_type(static_cast<dpp::component_type>(type)); }
+	void SetType(dpp::component_type type) { m_component.set_type(type); }
 	void SetLabel(const char* label) { if (label) m_component.set_label(label); }
 	void SetCustomId(const char* custom_id) { if (custom_id) m_component.set_id(custom_id); }
-	void SetStyle(uint8_t style) { m_component.set_style(static_cast<dpp::component_style>(style)); }
+	void SetStyle(dpp::component_style style) { m_component.set_style(style); }
 	void SetUrl(const char* url) { if (url) m_component.set_url(url); }
 	void SetDisabled(bool disabled) { m_component.set_disabled(disabled); }
 	void SetPlaceholder(const char* placeholder) { if (placeholder) m_component.set_placeholder(placeholder); }
@@ -72,16 +72,16 @@ public:
 		if (item) m_component.add_media_gallery_item(item->GetComponent());
 	}
 	void SetDivider(bool divider) { m_component.set_divider(divider); }
-	void SetSpacing(uint8_t spacing) { m_component.set_spacing(static_cast<dpp::separator_spacing>(spacing)); }
+	void SetSpacing(dpp::separator_spacing spacing) { m_component.set_spacing(spacing); }
 	void SetAccent(uint32_t accent_color) { m_component.set_accent(accent_color); }
 	void SetDescription(const char* description) { if (description) m_component.set_description(description); }
 	void SetSpoiler(bool spoiler) { m_component.set_spoiler(spoiler); }
 	void SetSkuId(dpp::snowflake sku_id) { m_component.set_sku_id(sku_id); }
-	void SetTextStyle(uint8_t text_style) { m_component.set_text_style(static_cast<dpp::text_style_type>(text_style)); }
+	void SetTextStyle(dpp::text_style_type text_style) { m_component.set_text_style(text_style); }
 	void SetDefaultValue(const char* value) { if (value) m_component.set_default_value(value); }
 	void SetRequired(bool required) { m_component.set_required(required); }
 	void SetMinLength(uint32_t min_length) { m_component.set_min_length(min_length); }
 	void SetMaxLength(uint32_t max_length) { m_component.set_max_length(max_length); }
 	void AddChannelType(uint8_t channel_type) { m_component.add_channel_type(channel_type); }
-	void AddDefaultValue(dpp::snowflake id, uint8_t type) { m_component.add_default_value(id, static_cast<dpp::component_default_value_type>(type)); }
+	void AddDefaultValue(dpp::snowflake id, dpp::component_default_value_type type) { m_component.add_default_value(id, type); }
 };

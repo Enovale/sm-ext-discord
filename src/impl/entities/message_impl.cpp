@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -26,7 +26,7 @@
 #include "utils/discord_embed.h"
 #include "utils/discord_poll.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
 
 void DiscordMessage::AddComponent(const DiscordComponent* component) {
 	if (component) m_message.add_component(component->GetComponent());
@@ -36,8 +36,8 @@ void DiscordMessage::Edit(const char* new_content, IPluginFunction* callback, ce
 	if (!m_client || !new_content) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().Edit(m_message.channel_id, m_message.id, new_content, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().Edit(m_message.channel_id, m_message.id, new_content, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().Edit(m_message.channel_id, m_message.id, new_content);
@@ -48,8 +48,8 @@ void DiscordMessage::EditEmbed(const char* new_content, const DiscordEmbed* embe
 	if (!m_client || !embed) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().EditEmbed(m_message.channel_id, m_message.id, new_content ? new_content : "", embed, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().EditEmbed(m_message.channel_id, m_message.id, new_content ? new_content : "", embed, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().EditEmbed(m_message.channel_id, m_message.id, new_content ? new_content : "", embed);
@@ -60,8 +60,8 @@ void DiscordMessage::EditFromObject(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().EditMessage(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().EditMessage(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().EditMessage(this);
@@ -72,8 +72,8 @@ void DiscordMessage::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().Delete(m_message.channel_id, m_message.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		m_client->Messages().Delete(m_message.channel_id, m_message.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		m_client->Messages().Delete(m_message.channel_id, m_message.id);
@@ -84,8 +84,8 @@ void DiscordMessage::Pin(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().Pin(m_message.channel_id, m_message.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Pin);
+		m_client->Messages().Pin(m_message.channel_id, m_message.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Pin);
 		});
 	} else {
 		m_client->Messages().Pin(m_message.channel_id, m_message.id);
@@ -96,8 +96,8 @@ void DiscordMessage::Unpin(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().Unpin(m_message.channel_id, m_message.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Unpin);
+		m_client->Messages().Unpin(m_message.channel_id, m_message.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Unpin);
 		});
 	} else {
 		m_client->Messages().Unpin(m_message.channel_id, m_message.id);
@@ -131,8 +131,8 @@ void DiscordMessage::Reply(const char* content, IPluginFunction* callback, cell_
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().SendDPPMessage(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().SendDPPMessage(reply_msg, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().SendDPPMessage(reply_msg);
@@ -154,8 +154,8 @@ void DiscordMessage::ReplyEmbed(const char* content, const DiscordEmbed* embed, 
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().SendDPPMessage(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().SendDPPMessage(reply_msg, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().SendDPPMessage(reply_msg);
@@ -173,8 +173,8 @@ void DiscordMessage::ReplyFromObject(const DiscordMessage* reply_message, IPlugi
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().SendDPPMessage(reply_msg, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().SendDPPMessage(reply_msg, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().SendDPPMessage(reply_msg);
@@ -186,12 +186,12 @@ void DiscordMessage::Crosspost() {
 	m_client->Messages().Crosspost(m_message.channel_id, m_message.id);
 }
 
-void DiscordMessage::CreateThread(const char* name, int auto_archive_duration, IPluginFunction* callback, cell_t data) {
+void DiscordMessage::CreateThread(const char* name, uint16_t auto_archive_duration, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !name) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().CreateWithMessage(m_message.channel_id, m_message.id, name, auto_archive_duration, 0, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+		m_client->Threads().CreateWithMessage(m_message.channel_id, m_message.id, name, auto_archive_duration, 0, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel, dpp::thread>(cb);
 		});
 	} else {
 		m_client->Threads().CreateWithMessage(m_message.channel_id, m_message.id, name, auto_archive_duration, 0);
@@ -206,8 +206,8 @@ void DiscordMessage::Send(IPluginFunction* callback, cell_t data) {
 	}
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().SendObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().SendObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().SendObject(this);
@@ -231,8 +231,8 @@ void DiscordMessage::EndPoll() {
 bool DiscordMessage::GetPollAnswerVoters(uint32_t answer_id, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Messages().GetPollAnswerVoters(m_message, answer_id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordUser, dpp::user_map>(client_handle, client, callback, data, cb, DiscordResultType::Voters);
+	m_client->Messages().GetPollAnswerVoters(m_message, answer_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordUser, dpp::user_map>(cb, DiscordResultType::Voters);
 	});
 	return true;
 }

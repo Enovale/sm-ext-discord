@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -188,6 +188,23 @@ public:
 	template<typename T>
 	T* GetPointer(IPluginContext* ctx, Handle_t handle) {
 		return GetPointer<T>(ctx, handle, HandleIdOf<T>::value);
+	}
+
+	template<typename T>
+	T* Read(Handle_t handle, HandleId id) {
+		if (!handle) return nullptr;
+
+		HandleSecurity sec(nullptr, myself->GetIdentity());
+		T* obj = nullptr;
+		if (handlesys->ReadHandle(handle, Get(id), &sec, reinterpret_cast<void**>(&obj)) != HandleError_None) {
+			return nullptr;
+		}
+		return obj;
+	}
+
+	template<typename T>
+	T* Read(Handle_t handle) {
+		return Read<T>(handle, HandleIdOf<T>::value);
 	}
 
 	void FreeHandle(Handle_t handle);

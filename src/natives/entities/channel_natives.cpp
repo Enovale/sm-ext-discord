@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -75,14 +75,15 @@ static cell_t channel_FetchChannel(IPluginContext* pContext, const cell_t* param
 	if (!ParseSnowflake(pContext, channelId, channelFlake)) return 0;
 
 	Handle_t client_handle = discord->GetHandle();
+	AsyncCallback async(client_handle, callback, data);
 	dpp::channel* cached_channel = dpp::find_channel(channelFlake);
 	if (cached_channel) {
 		DiscordChannel* channel = new DiscordChannel(*cached_channel, discord);
-		PushCachedResult<DiscordChannel>(client_handle, discord, callback, data, channel);
+		async.CachedResult<DiscordChannel>(channel);
 		return 1;
 	}
-	discord->Channels().Get(channelFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResult<DiscordChannel>(client_handle, discord, callback, data, confirmation);
+	discord->Channels().Get(channelFlake, [callback = async](const dpp::confirmation_callback_t& confirmation) {
+		callback.Result<DiscordChannel>(confirmation);
 	});
 
 	return 1;
@@ -179,7 +180,8 @@ static cell_t channel_SetPosition(IPluginContext* pContext, const cell_t* params
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	uint16_t position = static_cast<uint16_t>(params[2]);
+	uint16_t position;
+	if (!GetNativeUInt16(pContext, params[2], 65535, "Channel position", position)) return 0;
 	channel->SetPosition(position);
 	return 1;
 }
@@ -189,7 +191,8 @@ static cell_t channel_SetRateLimitPerUser(IPluginContext* pContext, const cell_t
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	uint16_t seconds = static_cast<uint16_t>(params[2]);
+	uint16_t seconds;
+	if (!GetNativeUInt16(pContext, params[2], 21600, "Rate limit per user", seconds)) return 0;
 	channel->SetRateLimitPerUser(seconds);
 	return 1;
 }
@@ -199,7 +202,8 @@ static cell_t channel_SetBitrate(IPluginContext* pContext, const cell_t* params)
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	uint16_t bitrate = static_cast<uint16_t>(params[2]);
+	uint16_t bitrate;
+	if (!GetNativeUInt16(pContext, params[2], 65535, "Bitrate", bitrate)) return 0;
 	channel->SetBitrate(bitrate);
 	return 1;
 }
@@ -209,7 +213,8 @@ static cell_t channel_SetUserLimit(IPluginContext* pContext, const cell_t* param
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	uint8_t limit = static_cast<uint8_t>(params[2]);
+	uint8_t limit;
+	if (!GetNativeUInt8(pContext, params[2], 99, "User limit", limit)) return 0;
 	channel->SetUserLimit(limit);
 	return 1;
 }
@@ -235,7 +240,8 @@ static cell_t channel_AddPermissionOverwrite(IPluginContext* pContext, const cel
 
 	char* targetId;
 	pContext->LocalToString(params[2], &targetId);
-	uint8_t type = static_cast<uint8_t>(params[3]);
+	uint8_t type;
+	if (!GetNativeUInt8(pContext, params[3], dpp::ot_member, "Permission overwrite type", type)) return 0;
 
 	char* allowed_str;
 	char* denied_str;
@@ -262,7 +268,8 @@ static cell_t channel_SetPermissionOverwrite(IPluginContext* pContext, const cel
 
 	char* targetId;
 	pContext->LocalToString(params[2], &targetId);
-	uint8_t type = static_cast<uint8_t>(params[3]);
+	uint8_t type;
+	if (!GetNativeUInt8(pContext, params[3], dpp::ot_member, "Permission overwrite type", type)) return 0;
 
 	char* allowed_str;
 	char* denied_str;
@@ -289,7 +296,8 @@ static cell_t channel_RemovePermissionOverwrite(IPluginContext* pContext, const 
 
 	char* targetId;
 	pContext->LocalToString(params[2], &targetId);
-	uint8_t type = static_cast<uint8_t>(params[3]);
+	uint8_t type;
+	if (!GetNativeUInt8(pContext, params[3], dpp::ot_member, "Permission overwrite type", type)) return 0;
 
 	dpp::snowflake target;
 	if (!ParseSnowflake(pContext, targetId, target)) return 0;
@@ -312,8 +320,26 @@ static cell_t channel_EditPermissions(IPluginContext* pContext, const cell_t* pa
 	dpp::snowflake overwrite_id;
 	if (!ParseSnowflake(pContext, overwrite_id_str, overwrite_id)) return 0;
 
-	uint64_t allow = static_cast<uint64_t>(params[3]);
-	uint64_t deny = static_cast<uint64_t>(params[4]);
+	char* allow_str = nullptr;
+	char* deny_str = nullptr;
+	if (pContext->LocalToString(params[3], &allow_str) != SP_ERROR_NONE || !allow_str) {
+		pContext->ReportError("Could not read allowed permissions string");
+		return 0;
+	}
+	if (pContext->LocalToString(params[4], &deny_str) != SP_ERROR_NONE || !deny_str) {
+		pContext->ReportError("Could not read denied permissions string");
+		return 0;
+	}
+
+	uint64_t allow, deny;
+	if (!ParseUInt64(allow_str, allow)) {
+		pContext->ReportError("Invalid allowed permissions string");
+		return 0;
+	}
+	if (!ParseUInt64(deny_str, deny)) {
+		pContext->ReportError("Invalid denied permissions string");
+		return 0;
+	}
 	bool is_member = params[5];
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
@@ -343,8 +369,10 @@ static cell_t channel_CreateInvite(IPluginContext* pContext, const cell_t* param
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int max_age = params[2];
-	int max_uses = params[3];
+	int max_age;
+	if (!GetNativeIntInRange(pContext, params[2], 0, 604800, "Invite max age", max_age)) return 0;
+	int max_uses;
+	if (!GetNativeIntInRange(pContext, params[3], 0, 100, "Invite max uses", max_uses)) return 0;
 	bool temporary = params[4];
 	bool unique = params[5];
 
@@ -483,15 +511,12 @@ static cell_t channel_GetLastMessageId(IPluginContext* pContext, const cell_t* p
 }
 
 
-static cell_t channel_GetLastPinTimestamp64(IPluginContext* pContext, const cell_t* params)
+static cell_t channel_GetLastPinTimestamp(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	char buffer[32];
-	FormatInt64(static_cast<int64_t>(channel->GetLastPinTimestamp()), buffer, sizeof(buffer));
-	pContext->StringToLocal(params[2], params[3], buffer);
-	return 1;
+	return WriteTimestampString(pContext, params[2], params[3], channel->GetLastPinTimestamp());
 }
 
 
@@ -511,8 +536,15 @@ static cell_t channel_GetPermissionOverwriteTargetId(IPluginContext* pContext, c
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
+	int count = static_cast<int>(channel->GetPermissionOverwriteCount());
+	if (count <= 0) {
+		pContext->ReportError("No permission overwrites are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Permission overwrite index", index)) return 0;
 
-	std::string targetId = channel->GetPermissionOverwriteTargetId(params[2]);
+	std::string targetId = channel->GetPermissionOverwriteTargetId(index);
 	pContext->StringToLocal(params[3], params[4], targetId.c_str());
 	return 1;
 }
@@ -522,7 +554,15 @@ static cell_t channel_GetPermissionOverwriteType(IPluginContext* pContext, const
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	return static_cast<cell_t>(channel->GetPermissionOverwriteType(params[2]));
+	int count = static_cast<int>(channel->GetPermissionOverwriteCount());
+	if (count <= 0) {
+		pContext->ReportError("No permission overwrites are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Permission overwrite index", index)) return 0;
+
+	return static_cast<cell_t>(channel->GetPermissionOverwriteType(index));
 }
 
 
@@ -531,7 +571,13 @@ static cell_t channel_GetAvailableTagName(IPluginContext* pContext, const cell_t
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int index = params[2];
+	int count = static_cast<int>(channel->GetAvailableTagCount());
+	if (count <= 0) {
+		pContext->ReportError("No available tags are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Available tag index", index)) return 0;
 	std::string tagName = channel->GetAvailableTagName(index);
 	pContext->StringToLocal(params[3], params[4], tagName.c_str());
 	return 1;
@@ -542,7 +588,13 @@ static cell_t channel_GetAvailableTagId(IPluginContext* pContext, const cell_t* 
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int index = params[2];
+	int count = static_cast<int>(channel->GetAvailableTagCount());
+	if (count <= 0) {
+		pContext->ReportError("No available tags are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Available tag index", index)) return 0;
 	std::string tagId = channel->GetAvailableTagId(index);
 	pContext->StringToLocal(params[3], params[4], tagId.c_str());
 	return 1;
@@ -553,7 +605,13 @@ static cell_t channel_GetAvailableTagEmoji(IPluginContext* pContext, const cell_
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int index = params[2];
+	int count = static_cast<int>(channel->GetAvailableTagCount());
+	if (count <= 0) {
+		pContext->ReportError("No available tags are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Available tag index", index)) return 0;
 	std::string tagEmoji = channel->GetAvailableTagEmoji(index);
 	pContext->StringToLocal(params[3], params[4], tagEmoji.c_str());
 	return 1;
@@ -564,7 +622,13 @@ static cell_t channel_GetAvailableTagModerated(IPluginContext* pContext, const c
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int index = params[2];
+	int count = static_cast<int>(channel->GetAvailableTagCount());
+	if (count <= 0) {
+		pContext->ReportError("No available tags are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Available tag index", index)) return 0;
 	return channel->GetAvailableTagModerated(index);
 }
 
@@ -573,7 +637,13 @@ static cell_t channel_GetAvailableTagEmojiIsCustom(IPluginContext* pContext, con
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int index = params[2];
+	int count = static_cast<int>(channel->GetAvailableTagCount());
+	if (count <= 0) {
+		pContext->ReportError("No available tags are available");
+		return 0;
+	}
+	int index;
+	if (!GetNativeIntInRange(pContext, params[2], 0, count - 1, "Available tag index", index)) return 0;
 	return channel->GetAvailableTagEmojiIsCustom(index);
 }
 
@@ -638,24 +708,26 @@ static cell_t channel_CreateForumThread(IPluginContext* pContext, const cell_t* 
 	pContext->LocalToString(params[3], &message);
 
 	std::vector<dpp::snowflake> tag_ids;
-	int tag_count = params[5];
+	int tag_count;
+	if (!GetNativeIntInRange(pContext, params[5], 0, 5, "Forum tag count", tag_count)) return 0;
 
-	if (params[4] != 0 && tag_count > 0) {
+	if (tag_count > 0) {
 		cell_t* tag_array;
-		pContext->LocalToPhysAddr(params[4], &tag_array);
+		if (!GetNativeArray(pContext, params[4], &tag_array, "forum tag")) return 0;
 
 		for (int i = 0; i < tag_count; i++) {
 			char* tag_id;
 			pContext->LocalToString(tag_array[i], &tag_id);
 			dpp::snowflake tag_snowflake;
-			if (ParseSnowflake(pContext, tag_id, tag_snowflake)) {
-				tag_ids.push_back(tag_snowflake);
-			}
+			if (!ParseSnowflake(pContext, tag_id, tag_snowflake)) return 0;
+			tag_ids.push_back(tag_snowflake);
 		}
 	}
 
-	int auto_archive = params[6];
-	int rate_limit = params[7];
+	dpp::auto_archive_duration_t auto_archive;
+	if (!GetNativeAutoArchiveEnum(pContext, params[6], "Auto archive duration", auto_archive)) return 0;
+	uint16_t rate_limit;
+	if (!GetNativeUInt16(pContext, params[7], 21600, "Thread rate limit", rate_limit)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[8]);
 
@@ -678,24 +750,26 @@ static cell_t channel_CreateForumThreadEmbed(IPluginContext* pContext, const cel
 	if (!embed) return 0;
 
 	std::vector<dpp::snowflake> tag_ids;
-	int tag_count = params[6];
+	int tag_count;
+	if (!GetNativeIntInRange(pContext, params[6], 0, 5, "Forum tag count", tag_count)) return 0;
 
-	if (params[5] != 0 && tag_count > 0) {
+	if (tag_count > 0) {
 		cell_t* tag_array;
-		pContext->LocalToPhysAddr(params[5], &tag_array);
+		if (!GetNativeArray(pContext, params[5], &tag_array, "forum tag")) return 0;
 
 		for (int i = 0; i < tag_count; i++) {
 			char* tag_id;
 			pContext->LocalToString(tag_array[i], &tag_id);
 			dpp::snowflake tag_snowflake;
-			if (ParseSnowflake(pContext, tag_id, tag_snowflake)) {
-				tag_ids.push_back(tag_snowflake);
-			}
+			if (!ParseSnowflake(pContext, tag_id, tag_snowflake)) return 0;
+			tag_ids.push_back(tag_snowflake);
 		}
 	}
 
-	int auto_archive = params[7];
-	int rate_limit = params[8];
+	dpp::auto_archive_duration_t auto_archive;
+	if (!GetNativeAutoArchiveEnum(pContext, params[7], "Auto archive duration", auto_archive)) return 0;
+	uint16_t rate_limit;
+	if (!GetNativeUInt16(pContext, params[8], 21600, "Thread rate limit", rate_limit)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[9]);
 
@@ -709,7 +783,8 @@ static cell_t channel_GetIconUrl(IPluginContext* pContext, const cell_t* params)
 	DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, params[1]);
 	if (!channel) return 0;
 
-	int size = params[4];
+	uint16_t size;
+	if (!GetNativeUInt16(pContext, params[4], 4096, "Icon size", size)) return 0;
 	std::string iconUrl = channel->GetIconUrl(size);
 	pContext->StringToLocal(params[2], params[3], iconUrl.c_str());
 	return 1;
@@ -723,10 +798,12 @@ static cell_t channel_CreateThread(IPluginContext* pContext, const cell_t* param
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	uint8_t type = params[3];
-	int auto_archive = params[4];
+	dpp::channel_type type = static_cast<dpp::channel_type>(params[3]);
+	uint16_t auto_archive;
+	if (!GetNativeAutoArchiveMinutes(pContext, params[4], false, "Auto archive duration", auto_archive)) return 0;
 	bool invitable = params[5];
-	int rate_limit = params[6];
+	uint16_t rate_limit;
+	if (!GetNativeUInt16(pContext, params[6], 21600, "Thread rate limit", rate_limit)) return 0;
 	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
 
 	cell_t data = params[8];
@@ -748,8 +825,10 @@ static cell_t channel_CreateThreadWithMessage(IPluginContext* pContext, const ce
 	char* name;
 	pContext->LocalToString(params[3], &name);
 
-	int auto_archive = params[4];
-	int rate_limit = params[5];
+	uint16_t auto_archive;
+	if (!GetNativeAutoArchiveMinutes(pContext, params[4], false, "Auto archive duration", auto_archive)) return 0;
+	uint16_t rate_limit;
+	if (!GetNativeUInt16(pContext, params[5], 21600, "Thread rate limit", rate_limit)) return 0;
 	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
 
 	cell_t data = params[7];
@@ -789,8 +868,10 @@ static cell_t channel_ModifyThread(IPluginContext* pContext, const cell_t* param
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	int auto_archive = params[3];
-	int rate_limit = params[4];
+	uint16_t auto_archive;
+	if (!GetNativeAutoArchiveMinutes(pContext, params[3], true, "Auto archive duration", auto_archive)) return 0;
+	uint16_t rate_limit;
+	if (!GetNativeUInt16(pContext, params[4], 21600, "Thread rate limit", rate_limit)) return 0;
 	bool archived = params[5];
 	bool locked = params[6];
 	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
@@ -810,8 +891,11 @@ static cell_t channel_ThreadMemberAdd(IPluginContext* pContext, const cell_t* pa
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
 
+	dpp::snowflake user;
+	if (!ParseSnowflake(pContext, user_id, user)) return 0;
+
 	cell_t data = params[4];
-	channel->ThreadMemberAdd(dpp::snowflake(user_id), callback, data);
+	channel->ThreadMemberAdd(user, callback, data);
 	return 1;
 }
 
@@ -825,8 +909,11 @@ static cell_t channel_ThreadMemberRemove(IPluginContext* pContext, const cell_t*
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
 
+	dpp::snowflake user;
+	if (!ParseSnowflake(pContext, user_id, user)) return 0;
+
 	cell_t data = params[4];
-	channel->ThreadMemberRemove(dpp::snowflake(user_id), callback, data);
+	channel->ThreadMemberRemove(user, callback, data);
 	return 1;
 }
 
@@ -860,8 +947,13 @@ static cell_t channel_GetArchivedThreads(IPluginContext* pContext, const cell_t*
 	if (!channel) return 0;
 
 	bool is_private = params[2];
-	time_t before = static_cast<time_t>(params[3]);
-	uint16_t limit = static_cast<uint16_t>(params[4]);
+	char* before_str;
+	pContext->LocalToString(params[3], &before_str);
+	time_t before;
+	if (!ParseOptionalTimestamp(pContext, before_str, "Archived thread before timestamp", before)) return 0;
+
+	uint16_t limit;
+	if (!GetNativeUInt16(pContext, params[4], 100, "Archived thread limit", limit)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[5]);
 	if (!callback) {
@@ -928,8 +1020,7 @@ extern const sp_nativeinfo_t channel_natives[] = {
 	{"DiscordChannel.Flags.get", EntityGetFlags<DiscordChannel>},
 	{"DiscordChannel.GetOwnerId", channel_GetOwnerId},
 	{"DiscordChannel.GetLastMessageId", channel_GetLastMessageId},
-	{"DiscordChannel.LastPinTimestamp.get", EntityGetInt<DiscordChannel, time_t, &DiscordChannel::GetLastPinTimestamp>},
-	{"DiscordChannel.GetLastPinTimestamp", channel_GetLastPinTimestamp64},
+		{"DiscordChannel.GetLastPinTimestamp", channel_GetLastPinTimestamp},
 	{"DiscordChannel.DefaultThreadRateLimitPerUser.get", EntityGetInt<DiscordChannel, uint16_t, &DiscordChannel::GetDefaultThreadRateLimitPerUser>},
 	{"DiscordChannel.DefaultAutoArchiveDuration.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetDefaultAutoArchiveDuration>},
 	{"DiscordChannel.DefaultSortOrder.get", EntityGetInt<DiscordChannel, uint8_t, &DiscordChannel::GetDefaultSortOrder>},

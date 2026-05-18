@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -25,7 +25,7 @@
 #include "core/natives_manager.h"
 #include "core/task_manager.h"
 #include "core/callback_manager.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
 #include "core/discord_event.h"
 #include "core/event_registry.h"
 

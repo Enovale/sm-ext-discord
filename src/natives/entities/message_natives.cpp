@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -152,8 +152,8 @@ static cell_t message_FetchMessage(IPluginContext* pContext, const cell_t* param
 	if (!ParseSnowflake(pContext, channelId, channelFlake)) return 0;
 
 	Handle_t client_handle = discord->GetHandle();
-	discord->Messages().Get(messageFlake, channelFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResult<DiscordMessage>(client_handle, discord, callback, data, confirmation);
+	discord->Messages().Get(messageFlake, channelFlake, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& confirmation) {
+		callback.Result<DiscordMessage>(confirmation);
 	});
 
 	return 1;
@@ -391,7 +391,8 @@ static cell_t message_CreateThread(IPluginContext* pContext, const cell_t* param
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	int auto_archive_duration = params[3];
+	uint16_t auto_archive_duration;
+	if (!GetNativeAutoArchiveMinutes(pContext, params[3], false, "Auto archive duration", auto_archive_duration)) return 0;
 	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
 
 	cell_t data = params[5];
@@ -399,26 +400,20 @@ static cell_t message_CreateThread(IPluginContext* pContext, const cell_t* param
 	return 1;
 }
 
-static cell_t message_GetTimestamp64(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetTimestamp(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	char buffer[32];
-	FormatInt64(static_cast<int64_t>(message->GetTimestamp()), buffer, sizeof(buffer));
-	pContext->StringToLocal(params[2], params[3], buffer);
-	return 1;
+	return WriteTimestampString(pContext, params[2], params[3], message->GetTimestamp());
 }
 
-static cell_t message_GetEditedTimestamp64(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetEditedTimestamp(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	char buffer[32];
-	FormatInt64(static_cast<int64_t>(message->GetEditedTimestamp()), buffer, sizeof(buffer));
-	pContext->StringToLocal(params[2], params[3], buffer);
-	return 1;
+	return WriteTimestampString(pContext, params[2], params[3], message->GetEditedTimestamp());
 }
 
 static cell_t message_GetReferencedMessageId(IPluginContext* pContext, const cell_t* params)
@@ -572,7 +567,8 @@ static cell_t message_SetType(IPluginContext* pContext, const cell_t* params)
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	message->SetType(static_cast<dpp::message_type>(params[2]));
+	dpp::message_type type = static_cast<dpp::message_type>(params[2]);
+	message->SetType(type);
 	return 1;
 }
 
@@ -581,7 +577,10 @@ static cell_t message_SetFlags(IPluginContext* pContext, const cell_t* params)
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	message->SetFlags(static_cast<uint16_t>(params[2]));
+	uint16_t flags;
+	if (!GetNativeUInt16(pContext, params[2], 0xFFFF, "Message flags", flags)) return 0;
+
+	message->SetFlags(flags);
 	return 1;
 }
 
@@ -663,7 +662,8 @@ static cell_t message_GetPollAnswerVoters(IPluginContext* pContext, const cell_t
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	uint32_t answer_id = static_cast<uint32_t>(params[2]);
+	uint32_t answer_id;
+	if (!GetNativeUInt32(pContext, params[2], 1000, "Poll answer ID", answer_id)) return 0;
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
 	if (!callback) {
 		pContext->ReportError("Invalid callback function");
@@ -703,25 +703,48 @@ static cell_t message_SetAllowedMentions(IPluginContext* pContext, const cell_t*
 	DiscordMessage* message = Handles.GetPointer<DiscordMessage>(pContext, params[1]);
 	if (!message) return 0;
 
-	cell_t* users_array;
-	cell_t* roles_array;
+	constexpr cell_t kMaxAllowedMentionIds = 100;
+	cell_t users_count = params[4];
+	cell_t roles_count = params[6];
 
-	pContext->LocalToPhysAddr(params[3], &users_array);
-	pContext->LocalToPhysAddr(params[5], &roles_array);
+	if (users_count < 0 || users_count > kMaxAllowedMentionIds) {
+		pContext->ReportError("Invalid allowed mention user count %d (must be 0-%d)", users_count, kMaxAllowedMentionIds);
+		return 0;
+	}
 
-	std::vector<dpp::snowflake> users(params[4]);
-	std::vector<dpp::snowflake> roles(params[6]);
+	if (roles_count < 0 || roles_count > kMaxAllowedMentionIds) {
+		pContext->ReportError("Invalid allowed mention role count %d (must be 0-%d)", roles_count, kMaxAllowedMentionIds);
+		return 0;
+	}
+
+	cell_t* users_array = nullptr;
+	cell_t* roles_array = nullptr;
+
+	if (users_count > 0 && pContext->LocalToPhysAddr(params[3], &users_array) != SP_ERROR_NONE) {
+		pContext->ReportError("Invalid allowed mention users array");
+		return 0;
+	}
+
+	if (roles_count > 0 && pContext->LocalToPhysAddr(params[5], &roles_array) != SP_ERROR_NONE) {
+		pContext->ReportError("Invalid allowed mention roles array");
+		return 0;
+	}
+
+	std::vector<dpp::snowflake> users(users_count);
+	std::vector<dpp::snowflake> roles(roles_count);
 
 	for (size_t i = 0; i < users.size(); i++) {
 		char* str;
-		pContext->LocalToString(users_array[i], &str);
-		ParseSnowflake(str, users[i]);
+		if (pContext->LocalToString(users_array[i], &str) != SP_ERROR_NONE || !ParseSnowflake(pContext, str, users[i])) {
+			return 0;
+		}
 	}
 
 	for (size_t i = 0; i < roles.size(); i++) {
 		char* str;
-		pContext->LocalToString(roles_array[i], &str);
-		ParseSnowflake(str, roles[i]);
+		if (pContext->LocalToString(roles_array[i], &str) != SP_ERROR_NONE || !ParseSnowflake(pContext, str, roles[i])) {
+			return 0;
+		}
 	}
 
 	message->SetAllowedMentions(params[2], users, roles);
@@ -813,10 +836,8 @@ extern const sp_nativeinfo_t message_natives[] = {
 	{"DiscordMessage.CreateThread", message_CreateThread},
 	{"DiscordMessage.Flags.get", EntityGetFlags<DiscordMessage>},
 	{"DiscordMessage.Flags.set", message_SetFlags},
-	{"DiscordMessage.Timestamp.get", EntityGetInt<DiscordMessage, time_t, &DiscordMessage::GetTimestamp>},
-	{"DiscordMessage.GetTimestamp", message_GetTimestamp64},
-	{"DiscordMessage.EditedTimestamp.get", EntityGetInt<DiscordMessage, time_t, &DiscordMessage::GetEditedTimestamp>},
-	{"DiscordMessage.GetEditedTimestamp", message_GetEditedTimestamp64},
+		{"DiscordMessage.GetTimestamp", message_GetTimestamp},
+		{"DiscordMessage.GetEditedTimestamp", message_GetEditedTimestamp},
 	{"DiscordMessage.IsDM.get", EntityGetBool<DiscordMessage, &DiscordMessage::IsDM>},
 	{"DiscordMessage.HasRemixAttachment.get", EntityGetBool<DiscordMessage, &DiscordMessage::HasRemixAttachment>},
 	{"DiscordMessage.HasReference.get", EntityGetBool<DiscordMessage, &DiscordMessage::HasReference>},

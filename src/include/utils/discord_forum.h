@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,6 +21,7 @@
 #pragma once
 
 #include "discord_common.h"
+#include <cctype>
 
 class DiscordForumTag
 {
@@ -33,11 +34,14 @@ public:
 		m_tag.set_name(name);
 		if (emoji && emoji[0] != '\0') {
 			size_t len = strlen(emoji);
-			if (std::all_of(emoji, emoji + len, ::isdigit)) {
-				m_tag.emoji = dpp::snowflake(emoji);
-			} else {
-				m_tag.emoji = std::string(emoji);
-			}
+				if (std::all_of(emoji, emoji + len, [](unsigned char c) { return std::isdigit(c); })) {
+					dpp::snowflake emoji_id;
+					if (ParseSnowflake(emoji, emoji_id)) {
+						m_tag.emoji = emoji_id;
+					}
+				} else {
+					m_tag.emoji = std::string(emoji);
+				}
 		}
 		m_tag.moderated = moderated;
 	}
@@ -59,11 +63,14 @@ public:
 	void SetEmoji(const char* emoji) {
 		if (emoji && emoji[0] != '\0') {
 			size_t len = strlen(emoji);
-			if (std::all_of(emoji, emoji + len, ::isdigit)) {
-				m_tag.emoji = dpp::snowflake(emoji);
-			} else {
-				m_tag.emoji = std::string(emoji);
-			}
+				if (std::all_of(emoji, emoji + len, [](unsigned char c) { return std::isdigit(c); })) {
+					dpp::snowflake emoji_id;
+					if (ParseSnowflake(emoji, emoji_id)) {
+						m_tag.emoji = emoji_id;
+					}
+				} else {
+					m_tag.emoji = std::string(emoji);
+				}
 		} else {
 			m_tag.emoji = std::monostate{};
 		}

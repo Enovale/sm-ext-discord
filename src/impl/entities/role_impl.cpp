@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,9 +21,9 @@
 #include "entities/discord_role.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
-#include <fstream>
+#include "core/async_callback.h"
 
+static constexpr std::streamoff kMaxRoleIconBytes = 10 * 1024 * 1024;
 
 bool DiscordRole::HasPermission(const char* permission) const {
 	uint64_t target_perm;
@@ -36,8 +36,8 @@ void DiscordRole::Modify(IPluginFunction* callback, cell_t data) {
 	m_role.guild_id = m_guild_id;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Roles().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordRole>(client_handle, client, callback, data, cb);
+		m_client->Roles().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordRole>(cb);
 		});
 	} else {
 		m_client->Roles().ModifyFromObject(this);
@@ -48,8 +48,8 @@ void DiscordRole::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Roles().Delete(m_guild_id, m_role.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		m_client->Roles().Delete(m_guild_id, m_role.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		m_client->Roles().Delete(m_guild_id, m_role.id);
@@ -72,18 +72,10 @@ bool DiscordRole::SetIcon(const char* filepath, dpp::image_type type) {
 	char fullpath[PLATFORM_MAX_PATH];
 	g_pSM->BuildPath(Path_Game, fullpath, sizeof(fullpath), "%s", filepath);
 
-	std::ifstream file(fullpath, std::ios::binary | std::ios::ate);
-	if (!file.is_open()) {
-		Log.Error("SetIcon: Failed to open file: %s", fullpath);
-		return false;
-	}
-
-	std::streamsize size = file.tellg();
-	file.seekg(0, std::ios::beg);
-
-	std::string buffer(size, '\0');
-	if (!file.read(&buffer[0], size)) {
-		Log.Error("SetIcon: Failed to read file: %s", fullpath);
+	std::string buffer;
+	std::string error;
+	if (!ReadBinaryFile(fullpath, kMaxRoleIconBytes, "role icon file", buffer, error)) {
+		Log.Error("SetIcon: %s", error.c_str());
 		return false;
 	}
 

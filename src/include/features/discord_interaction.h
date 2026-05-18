@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_embed.h"
 #include "entities/discord_user.h"
 #include "core/handle_manager.h"
@@ -30,7 +31,7 @@ class DiscordInteraction
 private:
 	dpp::slashcommand_t m_interaction;
 	std::string m_commandName;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	mutable CachedHandle<DiscordUser> m_userHandle;
 
 public:
@@ -78,13 +79,13 @@ private:
 	std::string m_commandName;
 	dpp::interaction m_command;
 	dpp::autocomplete_t m_autocomplete;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	mutable CachedHandle<DiscordUser> m_userHandle;
 
 public:
 	DiscordAutocompleteInteraction(const dpp::autocomplete_t& autocomplete, DiscordClient* client);
 
-	DiscordClient* GetClient() const { return m_client; }
+	DiscordClient* GetClient() const { return m_client.Get(); }
 	dpp::interaction_response& GetResponse() { return m_response; }
 	const dpp::interaction& GetCommand() const { return m_command; }
 

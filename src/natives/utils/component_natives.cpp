@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -18,7 +18,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "core/handle_manager.h"
+#include "natives/natives_common.h"
 #include "utils/discord_component.h"
 
 static cell_t component_Constructor(IPluginContext* pContext, const cell_t* params)
@@ -34,7 +34,8 @@ static cell_t component_SetType(IPluginContext* pContext, const cell_t* params)
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetType(params[2]);
+	dpp::component_type type = static_cast<dpp::component_type>(params[2]);
+	component->SetType(type);
 	return 1;
 }
 
@@ -65,7 +66,8 @@ static cell_t component_SetStyle(IPluginContext* pContext, const cell_t* params)
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetStyle(params[2]);
+	dpp::component_style style = static_cast<dpp::component_style>(params[2]);
+	component->SetStyle(style);
 	return 1;
 }
 
@@ -105,7 +107,9 @@ static cell_t component_SetMinValues(IPluginContext* pContext, const cell_t* par
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetMinValues(params[2]);
+	uint8_t min_values;
+	if (!GetNativeUInt8(pContext, params[2], 25, "Minimum values", min_values)) return 0;
+	component->SetMinValues(min_values);
 	return 1;
 }
 
@@ -114,7 +118,9 @@ static cell_t component_SetMaxValues(IPluginContext* pContext, const cell_t* par
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetMaxValues(params[2]);
+	uint8_t max_values;
+	if (!GetNativeUInt8(pContext, params[2], 25, "Maximum values", max_values)) return 0;
+	component->SetMaxValues(max_values);
 	return 1;
 }
 
@@ -252,7 +258,8 @@ static cell_t component_SetSpacing(IPluginContext* pContext, const cell_t* param
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetSpacing(params[2]);
+	dpp::separator_spacing spacing = static_cast<dpp::separator_spacing>(params[2]);
+	component->SetSpacing(spacing);
 	return 1;
 }
 
@@ -261,7 +268,10 @@ static cell_t component_SetAccent(IPluginContext* pContext, const cell_t* params
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetAccent(params[2]);
+	uint32_t accent;
+	if (!GetNativeUInt32(pContext, params[2], 0xFFFFFF, "Accent color", accent)) return 0;
+
+	component->SetAccent(accent);
 	return 1;
 }
 
@@ -292,7 +302,9 @@ static cell_t component_SetSkuId(IPluginContext* pContext, const cell_t* params)
 
 	char* sku_id_str;
 	pContext->LocalToString(params[2], &sku_id_str);
-	component->SetSkuId(dpp::snowflake(sku_id_str));
+	dpp::snowflake sku_id;
+	if (!ParseSnowflake(pContext, sku_id_str, sku_id)) return 0;
+	component->SetSkuId(sku_id);
 	return 1;
 }
 
@@ -301,7 +313,8 @@ static cell_t component_SetTextStyle(IPluginContext* pContext, const cell_t* par
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetTextStyle(params[2]);
+	dpp::text_style_type text_style = static_cast<dpp::text_style_type>(params[2]);
+	component->SetTextStyle(text_style);
 	return 1;
 }
 
@@ -330,7 +343,9 @@ static cell_t component_SetMinLength(IPluginContext* pContext, const cell_t* par
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetMinLength(params[2]);
+	uint16_t min_length;
+	if (!GetNativeUInt16(pContext, params[2], 4000, "Minimum length", min_length)) return 0;
+	component->SetMinLength(min_length);
 	return 1;
 }
 
@@ -339,7 +354,9 @@ static cell_t component_SetMaxLength(IPluginContext* pContext, const cell_t* par
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->SetMaxLength(params[2]);
+	uint16_t max_length;
+	if (!GetNativeUInt16(pContext, params[2], 4000, "Maximum length", max_length)) return 0;
+	component->SetMaxLength(max_length);
 	return 1;
 }
 
@@ -348,7 +365,8 @@ static cell_t component_AddChannelType(IPluginContext* pContext, const cell_t* p
 	DiscordComponent* component = Handles.GetPointer<DiscordComponent>(pContext, params[1]);
 	if (!component) return 0;
 
-	component->AddChannelType(params[2]);
+	dpp::channel_type channel_type = static_cast<dpp::channel_type>(params[2]);
+	component->AddChannelType(static_cast<uint8_t>(channel_type));
 	return 1;
 }
 
@@ -359,7 +377,11 @@ static cell_t component_AddDefaultValue(IPluginContext* pContext, const cell_t* 
 
 	char* id_str;
 	pContext->LocalToString(params[2], &id_str);
-	component->AddDefaultValue(dpp::snowflake(id_str), params[3]);
+	dpp::snowflake id;
+	if (!ParseSnowflake(pContext, id_str, id)) return 0;
+
+	dpp::component_default_value_type type = static_cast<dpp::component_default_value_type>(params[3]);
+	component->AddDefaultValue(id, type);
 	return 1;
 }
 

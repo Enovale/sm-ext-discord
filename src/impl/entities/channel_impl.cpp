@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -27,14 +27,18 @@
 #include "utils/discord_embed.h"
 #include "utils/discord_forum.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
+#include "core/async_callback.h"
+#include <cctype>
 
 // Helper to parse emoji (snowflake ID or unicode string)
 static void ParseEmojiForTag(dpp::forum_tag& tag, const char* emoji) {
 	if (!emoji || emoji[0] == '\0') return;
 	size_t len = strlen(emoji);
-	if (std::all_of(emoji, emoji + len, ::isdigit)) {
-		tag.emoji = dpp::snowflake(emoji);
+	if (std::all_of(emoji, emoji + len, [](unsigned char c) { return std::isdigit(c); })) {
+		dpp::snowflake emoji_id;
+		if (ParseSnowflake(emoji, emoji_id)) {
+			tag.emoji = emoji_id;
+		}
 	} else {
 		tag.emoji = std::string(emoji);
 	}
@@ -100,8 +104,8 @@ void DiscordChannel::Modify(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel>(client_handle, client, callback, data, cb);
+		m_client->Channels().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel>(cb);
 		});
 	} else {
 		m_client->Channels().ModifyFromObject(this);
@@ -112,8 +116,8 @@ void DiscordChannel::Delete(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().Delete(m_channel.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::Delete);
+		m_client->Channels().Delete(m_channel.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::Delete);
 		});
 	} else {
 		m_client->Channels().Delete(m_channel.id);
@@ -125,7 +129,7 @@ void DiscordChannel::AddPermissionOverwrite(dpp::snowflake target_id, uint8_t ty
 
 	dpp::permission_overwrite overwrite;
 	overwrite.id = target_id;
-	overwrite.type = static_cast<dpp::overwrite_type>(type);
+	overwrite.type = type;
 	overwrite.allow = allowed;
 	overwrite.deny = denied;
 
@@ -133,8 +137,8 @@ void DiscordChannel::AddPermissionOverwrite(dpp::snowflake target_id, uint8_t ty
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel>(client_handle, client, callback, data, cb);
+		m_client->Channels().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel>(cb);
 		});
 	} else {
 		m_client->Channels().ModifyFromObject(this);
@@ -146,7 +150,7 @@ void DiscordChannel::SetPermissionOverwrite(dpp::snowflake target_id, uint8_t ty
 
 	dpp::permission_overwrite overwrite;
 	overwrite.id = target_id;
-	overwrite.type = static_cast<dpp::overwrite_type>(type);
+	overwrite.type = type;
 	overwrite.allow = allowed;
 	overwrite.deny = denied;
 
@@ -167,8 +171,8 @@ void DiscordChannel::SetPermissionOverwrite(dpp::snowflake target_id, uint8_t ty
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel>(client_handle, client, callback, data, cb);
+		m_client->Channels().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel>(cb);
 		});
 	} else {
 		m_client->Channels().ModifyFromObject(this);
@@ -188,8 +192,8 @@ void DiscordChannel::RemovePermissionOverwrite(dpp::snowflake target_id, uint8_t
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().ModifyFromObject(this, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel>(client_handle, client, callback, data, cb);
+		m_client->Channels().ModifyFromObject(this, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel>(cb);
 		});
 	} else {
 		m_client->Channels().ModifyFromObject(this);
@@ -215,8 +219,8 @@ void DiscordChannel::CreateInvite(int max_age, int max_uses, bool temporary, boo
 	invite.unique = unique;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Invites().CreateWithChannel(m_channel, invite, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordInvite>(client_handle, client, callback, data, cb);
+		m_client->Invites().CreateWithChannel(m_channel, invite, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordInvite>(cb);
 		});
 	} else {
 		m_client->Invites().CreateWithChannel(m_channel, invite);
@@ -227,8 +231,8 @@ void DiscordChannel::CreateInviteFromObject(const DiscordInvite* invite_obj, IPl
 	if (!m_client || !invite_obj) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Invites().CreateWithChannel(m_channel, invite_obj->GetDPPInvite(), [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordInvite>(client_handle, client, callback, data, cb);
+		m_client->Invites().CreateWithChannel(m_channel, invite_obj->GetDPPInvite(), [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordInvite>(cb);
 		});
 	} else {
 		m_client->Invites().CreateWithChannel(m_channel, invite_obj->GetDPPInvite());
@@ -238,8 +242,8 @@ void DiscordChannel::CreateInviteFromObject(const DiscordInvite* invite_obj, IPl
 bool DiscordChannel::GetInvites(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Channels().GetInvites(m_channel, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordInvite, dpp::invite_map>(client_handle, client, callback, data, cb, DiscordResultType::Invites);
+	m_client->Channels().GetInvites(m_channel, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordInvite, dpp::invite_map>(cb, DiscordResultType::Invites);
 	});
 	return true;
 }
@@ -247,8 +251,8 @@ bool DiscordChannel::GetInvites(IPluginFunction* callback, cell_t data) {
 bool DiscordChannel::GetWebhooks(IPluginFunction* callback, cell_t data) {
 	if (!m_client || !m_client->IsRunning() || !callback) return false;
 	Handle_t client_handle = m_client->GetHandle();
-	m_client->Channels().GetWebhooks(m_channel.id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordWebhook, dpp::webhook_map>(client_handle, client, callback, data, cb, DiscordResultType::Webhooks);
+	m_client->Channels().GetWebhooks(m_channel.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordWebhook, dpp::webhook_map>(cb, DiscordResultType::Webhooks);
 	});
 	return true;
 }
@@ -257,8 +261,8 @@ void DiscordChannel::SendMessage(const char* content, IPluginFunction* callback,
 	if (!m_client || !content) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().Send(m_channel.id, content, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().Send(m_channel.id, content, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().Send(m_channel.id, content);
@@ -269,8 +273,8 @@ void DiscordChannel::SendMessageEmbed(const char* content, const DiscordEmbed* e
 	if (!m_client || !embed) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().SendEmbed(m_channel.id, content ? content : "", embed, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().SendEmbed(m_channel.id, content ? content : "", embed, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().SendEmbed(m_channel.id, content ? content : "", embed);
@@ -281,8 +285,8 @@ void DiscordChannel::SendDiscordMessage(const DiscordMessage* message, IPluginFu
 	if (!m_client || !message) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Messages().SendObjectToChannel(m_channel.id, message, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordMessage>(client_handle, client, callback, data, cb);
+		m_client->Messages().SendObjectToChannel(m_channel.id, message, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordMessage>(cb);
 		});
 	} else {
 		m_client->Messages().SendObjectToChannel(m_channel.id, message);
@@ -353,21 +357,21 @@ void DiscordChannel::ApplyForumTag(const DiscordForumTag* tag) {
 	m_client->Channels().ModifyFromObject(this);
 }
 
-void DiscordChannel::CreateForumThread(const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids, int auto_archive, int rate_limit, IPluginFunction* callback, cell_t data) {
+void DiscordChannel::CreateForumThread(const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids, dpp::auto_archive_duration_t auto_archive, uint16_t rate_limit, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !name || !message) return;
 
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
 		m_client->Threads().CreateInForum(m_channel.id, name, message, tag_ids, auto_archive, rate_limit,
-			[client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+			[callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Result<DiscordChannel, dpp::thread>(cb);
 			});
 	} else {
 		m_client->Threads().CreateInForum(m_channel.id, name, message, tag_ids, auto_archive, rate_limit);
 	}
 }
 
-void DiscordChannel::CreateForumThreadEmbed(const char* name, const char* message, const DiscordEmbed* embed, const std::vector<dpp::snowflake>& tag_ids, int auto_archive, int rate_limit, IPluginFunction* callback, cell_t data) {
+void DiscordChannel::CreateForumThreadEmbed(const char* name, const char* message, const DiscordEmbed* embed, const std::vector<dpp::snowflake>& tag_ids, dpp::auto_archive_duration_t auto_archive, uint16_t rate_limit, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !name || !message || !embed) return;
 
 	dpp::message starter_message(m_channel.id, message);
@@ -376,33 +380,33 @@ void DiscordChannel::CreateForumThreadEmbed(const char* name, const char* messag
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
 		m_client->Threads().CreateInForumWithMessage(m_channel.id, name, starter_message, tag_ids, auto_archive, rate_limit,
-			[client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+			[callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Result<DiscordChannel, dpp::thread>(cb);
 			});
 	} else {
 		m_client->Threads().CreateInForumWithMessage(m_channel.id, name, starter_message, tag_ids, auto_archive, rate_limit);
 	}
 }
 
-void DiscordChannel::CreateThread(const char* name, uint8_t type, int auto_archive, bool invitable, int rate_limit, IPluginFunction* callback, cell_t data) {
+void DiscordChannel::CreateThread(const char* name, dpp::channel_type type, uint16_t auto_archive, bool invitable, uint16_t rate_limit, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !name) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().Create(m_channel.id, name, static_cast<dpp::channel_type>(type), auto_archive, invitable, rate_limit,
-			[client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-				PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+		m_client->Threads().Create(m_channel.id, name, type, auto_archive, invitable, rate_limit,
+			[callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+				callback.Result<DiscordChannel, dpp::thread>(cb);
 			});
 	} else {
-		m_client->Threads().Create(m_channel.id, name, static_cast<dpp::channel_type>(type), auto_archive, invitable, rate_limit);
+		m_client->Threads().Create(m_channel.id, name, type, auto_archive, invitable, rate_limit);
 	}
 }
 
-void DiscordChannel::CreateThreadWithMessage(dpp::snowflake message_id, const char* name, int auto_archive, int rate_limit, IPluginFunction* callback, cell_t data) {
+void DiscordChannel::CreateThreadWithMessage(dpp::snowflake message_id, const char* name, uint16_t auto_archive, uint16_t rate_limit, IPluginFunction* callback, cell_t data) {
 	if (!m_client || !name) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().CreateWithMessage(m_channel.id, message_id, name, auto_archive, rate_limit, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+		m_client->Threads().CreateWithMessage(m_channel.id, message_id, name, auto_archive, rate_limit, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel, dpp::thread>(cb);
 		});
 	} else {
 		m_client->Threads().CreateWithMessage(m_channel.id, message_id, name, auto_archive, rate_limit);
@@ -413,8 +417,8 @@ void DiscordChannel::JoinThread(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().Join(m_channel.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Threads().Join(m_channel.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Threads().Join(m_channel.id);
@@ -425,20 +429,20 @@ void DiscordChannel::LeaveThread(IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().Leave(m_channel.id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Threads().Leave(m_channel.id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Threads().Leave(m_channel.id);
 	}
 }
 
-void DiscordChannel::ModifyThread(const char* name, int auto_archive, int rate_limit, bool archived, bool locked, IPluginFunction* callback, cell_t data) {
+void DiscordChannel::ModifyThread(const char* name, uint16_t auto_archive, uint16_t rate_limit, bool archived, bool locked, IPluginFunction* callback, cell_t data) {
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().Modify(m_channel.id, name ? name : "", auto_archive, rate_limit, archived, locked, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Threads().Modify(m_channel.id, name ? name : "", auto_archive, rate_limit, archived, locked, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Threads().Modify(m_channel.id, name ? name : "", auto_archive, rate_limit, archived, locked);
@@ -449,8 +453,8 @@ void DiscordChannel::ThreadMemberAdd(dpp::snowflake user_id, IPluginFunction* ca
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().MemberAdd(m_channel.id, user_id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::ThreadMemberAdd);
+		m_client->Threads().MemberAdd(m_channel.id, user_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::ThreadMemberAdd);
 		});
 	} else {
 		m_client->Threads().MemberAdd(m_channel.id, user_id);
@@ -461,8 +465,8 @@ void DiscordChannel::ThreadMemberRemove(dpp::snowflake user_id, IPluginFunction*
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().MemberRemove(m_channel.id, user_id, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb, DiscordResultType::ThreadMemberRemove);
+		m_client->Threads().MemberRemove(m_channel.id, user_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb, DiscordResultType::ThreadMemberRemove);
 		});
 	} else {
 		m_client->Threads().MemberRemove(m_channel.id, user_id);
@@ -473,8 +477,8 @@ void DiscordChannel::SetArchived(bool archived, IPluginFunction* callback, cell_
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().Archive(m_channel.id, archived, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+		m_client->Threads().Archive(m_channel.id, archived, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel, dpp::thread>(cb);
 		});
 	} else {
 		m_client->Threads().Archive(m_channel.id, archived);
@@ -485,8 +489,8 @@ void DiscordChannel::SetLocked(bool locked, IPluginFunction* callback, cell_t da
 	if (!m_client) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Threads().Lock(m_channel.id, locked, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushResult<DiscordChannel, dpp::thread>(client_handle, client, callback, data, cb);
+		m_client->Threads().Lock(m_channel.id, locked, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Result<DiscordChannel, dpp::thread>(cb);
 		});
 	} else {
 		m_client->Threads().Lock(m_channel.id, locked);
@@ -499,8 +503,8 @@ bool DiscordChannel::GetArchivedThreads(bool is_private, time_t before, uint16_t
 	Handle_t client_handle = m_client->GetHandle();
 	dpp::snowflake channel_id = m_channel.id;
 
-	auto handler = [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordChannel, dpp::thread_map>(client_handle, client, callback, data, cb, DiscordResultType::Threads);
+	auto handler = [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordChannel, dpp::thread_map>(cb, DiscordResultType::Threads);
 	};
 
 	if (is_private) {
@@ -517,8 +521,8 @@ bool DiscordChannel::GetThreadMembers(IPluginFunction* callback, cell_t data) {
 	Handle_t client_handle = m_client->GetHandle();
 	dpp::snowflake thread_id = m_channel.id;
 
-	m_client->Threads().GetMembers(thread_id, [client = m_client, client_handle, callback, data](const dpp::confirmation_callback_t& cb) {
-		PushResultList<DiscordThreadMember, dpp::thread_member_map>(client_handle, client, callback, data, cb, DiscordResultType::ThreadMembers);
+	m_client->Threads().GetMembers(thread_id, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+		callback.ResultList<DiscordThreadMember, dpp::thread_member_map>(cb, DiscordResultType::ThreadMembers);
 	});
 	return true;
 }
@@ -527,8 +531,8 @@ void DiscordChannel::EditPermissions(dpp::snowflake overwrite_id, uint64_t allow
 	if (!m_client || !m_client->IsRunning()) return;
 	if (callback) {
 		Handle_t client_handle = m_client->GetHandle();
-		m_client->Channels().EditPermissions(m_channel.id, overwrite_id, allow, deny, is_member, [client_handle, client = m_client, callback, data](const dpp::confirmation_callback_t& cb) {
-			PushConfirm(client_handle, client, callback, data, cb);
+		m_client->Channels().EditPermissions(m_channel.id, overwrite_id, allow, deny, is_member, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& cb) {
+			callback.Confirm(cb);
 		});
 	} else {
 		m_client->Channels().EditPermissions(m_channel.id, overwrite_id, allow, deny, is_member);

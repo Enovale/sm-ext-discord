@@ -44,6 +44,7 @@ New message received.
 | guild_id | string | Guild snowflake ID |
 | author_id | string | Author user ID |
 | content | string | Message content |
+| content_length | int | Message content length (⚠️not including any null-termination) |
 
 ### message_update
 Message was edited.

@@ -28,15 +28,15 @@ jobs:
           - ubuntu-22.04
           - windows-latest
         sm_version:
-          - "1.11"
+          - "1.12"
           - "latest"
 
         include:
           - sm_version: latest
             sm_branch: master
 
-          - sm_version: "1.11"
-            sm_branch: "1.11-dev"
+          - sm_version: "1.12"
+            sm_branch: "1.12-dev"
 
           - os: windows-latest
             os_short: win-latest

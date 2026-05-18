@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_embed.h"
 #include "utils/discord_forum.h"
 
@@ -27,7 +28,7 @@ class DiscordChannel
 {
 private:
 	dpp::channel m_channel;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 
 public:
 	DiscordChannel(const dpp::channel& chnl) : m_channel(chnl), m_client(nullptr) {}
@@ -143,15 +144,15 @@ public:
 	void ApplyForumTag(const class DiscordForumTag* tag);
 
 	// Forum thread creation
-	void CreateForumThread(const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids = {}, int auto_archive = 1440, int rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
-	void CreateForumThreadEmbed(const char* name, const char* message, const class DiscordEmbed* embed, const std::vector<dpp::snowflake>& tag_ids = {}, int auto_archive = 1440, int rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateForumThread(const char* name, const char* message, const std::vector<dpp::snowflake>& tag_ids = {}, dpp::auto_archive_duration_t auto_archive = dpp::arc_1_day, uint16_t rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateForumThreadEmbed(const char* name, const char* message, const class DiscordEmbed* embed, const std::vector<dpp::snowflake>& tag_ids = {}, dpp::auto_archive_duration_t auto_archive = dpp::arc_1_day, uint16_t rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	// Thread management
-	void CreateThread(const char* name, uint8_t type = 11, int auto_archive = 1440, bool invitable = true, int rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
-	void CreateThreadWithMessage(dpp::snowflake message_id, const char* name, int auto_archive = 1440, int rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateThread(const char* name, dpp::channel_type type = dpp::CHANNEL_PUBLIC_THREAD, uint16_t auto_archive = 1440, bool invitable = true, uint16_t rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void CreateThreadWithMessage(dpp::snowflake message_id, const char* name, uint16_t auto_archive = 1440, uint16_t rate_limit = 0, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void JoinThread(IPluginFunction* callback = nullptr, cell_t data = 0);
 	void LeaveThread(IPluginFunction* callback = nullptr, cell_t data = 0);
-	void ModifyThread(const char* name, int auto_archive = 0, int rate_limit = 0, bool archived = false, bool locked = false, IPluginFunction* callback = nullptr, cell_t data = 0);
+	void ModifyThread(const char* name, uint16_t auto_archive = 0, uint16_t rate_limit = 0, bool archived = false, bool locked = false, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void ThreadMemberAdd(dpp::snowflake user_id, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void ThreadMemberRemove(dpp::snowflake user_id, IPluginFunction* callback = nullptr, cell_t data = 0);
 	void SetArchived(bool archived, IPluginFunction* callback = nullptr, cell_t data = 0);

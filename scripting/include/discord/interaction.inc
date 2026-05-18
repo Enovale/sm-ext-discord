@@ -72,7 +72,7 @@ methodmap DiscordInteraction < Handle
    *
    * @param name      Name of the option
    * @return          Integer value of the option, 0 if option doesn't exist
-   * @note            WARNING: Discord integers are 64-bit. Values exceeding int32 range will be truncated.
+   * @note            WARNING: Discord integers are 64-bit. Values exceeding int32 range will cause a native error.
    *                  Use GetOptionValueInt64() for full 64-bit integers.
    */
   public native int GetOptionValueInt(const char[] name);

@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,13 +20,14 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_common.h"
 
 class DiscordUser
 {
 private:
 	dpp::user m_user;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 
 public:
 	DiscordUser(const dpp::user& user, DiscordClient* client) : m_user(user), m_client(client) {}
@@ -46,5 +47,5 @@ public:
 
 	// Internal accessors
 	const dpp::user& GetDPPUser() const { return m_user; }
-	DiscordClient* GetClient() const { return m_client; }
+	DiscordClient* GetClient() const { return m_client.Get(); }
 };

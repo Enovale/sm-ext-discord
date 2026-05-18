@@ -6,7 +6,7 @@ methodmap Discord < Handle {
    * @param token     Discord bot token
    * @param intents   Optional Discord intents bitmask to control what events the bot receives (default: DISCORD_INTENTS_DEFAULT | Intent_MessageContent)
    * @return          New Discord client handle, or null on failure
-   * @note            If no intents specified, the bot will use all available intents for backward compatibility.
+   * @note            If no intents specified, the bot will use default intents plus message content.
    *                  For better performance and compliance, specify only the intents you need
    */
   public native Discord(const char[] token, DiscordIntents intents = DISCORD_INTENTS_DEFAULT | Intent_MessageContent);
@@ -45,18 +45,18 @@ methodmap Discord < Handle {
   /**
    * Gets the bot's user ID
    *
-   * @param buffer    Buffer to store the ID
+   * @param buffer       Buffer to store the ID
    * @param maxlength    Maximum length of the buffer
-   * @return          True if successful, false otherwise
+   * @return             True if successful, false otherwise
    */
   public native bool GetBotId(char[] buffer, int maxlength);
 
   /**
    * Gets the bot's username
    *
-   * @param buffer    Buffer to store the username
+   * @param buffer       Buffer to store the username
    * @param maxlength    Maximum length of the buffer
-   * @return          True if successful, false otherwise
+   * @return             True if successful, false otherwise
    */
   public native bool GetBotName(char[] buffer, int maxlength);
 
@@ -72,9 +72,9 @@ methodmap Discord < Handle {
   /**
    * Gets the bot's avatar URL
    *
-   * @param buffer    Buffer to store the URL
+   * @param buffer       Buffer to store the URL
    * @param maxlength    Maximum length of the buffer
-   * @return          True if successful, false otherwise
+   * @return             True if successful, false otherwise
    */
   public native bool GetBotAvatarUrl(char[] buffer, int maxlength);
 
@@ -125,10 +125,10 @@ methodmap Discord < Handle {
    * Sends a DiscordMessage object to a specific channel
    *
    * @param channel_id Target channel ID
-   * @param message   DiscordMessage object to send
-   * @param callback  Optional callback to receive the created message
-   * @param data      Optional data to pass to callback
-   * @note            This will override the channel ID in the message object
+   * @param message    DiscordMessage object to send
+   * @param callback   Optional callback to receive the created message
+   * @param data       Optional data to pass to callback
+   * @note             This will override the channel ID in the message object
    */
   public native void SendMessageFromObjectToChannel(const char[] channel_id, DiscordMessage message, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 

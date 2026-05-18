@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -28,6 +28,8 @@ EventHandler::~EventHandler() {
 }
 
 void EventHandler::RegisterEvent(CallbackId id) {
+	std::lock_guard<std::mutex> lock(m_eventMutex);
+
 	if (!m_cluster) return;
 
 	size_t idx = static_cast<size_t>(id);
@@ -40,246 +42,258 @@ void EventHandler::RegisterEvent(CallbackId id) {
 		m_detachFuncs[idx] = [ptr, h]() { ptr->detach(h); };
 	};
 
+	Handle_t clientHandle = m_client ? m_client->GetHandle() : BAD_HANDLE;
+	auto dispatch = [clientHandle](auto method) {
+		return [clientHandle, method](const auto& event) {
+			auto eventCopy = event;
+			Tasks.Push([clientHandle, method, eventCopy = std::move(eventCopy)]() mutable {
+				DiscordClient* client = Handles.Read<DiscordClient>(clientHandle);
+				if (!client) return;
+				(client->Events().*method)(eventCopy);
+			});
+		};
+	};
+
 	switch (id) {
 		case CallbackId::Ready:
-			reg(m_cluster->on_ready, [this](const dpp::ready_t& e) { OnReady(e); });
+			reg(m_cluster->on_ready, dispatch(&EventHandler::OnReady));
 			break;
 		case CallbackId::Resumed:
-			reg(m_cluster->on_resumed, [this](const dpp::resumed_t& e) { OnResumed(e); });
+			reg(m_cluster->on_resumed, dispatch(&EventHandler::OnResumed));
 			break;
 		case CallbackId::MessageCreate:
-			reg(m_cluster->on_message_create, [this](const dpp::message_create_t& e) { OnMessageCreate(e); });
+			reg(m_cluster->on_message_create, dispatch(&EventHandler::OnMessageCreate));
 			break;
 		case CallbackId::MessageUpdate:
-			reg(m_cluster->on_message_update, [this](const dpp::message_update_t& e) { OnMessageUpdate(e); });
+			reg(m_cluster->on_message_update, dispatch(&EventHandler::OnMessageUpdate));
 			break;
 		case CallbackId::MessageDelete:
-			reg(m_cluster->on_message_delete, [this](const dpp::message_delete_t& e) { OnMessageDelete(e); });
+			reg(m_cluster->on_message_delete, dispatch(&EventHandler::OnMessageDelete));
 			break;
 		case CallbackId::MessageDeleteBulk:
-			reg(m_cluster->on_message_delete_bulk, [this](const dpp::message_delete_bulk_t& e) { OnMessageDeleteBulk(e); });
+			reg(m_cluster->on_message_delete_bulk, dispatch(&EventHandler::OnMessageDeleteBulk));
 			break;
 		case CallbackId::MessageReactionAdd:
-			reg(m_cluster->on_message_reaction_add, [this](const dpp::message_reaction_add_t& e) { OnMessageReactionAdd(e); });
+			reg(m_cluster->on_message_reaction_add, dispatch(&EventHandler::OnMessageReactionAdd));
 			break;
 		case CallbackId::MessageReactionRemove:
-			reg(m_cluster->on_message_reaction_remove, [this](const dpp::message_reaction_remove_t& e) { OnMessageReactionRemove(e); });
+			reg(m_cluster->on_message_reaction_remove, dispatch(&EventHandler::OnMessageReactionRemove));
 			break;
 		case CallbackId::MessageReactionRemoveAll:
-			reg(m_cluster->on_message_reaction_remove_all, [this](const dpp::message_reaction_remove_all_t& e) { OnMessageReactionRemoveAll(e); });
+			reg(m_cluster->on_message_reaction_remove_all, dispatch(&EventHandler::OnMessageReactionRemoveAll));
 			break;
 		case CallbackId::MessageReactionRemoveEmoji:
-			reg(m_cluster->on_message_reaction_remove_emoji, [this](const dpp::message_reaction_remove_emoji_t& e) { OnMessageReactionRemoveEmoji(e); });
+			reg(m_cluster->on_message_reaction_remove_emoji, dispatch(&EventHandler::OnMessageReactionRemoveEmoji));
 			break;
 		case CallbackId::MessagePollVoteAdd:
-			reg(m_cluster->on_message_poll_vote_add, [this](const dpp::message_poll_vote_add_t& e) { OnMessagePollVoteAdd(e); });
+			reg(m_cluster->on_message_poll_vote_add, dispatch(&EventHandler::OnMessagePollVoteAdd));
 			break;
 		case CallbackId::MessagePollVoteRemove:
-			reg(m_cluster->on_message_poll_vote_remove, [this](const dpp::message_poll_vote_remove_t& e) { OnMessagePollVoteRemove(e); });
+			reg(m_cluster->on_message_poll_vote_remove, dispatch(&EventHandler::OnMessagePollVoteRemove));
 			break;
 		case CallbackId::ChannelCreate:
-			reg(m_cluster->on_channel_create, [this](const dpp::channel_create_t& e) { OnChannelCreate(e); });
+			reg(m_cluster->on_channel_create, dispatch(&EventHandler::OnChannelCreate));
 			break;
 		case CallbackId::ChannelUpdate:
-			reg(m_cluster->on_channel_update, [this](const dpp::channel_update_t& e) { OnChannelUpdate(e); });
+			reg(m_cluster->on_channel_update, dispatch(&EventHandler::OnChannelUpdate));
 			break;
 		case CallbackId::ChannelDelete:
-			reg(m_cluster->on_channel_delete, [this](const dpp::channel_delete_t& e) { OnChannelDelete(e); });
+			reg(m_cluster->on_channel_delete, dispatch(&EventHandler::OnChannelDelete));
 			break;
 		case CallbackId::ChannelPinsUpdate:
-			reg(m_cluster->on_channel_pins_update, [this](const dpp::channel_pins_update_t& e) { OnChannelPinsUpdate(e); });
+			reg(m_cluster->on_channel_pins_update, dispatch(&EventHandler::OnChannelPinsUpdate));
 			break;
 		case CallbackId::ThreadCreate:
-			reg(m_cluster->on_thread_create, [this](const dpp::thread_create_t& e) { OnThreadCreate(e); });
+			reg(m_cluster->on_thread_create, dispatch(&EventHandler::OnThreadCreate));
 			break;
 		case CallbackId::ThreadUpdate:
-			reg(m_cluster->on_thread_update, [this](const dpp::thread_update_t& e) { OnThreadUpdate(e); });
+			reg(m_cluster->on_thread_update, dispatch(&EventHandler::OnThreadUpdate));
 			break;
 		case CallbackId::ThreadDelete:
-			reg(m_cluster->on_thread_delete, [this](const dpp::thread_delete_t& e) { OnThreadDelete(e); });
+			reg(m_cluster->on_thread_delete, dispatch(&EventHandler::OnThreadDelete));
 			break;
 		case CallbackId::ThreadListSync:
-			reg(m_cluster->on_thread_list_sync, [this](const dpp::thread_list_sync_t& e) { OnThreadListSync(e); });
+			reg(m_cluster->on_thread_list_sync, dispatch(&EventHandler::OnThreadListSync));
 			break;
 		case CallbackId::ThreadMemberUpdate:
-			reg(m_cluster->on_thread_member_update, [this](const dpp::thread_member_update_t& e) { OnThreadMemberUpdate(e); });
+			reg(m_cluster->on_thread_member_update, dispatch(&EventHandler::OnThreadMemberUpdate));
 			break;
 		case CallbackId::ThreadMembersUpdate:
-			reg(m_cluster->on_thread_members_update, [this](const dpp::thread_members_update_t& e) { OnThreadMembersUpdate(e); });
+			reg(m_cluster->on_thread_members_update, dispatch(&EventHandler::OnThreadMembersUpdate));
 			break;
 		case CallbackId::GuildCreate:
-			reg(m_cluster->on_guild_create, [this](const dpp::guild_create_t& e) { OnGuildCreate(e); });
+			reg(m_cluster->on_guild_create, dispatch(&EventHandler::OnGuildCreate));
 			break;
 		case CallbackId::GuildUpdate:
-			reg(m_cluster->on_guild_update, [this](const dpp::guild_update_t& e) { OnGuildUpdate(e); });
+			reg(m_cluster->on_guild_update, dispatch(&EventHandler::OnGuildUpdate));
 			break;
 		case CallbackId::GuildDelete:
-			reg(m_cluster->on_guild_delete, [this](const dpp::guild_delete_t& e) { OnGuildDelete(e); });
+			reg(m_cluster->on_guild_delete, dispatch(&EventHandler::OnGuildDelete));
 			break;
 		case CallbackId::GuildBanAdd:
-			reg(m_cluster->on_guild_ban_add, [this](const dpp::guild_ban_add_t& e) { OnGuildBanAdd(e); });
+			reg(m_cluster->on_guild_ban_add, dispatch(&EventHandler::OnGuildBanAdd));
 			break;
 		case CallbackId::GuildBanRemove:
-			reg(m_cluster->on_guild_ban_remove, [this](const dpp::guild_ban_remove_t& e) { OnGuildBanRemove(e); });
+			reg(m_cluster->on_guild_ban_remove, dispatch(&EventHandler::OnGuildBanRemove));
 			break;
 		case CallbackId::GuildEmojisUpdate:
-			reg(m_cluster->on_guild_emojis_update, [this](const dpp::guild_emojis_update_t& e) { OnGuildEmojisUpdate(e); });
+			reg(m_cluster->on_guild_emojis_update, dispatch(&EventHandler::OnGuildEmojisUpdate));
 			break;
 		case CallbackId::GuildStickersUpdate:
-			reg(m_cluster->on_guild_stickers_update, [this](const dpp::guild_stickers_update_t& e) { OnGuildStickersUpdate(e); });
+			reg(m_cluster->on_guild_stickers_update, dispatch(&EventHandler::OnGuildStickersUpdate));
 			break;
 		case CallbackId::GuildIntegrationsUpdate:
-			reg(m_cluster->on_guild_integrations_update, [this](const dpp::guild_integrations_update_t& e) { OnGuildIntegrationsUpdate(e); });
+			reg(m_cluster->on_guild_integrations_update, dispatch(&EventHandler::OnGuildIntegrationsUpdate));
 			break;
 		case CallbackId::GuildMemberAdd:
-			reg(m_cluster->on_guild_member_add, [this](const dpp::guild_member_add_t& e) { OnGuildMemberAdd(e); });
+			reg(m_cluster->on_guild_member_add, dispatch(&EventHandler::OnGuildMemberAdd));
 			break;
 		case CallbackId::GuildMemberRemove:
-			reg(m_cluster->on_guild_member_remove, [this](const dpp::guild_member_remove_t& e) { OnGuildMemberRemove(e); });
+			reg(m_cluster->on_guild_member_remove, dispatch(&EventHandler::OnGuildMemberRemove));
 			break;
 		case CallbackId::GuildMemberUpdate:
-			reg(m_cluster->on_guild_member_update, [this](const dpp::guild_member_update_t& e) { OnGuildMemberUpdate(e); });
+			reg(m_cluster->on_guild_member_update, dispatch(&EventHandler::OnGuildMemberUpdate));
 			break;
 		case CallbackId::GuildMembersChunk:
-			reg(m_cluster->on_guild_members_chunk, [this](const dpp::guild_members_chunk_t& e) { OnGuildMembersChunk(e); });
+			reg(m_cluster->on_guild_members_chunk, dispatch(&EventHandler::OnGuildMembersChunk));
 			break;
 		case CallbackId::GuildRoleCreate:
-			reg(m_cluster->on_guild_role_create, [this](const dpp::guild_role_create_t& e) { OnGuildRoleCreate(e); });
+			reg(m_cluster->on_guild_role_create, dispatch(&EventHandler::OnGuildRoleCreate));
 			break;
 		case CallbackId::GuildRoleUpdate:
-			reg(m_cluster->on_guild_role_update, [this](const dpp::guild_role_update_t& e) { OnGuildRoleUpdate(e); });
+			reg(m_cluster->on_guild_role_update, dispatch(&EventHandler::OnGuildRoleUpdate));
 			break;
 		case CallbackId::GuildRoleDelete:
-			reg(m_cluster->on_guild_role_delete, [this](const dpp::guild_role_delete_t& e) { OnGuildRoleDelete(e); });
+			reg(m_cluster->on_guild_role_delete, dispatch(&EventHandler::OnGuildRoleDelete));
 			break;
 		case CallbackId::GuildScheduledEventCreate:
-			reg(m_cluster->on_guild_scheduled_event_create, [this](const dpp::guild_scheduled_event_create_t& e) { OnGuildScheduledEventCreate(e); });
+			reg(m_cluster->on_guild_scheduled_event_create, dispatch(&EventHandler::OnGuildScheduledEventCreate));
 			break;
 		case CallbackId::GuildScheduledEventUpdate:
-			reg(m_cluster->on_guild_scheduled_event_update, [this](const dpp::guild_scheduled_event_update_t& e) { OnGuildScheduledEventUpdate(e); });
+			reg(m_cluster->on_guild_scheduled_event_update, dispatch(&EventHandler::OnGuildScheduledEventUpdate));
 			break;
 		case CallbackId::GuildScheduledEventDelete:
-			reg(m_cluster->on_guild_scheduled_event_delete, [this](const dpp::guild_scheduled_event_delete_t& e) { OnGuildScheduledEventDelete(e); });
+			reg(m_cluster->on_guild_scheduled_event_delete, dispatch(&EventHandler::OnGuildScheduledEventDelete));
 			break;
 		case CallbackId::GuildScheduledEventUserAdd:
-			reg(m_cluster->on_guild_scheduled_event_user_add, [this](const dpp::guild_scheduled_event_user_add_t& e) { OnGuildScheduledEventUserAdd(e); });
+			reg(m_cluster->on_guild_scheduled_event_user_add, dispatch(&EventHandler::OnGuildScheduledEventUserAdd));
 			break;
 		case CallbackId::GuildScheduledEventUserRemove:
-			reg(m_cluster->on_guild_scheduled_event_user_remove, [this](const dpp::guild_scheduled_event_user_remove_t& e) { OnGuildScheduledEventUserRemove(e); });
+			reg(m_cluster->on_guild_scheduled_event_user_remove, dispatch(&EventHandler::OnGuildScheduledEventUserRemove));
 			break;
 		case CallbackId::GuildAuditLogEntryCreate:
-			reg(m_cluster->on_guild_audit_log_entry_create, [this](const dpp::guild_audit_log_entry_create_t& e) { OnGuildAuditLogEntryCreate(e); });
+			reg(m_cluster->on_guild_audit_log_entry_create, dispatch(&EventHandler::OnGuildAuditLogEntryCreate));
 			break;
 		case CallbackId::GuildJoinRequestDelete:
-			reg(m_cluster->on_guild_join_request_delete, [this](const dpp::guild_join_request_delete_t& e) { OnGuildJoinRequestDelete(e); });
+			reg(m_cluster->on_guild_join_request_delete, dispatch(&EventHandler::OnGuildJoinRequestDelete));
 			break;
 		case CallbackId::IntegrationCreate:
-			reg(m_cluster->on_integration_create, [this](const dpp::integration_create_t& e) { OnIntegrationCreate(e); });
+			reg(m_cluster->on_integration_create, dispatch(&EventHandler::OnIntegrationCreate));
 			break;
 		case CallbackId::IntegrationUpdate:
-			reg(m_cluster->on_integration_update, [this](const dpp::integration_update_t& e) { OnIntegrationUpdate(e); });
+			reg(m_cluster->on_integration_update, dispatch(&EventHandler::OnIntegrationUpdate));
 			break;
 		case CallbackId::IntegrationDelete:
-			reg(m_cluster->on_integration_delete, [this](const dpp::integration_delete_t& e) { OnIntegrationDelete(e); });
+			reg(m_cluster->on_integration_delete, dispatch(&EventHandler::OnIntegrationDelete));
 			break;
 		case CallbackId::InviteCreate:
-			reg(m_cluster->on_invite_create, [this](const dpp::invite_create_t& e) { OnInviteCreate(e); });
+			reg(m_cluster->on_invite_create, dispatch(&EventHandler::OnInviteCreate));
 			break;
 		case CallbackId::InviteDelete:
-			reg(m_cluster->on_invite_delete, [this](const dpp::invite_delete_t& e) { OnInviteDelete(e); });
+			reg(m_cluster->on_invite_delete, dispatch(&EventHandler::OnInviteDelete));
 			break;
 		case CallbackId::InteractionCreate:
-			reg(m_cluster->on_interaction_create, [this](const dpp::interaction_create_t& e) { OnInteractionCreate(e); });
+			reg(m_cluster->on_interaction_create, dispatch(&EventHandler::OnInteractionCreate));
 			break;
 		case CallbackId::Slashcommand:
-			reg(m_cluster->on_slashcommand, [this](const dpp::slashcommand_t& e) { OnSlashcommand(e); });
+			reg(m_cluster->on_slashcommand, dispatch(&EventHandler::OnSlashcommand));
 			break;
 		case CallbackId::Autocomplete:
-			reg(m_cluster->on_autocomplete, [this](const dpp::autocomplete_t& e) { OnAutocomplete(e); });
+			reg(m_cluster->on_autocomplete, dispatch(&EventHandler::OnAutocomplete));
 			break;
 		case CallbackId::ButtonClick:
-			reg(m_cluster->on_button_click, [this](const dpp::button_click_t& e) { OnButtonClick(e); });
+			reg(m_cluster->on_button_click, dispatch(&EventHandler::OnButtonClick));
 			break;
 		case CallbackId::SelectClick:
-			reg(m_cluster->on_select_click, [this](const dpp::select_click_t& e) { OnSelectClick(e); });
+			reg(m_cluster->on_select_click, dispatch(&EventHandler::OnSelectClick));
 			break;
 		case CallbackId::FormSubmit:
-			reg(m_cluster->on_form_submit, [this](const dpp::form_submit_t& e) { OnFormSubmit(e); });
+			reg(m_cluster->on_form_submit, dispatch(&EventHandler::OnFormSubmit));
 			break;
 		case CallbackId::UserContextMenu:
-			reg(m_cluster->on_user_context_menu, [this](const dpp::user_context_menu_t& e) { OnUserContextMenu(e); });
+			reg(m_cluster->on_user_context_menu, dispatch(&EventHandler::OnUserContextMenu));
 			break;
 		case CallbackId::MessageContextMenu:
-			reg(m_cluster->on_message_context_menu, [this](const dpp::message_context_menu_t& e) { OnMessageContextMenu(e); });
+			reg(m_cluster->on_message_context_menu, dispatch(&EventHandler::OnMessageContextMenu));
 			break;
 		case CallbackId::VoiceStateUpdate:
-			reg(m_cluster->on_voice_state_update, [this](const dpp::voice_state_update_t& e) { OnVoiceStateUpdate(e); });
+			reg(m_cluster->on_voice_state_update, dispatch(&EventHandler::OnVoiceStateUpdate));
 			break;
 		case CallbackId::VoiceServerUpdate:
-			reg(m_cluster->on_voice_server_update, [this](const dpp::voice_server_update_t& e) { OnVoiceServerUpdate(e); });
+			reg(m_cluster->on_voice_server_update, dispatch(&EventHandler::OnVoiceServerUpdate));
 			break;
 		case CallbackId::VoiceReady:
-			reg(m_cluster->on_voice_ready, [this](const dpp::voice_ready_t& e) { OnVoiceReady(e); });
+			reg(m_cluster->on_voice_ready, dispatch(&EventHandler::OnVoiceReady));
 			break;
 		case CallbackId::VoiceReceive:
-			reg(m_cluster->on_voice_receive, [this](const dpp::voice_receive_t& e) { OnVoiceReceive(e); });
+			reg(m_cluster->on_voice_receive, dispatch(&EventHandler::OnVoiceReceive));
 			break;
 		case CallbackId::VoiceTrackMarker:
-			reg(m_cluster->on_voice_track_marker, [this](const dpp::voice_track_marker_t& e) { OnVoiceTrackMarker(e); });
+			reg(m_cluster->on_voice_track_marker, dispatch(&EventHandler::OnVoiceTrackMarker));
 			break;
 		case CallbackId::VoiceClientDisconnect:
-			reg(m_cluster->on_voice_client_disconnect, [this](const dpp::voice_client_disconnect_t& e) { OnVoiceClientDisconnect(e); });
+			reg(m_cluster->on_voice_client_disconnect, dispatch(&EventHandler::OnVoiceClientDisconnect));
 			break;
 		case CallbackId::VoiceClientSpeaking:
-			reg(m_cluster->on_voice_client_speaking, [this](const dpp::voice_client_speaking_t& e) { OnVoiceClientSpeaking(e); });
+			reg(m_cluster->on_voice_client_speaking, dispatch(&EventHandler::OnVoiceClientSpeaking));
 			break;
 		case CallbackId::VoiceBufferSend:
-			reg(m_cluster->on_voice_buffer_send, [this](const dpp::voice_buffer_send_t& e) { OnVoiceBufferSend(e); });
+			reg(m_cluster->on_voice_buffer_send, dispatch(&EventHandler::OnVoiceBufferSend));
 			break;
 		case CallbackId::StageInstanceCreate:
-			reg(m_cluster->on_stage_instance_create, [this](const dpp::stage_instance_create_t& e) { OnStageInstanceCreate(e); });
+			reg(m_cluster->on_stage_instance_create, dispatch(&EventHandler::OnStageInstanceCreate));
 			break;
 		case CallbackId::StageInstanceUpdate:
-			reg(m_cluster->on_stage_instance_update, [this](const dpp::stage_instance_update_t& e) { OnStageInstanceUpdate(e); });
+			reg(m_cluster->on_stage_instance_update, dispatch(&EventHandler::OnStageInstanceUpdate));
 			break;
 		case CallbackId::StageInstanceDelete:
-			reg(m_cluster->on_stage_instance_delete, [this](const dpp::stage_instance_delete_t& e) { OnStageInstanceDelete(e); });
+			reg(m_cluster->on_stage_instance_delete, dispatch(&EventHandler::OnStageInstanceDelete));
 			break;
 		case CallbackId::PresenceUpdate:
-			reg(m_cluster->on_presence_update, [this](const dpp::presence_update_t& e) { OnPresenceUpdate(e); });
+			reg(m_cluster->on_presence_update, dispatch(&EventHandler::OnPresenceUpdate));
 			break;
 		case CallbackId::TypingStart:
-			reg(m_cluster->on_typing_start, [this](const dpp::typing_start_t& e) { OnTypingStart(e); });
+			reg(m_cluster->on_typing_start, dispatch(&EventHandler::OnTypingStart));
 			break;
 		case CallbackId::UserUpdate:
-			reg(m_cluster->on_user_update, [this](const dpp::user_update_t& e) { OnUserUpdate(e); });
+			reg(m_cluster->on_user_update, dispatch(&EventHandler::OnUserUpdate));
 			break;
 		case CallbackId::AutomodRuleCreate:
-			reg(m_cluster->on_automod_rule_create, [this](const dpp::automod_rule_create_t& e) { OnAutomodRuleCreate(e); });
+			reg(m_cluster->on_automod_rule_create, dispatch(&EventHandler::OnAutomodRuleCreate));
 			break;
 		case CallbackId::AutomodRuleUpdate:
-			reg(m_cluster->on_automod_rule_update, [this](const dpp::automod_rule_update_t& e) { OnAutomodRuleUpdate(e); });
+			reg(m_cluster->on_automod_rule_update, dispatch(&EventHandler::OnAutomodRuleUpdate));
 			break;
 		case CallbackId::AutomodRuleDelete:
-			reg(m_cluster->on_automod_rule_delete, [this](const dpp::automod_rule_delete_t& e) { OnAutomodRuleDelete(e); });
+			reg(m_cluster->on_automod_rule_delete, dispatch(&EventHandler::OnAutomodRuleDelete));
 			break;
 		case CallbackId::AutomodRuleExecute:
-			reg(m_cluster->on_automod_rule_execute, [this](const dpp::automod_rule_execute_t& e) { OnAutomodRuleExecute(e); });
+			reg(m_cluster->on_automod_rule_execute, dispatch(&EventHandler::OnAutomodRuleExecute));
 			break;
 		case CallbackId::EntitlementCreate:
-			reg(m_cluster->on_entitlement_create, [this](const dpp::entitlement_create_t& e) { OnEntitlementCreate(e); });
+			reg(m_cluster->on_entitlement_create, dispatch(&EventHandler::OnEntitlementCreate));
 			break;
 		case CallbackId::EntitlementUpdate:
-			reg(m_cluster->on_entitlement_update, [this](const dpp::entitlement_update_t& e) { OnEntitlementUpdate(e); });
+			reg(m_cluster->on_entitlement_update, dispatch(&EventHandler::OnEntitlementUpdate));
 			break;
 		case CallbackId::EntitlementDelete:
-			reg(m_cluster->on_entitlement_delete, [this](const dpp::entitlement_delete_t& e) { OnEntitlementDelete(e); });
+			reg(m_cluster->on_entitlement_delete, dispatch(&EventHandler::OnEntitlementDelete));
 			break;
 		case CallbackId::WebhooksUpdate:
-			reg(m_cluster->on_webhooks_update, [this](const dpp::webhooks_update_t& e) { OnWebhooksUpdate(e); });
+			reg(m_cluster->on_webhooks_update, dispatch(&EventHandler::OnWebhooksUpdate));
 			break;
 		case CallbackId::Log:
-			reg(m_cluster->on_log, [this](const dpp::log_t& e) { OnLog(e); });
+			reg(m_cluster->on_log, dispatch(&EventHandler::OnLog));
 			break;
 		default:
 			break;
@@ -287,6 +301,8 @@ void EventHandler::RegisterEvent(CallbackId id) {
 }
 
 void EventHandler::Detach() {
+	std::lock_guard<std::mutex> lock(m_eventMutex);
+
 	for (size_t i = 0; i < m_detachFuncs.size(); ++i) {
 		if (m_detachFuncs[i]) {
 			m_detachFuncs[i]();
@@ -296,7 +312,9 @@ void EventHandler::Detach() {
 	m_registeredEvents.reset();
 }
 
-void EventHandler::UnregisterEvent(CallbackId id) {
+void EventHandler::DetachEvent(CallbackId id) {
+	std::lock_guard<std::mutex> lock(m_eventMutex);
+
 	size_t idx = static_cast<size_t>(id);
 	if (!m_registeredEvents.test(idx)) return;
 
@@ -305,31 +323,10 @@ void EventHandler::UnregisterEvent(CallbackId id) {
 		m_detachFuncs[idx] = nullptr;
 	}
 	m_registeredEvents.reset(idx);
-	m_callbacks.Get(id).Release();
 }
 
 void EventHandler::DispatchEvent(CallbackId id, DiscordEvent* event) {
-	auto& cb = m_callbacks.Get(id);
-	if (!cb.IsValid()) {
-		delete event;
-		return;
-	}
-
-	Handle_t clientHandle = m_client->GetHandle();
-	IChangeableForward* forward = cb.forward;
-	cell_t data = cb.data;
-
-	Tasks.Push([clientHandle, forward, data, event]() {
-		Handle_t eventHandle = Handles.CreateCallback(event, HandleId::DiscordEvent);
-		if (!eventHandle) return;
-
-		forward->PushCell(clientHandle);
-		forward->PushCell(eventHandle);
-		forward->PushCell(data);
-		forward->Execute(nullptr);
-
-		Handles.FreeHandle(eventHandle);
-	});
+	DispatchCallbackEvent(m_callbacks.Get(id), event);
 }
 
 void EventHandler::OnReady(const dpp::ready_t& event) {
@@ -365,6 +362,7 @@ void EventHandler::OnMessageCreate(const dpp::message_create_t& event) {
 	ev->SetString("guild_id", event.msg.guild_id.str());
 	ev->SetString("author_id", event.msg.author.id.str());
 	ev->SetString("content", event.msg.content);
+	ev->SetInt("content_length", static_cast<int>(event.msg.content.length()));
 
 	DispatchEvent(CallbackId::MessageCreate, ev);
 }

@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,7 +21,6 @@
 #include "core/operations/channel_operations.h"
 #include "utils/discord_common.h"
 #include "core/discord_client.h"
-#include "core/callback_helpers.h"
 #include "entities/discord_channel.h"
 
 void ChannelOperations::Get(dpp::snowflake channel_id, Callback callback) {

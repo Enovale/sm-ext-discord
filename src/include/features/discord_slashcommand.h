@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_common.h"
 
 class DiscordSlashCommand
@@ -27,7 +28,7 @@ class DiscordSlashCommand
 private:
 	dpp::slashcommand m_command;
 	std::vector<dpp::command_option> m_options;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	dpp::snowflake m_guild_id; // Store guild ID for guild-specific commands
 	std::vector<dpp::command_permission> m_permissions; // Store command permissions
 
@@ -68,31 +69,43 @@ public:
 		m_command.options = m_options;
 	}
 
-	void AddChoiceOption(const char* name, const char* description, dpp::command_option_type type, bool required = false) {
-		dpp::command_option option(type, name, description, required);
+	void AddStringOptionWithChoices(const char* name, const char* description, bool required = false) {
+		dpp::command_option option(dpp::co_string, name, description, required);
 		m_options.push_back(option);
 		m_command.options = m_options;
 	}
 
-	void AddStringChoice(const char* choice_name, const char* choice_value) {
-		if (!m_options.empty()) {
-			m_options.back().add_choice(dpp::command_option_choice(choice_name, std::string(choice_value)));
-			m_command.options = m_options;
-		}
+	void AddIntOptionWithChoices(const char* name, const char* description, bool required = false) {
+		dpp::command_option option(dpp::co_integer, name, description, required);
+		m_options.push_back(option);
+		m_command.options = m_options;
 	}
 
-	void AddIntChoice(const char* choice_name, int64_t choice_value) {
-		if (!m_options.empty()) {
-			m_options.back().add_choice(dpp::command_option_choice(choice_name, choice_value));
-			m_command.options = m_options;
-		}
+	void AddFloatOptionWithChoices(const char* name, const char* description, bool required = false) {
+		dpp::command_option option(dpp::co_number, name, description, required);
+		m_options.push_back(option);
+		m_command.options = m_options;
 	}
 
-	void AddFloatChoice(const char* choice_name, double choice_value) {
-		if (!m_options.empty()) {
-			m_options.back().add_choice(dpp::command_option_choice(choice_name, choice_value));
-			m_command.options = m_options;
-		}
+	bool AddStringChoice(const char* choice_name, const char* choice_value) {
+		if (!LastOptionIs(dpp::co_string)) return false;
+		m_options.back().add_choice(dpp::command_option_choice(choice_name, std::string(choice_value)));
+		m_command.options = m_options;
+		return true;
+	}
+
+	bool AddIntChoice(const char* choice_name, int64_t choice_value) {
+		if (!LastOptionIs(dpp::co_integer)) return false;
+		m_options.back().add_choice(dpp::command_option_choice(choice_name, choice_value));
+		m_command.options = m_options;
+		return true;
+	}
+
+	bool AddFloatChoice(const char* choice_name, double choice_value) {
+		if (!LastOptionIs(dpp::co_number)) return false;
+		m_options.back().add_choice(dpp::command_option_choice(choice_name, choice_value));
+		m_command.options = m_options;
+		return true;
 	}
 
 	void RegisterToGuild(dpp::snowflake guild_id, IPluginFunction* callback = nullptr, cell_t data = 0);
@@ -205,4 +218,9 @@ public:
 	static void BulkDeleteGlobal(DiscordClient* client, IPluginFunction* callback = nullptr, cell_t data = 0);
 
 	const dpp::slashcommand& GetCommand() const { return m_command; }
+
+	bool LastOptionIs(dpp::command_option_type type) const {
+		if (m_options.empty()) return false;
+		return m_options.back().type == type;
+	}
 };

@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -24,15 +24,38 @@
 #include "core/callback_manager.h"
 #include "core/event_handler.h"
 #include "core/operations/operations.h"
+#include <mutex>
+#include <unordered_set>
 
 class DiscordClient
 {
 private:
 	std::unique_ptr<dpp::cluster> m_cluster;
-	Handle_t m_discord_handle = 0;
+	Handle_t m_discord_handle{0};
 	CallbackManager m_callbacks;
 	std::unique_ptr<EventHandler> m_eventHandler;
-	bool m_startCalled = false;
+	bool m_started{false};
+	bool m_stopping{false};
+	bool m_valid{false};
+	static std::mutex s_clientsMutex;
+	static std::unordered_set<DiscordClient*> s_clients;
+
+	void DispatchShutdownEvent();
+
+	template<typename Func>
+	bool ForEachConnectedShard(Func&& func) const {
+		if (!m_cluster) return false;
+
+		bool found = false;
+		for (const auto& shardEntry : m_cluster->get_shards()) {
+			dpp::discord_client* shard{shardEntry.second};
+			if (!shard || !shard->is_connected()) continue;
+
+			found = true;
+			func(shard);
+		}
+		return found;
+	}
 
 	// Operations
 	std::unique_ptr<MessageOperations> m_messageOps;
@@ -58,6 +81,7 @@ public:
 
 	void Start();
 	void Stop();
+	bool IsValid() const;
 	bool IsRunning() const;
 	void SendClosePacket();
 
@@ -92,6 +116,9 @@ public:
 	uint16_t GetBotDiscriminator() const { return m_cluster ? m_cluster->me.discriminator : 0; }
 	std::string GetBotAvatarUrl() const { return m_cluster ? m_cluster->me.get_avatar_url() : ""; }
 	uint64_t GetUptime() const;
+
+	static void StopAll();
+	static void ClearCallbacksForPlugin(SourceMod::IPlugin* plugin);
 
 	// Global cache counts (static - not instance specific)
 	static uint64_t GetCachedUserCount() { return dpp::get_user_count(); }

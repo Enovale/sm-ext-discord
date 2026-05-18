@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -88,8 +88,8 @@ static cell_t webhook_FetchWebhook(IPluginContext* pContext, const cell_t* param
 	if (!ParseSnowflake(pContext, webhookId, webhookFlake)) return 0;
 
 	Handle_t client_handle = discord->GetHandle();
-	discord->Webhooks().Get(webhookFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResult<DiscordWebhook>(client_handle, discord, callback, data, confirmation);
+	discord->Webhooks().Get(webhookFlake, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& confirmation) {
+		callback.Result<DiscordWebhook>(confirmation);
 	});
 
 	return 1;
@@ -377,8 +377,8 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 
 	Handle_t client_handle = discord->GetHandle();
 	cell_t data = params[5];
-	discord->Webhooks().Create(webhook, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResult<DiscordWebhook>(client_handle, discord, callback, data, confirmation);
+	discord->Webhooks().Create(webhook, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& confirmation) {
+		callback.Result<DiscordWebhook>(confirmation);
 	});
 	return 1;
 }
@@ -402,8 +402,8 @@ static cell_t webhook_GetChannelWebhooks(IPluginContext* pContext, const cell_t*
 
 	Handle_t client_handle = discord->GetHandle();
 	cell_t data = params[4];
-	discord->Webhooks().GetByChannel(channelFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResultList<DiscordWebhook, dpp::webhook_map>(client_handle, discord, callback, data, confirmation, DiscordResultType::Webhooks);
+	discord->Webhooks().GetByChannel(channelFlake, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& confirmation) {
+		callback.ResultList<DiscordWebhook, dpp::webhook_map>(confirmation, DiscordResultType::Webhooks);
 	});
 	return 1;
 }
@@ -427,8 +427,8 @@ static cell_t webhook_GetGuildWebhooks(IPluginContext* pContext, const cell_t* p
 
 	Handle_t client_handle = discord->GetHandle();
 	cell_t data = params[4];
-	discord->Webhooks().GetByGuild(guildFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResultList<DiscordWebhook, dpp::webhook_map>(client_handle, discord, callback, data, confirmation, DiscordResultType::Webhooks);
+	discord->Webhooks().GetByGuild(guildFlake, [callback = AsyncCallback(client_handle, callback, data)](const dpp::confirmation_callback_t& confirmation) {
+		callback.ResultList<DiscordWebhook, dpp::webhook_map>(confirmation, DiscordResultType::Webhooks);
 	});
 	return 1;
 }

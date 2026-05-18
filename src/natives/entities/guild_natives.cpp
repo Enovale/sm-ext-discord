@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -43,14 +43,15 @@ static cell_t guild_FetchGuild(IPluginContext* pContext, const cell_t* params)
 	if (!ParseSnowflake(pContext, guildId, guildFlake)) return 0;
 
 	Handle_t client_handle = discord->GetHandle();
+	AsyncCallback async(client_handle, callback, data);
 	dpp::guild* cached_guild = dpp::find_guild(guildFlake);
 	if (cached_guild) {
 		DiscordGuild* guild = new DiscordGuild(*cached_guild, discord);
-		PushCachedResult<DiscordGuild>(client_handle, discord, callback, data, guild);
+		async.CachedResult<DiscordGuild>(guild);
 		return 1;
 	}
-	discord->Guilds().Get(guildFlake, [client_handle, discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-		PushResult<DiscordGuild>(client_handle, discord, callback, data, confirmation);
+	discord->Guilds().Get(guildFlake, [callback = async](const dpp::confirmation_callback_t& confirmation) {
+		callback.Result<DiscordGuild>(confirmation);
 	});
 
 	return 1;
@@ -116,7 +117,8 @@ static cell_t guild_GetIconUrl(IPluginContext* pContext, const cell_t* params)
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	uint16_t size = static_cast<uint16_t>(params[4]);
+	uint16_t size;
+	if (!GetNativeUInt16(pContext, params[4], 4096, "Icon size", size)) return 0;
 	bool prefer_animated = params[5] != 0;
 	std::string iconUrl = guild->GetIconUrl(size, prefer_animated);
 
@@ -129,7 +131,8 @@ static cell_t guild_GetBannerUrl(IPluginContext* pContext, const cell_t* params)
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	uint16_t size = static_cast<uint16_t>(params[4]);
+	uint16_t size;
+	if (!GetNativeUInt16(pContext, params[4], 4096, "Banner size", size)) return 0;
 	bool prefer_animated = params[5] != 0;
 	std::string bannerUrl = guild->GetBannerUrl(size, prefer_animated);
 
@@ -142,7 +145,8 @@ static cell_t guild_GetSplashUrl(IPluginContext* pContext, const cell_t* params)
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	uint16_t size = static_cast<uint16_t>(params[4]);
+	uint16_t size;
+	if (!GetNativeUInt16(pContext, params[4], 4096, "Splash size", size)) return 0;
 	std::string splashUrl = guild->GetSplashUrl(size);
 
 	pContext->StringToLocal(params[2], params[3], splashUrl.c_str());
@@ -154,7 +158,8 @@ static cell_t guild_GetDiscoverySplashUrl(IPluginContext* pContext, const cell_t
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	uint16_t size = static_cast<uint16_t>(params[4]);
+	uint16_t size;
+	if (!GetNativeUInt16(pContext, params[4], 4096, "Discovery splash size", size)) return 0;
 	std::string splashUrl = guild->GetDiscoverySplashUrl(size);
 
 	pContext->StringToLocal(params[2], params[3], splashUrl.c_str());
@@ -390,14 +395,13 @@ static cell_t guild_GetMembers(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	uint16_t limit = static_cast<uint16_t>(params[3]);
+	uint16_t limit;
+	if (!GetNativeUInt16(pContext, params[3], 1000, "Member limit", limit)) return 0;
 	char* after_str;
 	pContext->LocalToString(params[4], &after_str);
 
 	dpp::snowflake after = 0;
-	if (after_str && after_str[0] != '\0') {
-		ParseSnowflake(after_str, after);
-	}
+	if (!ParseOptionalSnowflake(pContext, after_str, after)) return 0;
 
 	cell_t data = params[5];
 	guild->GetMembers(limit, after, callback, data);
@@ -418,7 +422,8 @@ static cell_t guild_SearchMembers(IPluginContext* pContext, const cell_t* params
 		return 0;
 	}
 
-	uint16_t limit = static_cast<uint16_t>(params[4]);
+	uint16_t limit;
+	if (!GetNativeUInt16(pContext, params[4], 1000, "Member search limit", limit)) return 0;
 	cell_t data = params[5];
 	guild->SearchMembers(query, limit, callback, data);
 	return 1;
@@ -473,10 +478,11 @@ static cell_t guild_GetBans(IPluginContext* pContext, const cell_t* params)
 	pContext->LocalToString(params[4], &after_str);
 
 	dpp::snowflake before = 0, after = 0;
-	if (before_str && before_str[0] != '\0') ParseSnowflake(before_str, before);
-	if (after_str && after_str[0] != '\0') ParseSnowflake(after_str, after);
+	if (!ParseOptionalSnowflake(pContext, before_str, before)) return 0;
+	if (!ParseOptionalSnowflake(pContext, after_str, after)) return 0;
 
-	uint16_t limit = static_cast<uint16_t>(params[5]);
+	uint16_t limit;
+	if (!GetNativeUInt16(pContext, params[5], 1000, "Ban limit", limit)) return 0;
 	cell_t data = params[6];
 	guild->GetBans(before, after, limit, callback, data);
 	return 1;
@@ -498,7 +504,9 @@ static cell_t guild_CreateEmoji(IPluginContext* pContext, const cell_t* params)
 	IPluginFunction* callback = pContext->GetFunctionById(params[5]);
 
 	cell_t data = params[6];
-	guild->CreateEmoji(name, fullpath, static_cast<dpp::image_type>(params[4]), callback, data);
+	dpp::image_type image_type = static_cast<dpp::image_type>(params[4]);
+
+	guild->CreateEmoji(name, fullpath, image_type, callback, data);
 	return 1;
 }
 
@@ -560,7 +568,9 @@ static cell_t guild_CreateSticker(IPluginContext* pContext, const cell_t* params
 	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
 
 	cell_t data = params[8];
-	guild->CreateSticker(name, description, tags, fullpath, static_cast<dpp::sticker_format>(params[6]), callback, data);
+	dpp::sticker_format format = static_cast<dpp::sticker_format>(params[6]);
+
+	guild->CreateSticker(name, description, tags, fullpath, format, callback, data);
 	return 1;
 }
 
@@ -579,10 +589,21 @@ static cell_t guild_CreateScheduledEvent(IPluginContext* pContext, const cell_t*
 	dpp::snowflake channel_id;
 	if (!ParseSnowflake(pContext, channel_id_str, channel_id)) return 0;
 
+	char* start_time_str;
+	char* end_time_str;
+	pContext->LocalToString(params[5], &start_time_str);
+	pContext->LocalToString(params[6], &end_time_str);
+	time_t start_time;
+	time_t end_time;
+	if (!ParseTimestamp(pContext, start_time_str, "Scheduled event start timestamp", false, start_time)) return 0;
+	if (!ParseOptionalTimestamp(pContext, end_time_str, "Scheduled event end timestamp", end_time)) return 0;
+
 	IPluginFunction* callback = pContext->GetFunctionById(params[8]);
 
 	cell_t data = params[9];
-	guild->CreateScheduledEvent(name, description, channel_id, params[5], params[6], static_cast<dpp::event_entity_type>(params[7]), callback, data);
+	dpp::event_entity_type entity_type = static_cast<dpp::event_entity_type>(params[7]);
+
+	guild->CreateScheduledEvent(name, description, channel_id, start_time, end_time, entity_type, callback, data);
 	return 1;
 }
 
@@ -598,10 +619,19 @@ static cell_t guild_CreateExternalScheduledEvent(IPluginContext* pContext, const
 	pContext->LocalToString(params[3], &description);
 	pContext->LocalToString(params[4], &location);
 
+	char* start_time_str;
+	char* end_time_str;
+	pContext->LocalToString(params[5], &start_time_str);
+	pContext->LocalToString(params[6], &end_time_str);
+	time_t start_time;
+	time_t end_time;
+	if (!ParseTimestamp(pContext, start_time_str, "External scheduled event start timestamp", false, start_time)) return 0;
+	if (!ParseTimestamp(pContext, end_time_str, "External scheduled event end timestamp", false, end_time)) return 0;
+
 	IPluginFunction* callback = pContext->GetFunctionById(params[7]);
 
 	cell_t data = params[8];
-	guild->CreateExternalScheduledEvent(name, description, location, params[5], params[6], callback, data);
+	guild->CreateExternalScheduledEvent(name, description, location, start_time, end_time, callback, data);
 	return 1;
 }
 
@@ -654,16 +684,17 @@ static cell_t guild_GetScheduledEventUsers(IPluginContext* pContext, const cell_
 	dpp::snowflake event_id;
 	if (!ParseSnowflake(pContext, event_id_str, event_id)) return 0;
 
-	uint16_t limit = static_cast<uint16_t>(params[3]);
+	uint16_t limit;
+	if (!GetNativeUInt16(pContext, params[3], 100, "Scheduled event user limit", limit)) return 0;
 
 	char* before_str;
 	char* after_str;
 	pContext->LocalToString(params[4], &before_str);
 	pContext->LocalToString(params[5], &after_str);
 
-	dpp::snowflake before, after;
-	ParseSnowflake(before_str, before);
-	ParseSnowflake(after_str, after);
+	dpp::snowflake before = 0, after = 0;
+	if (before_str && before_str[0] != '\0' && !ParseSnowflake(pContext, before_str, before)) return 0;
+	if (after_str && after_str[0] != '\0' && !ParseSnowflake(pContext, after_str, after)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[6]);
 	if (!callback) {
@@ -687,7 +718,8 @@ static cell_t guild_BanUser(IPluginContext* pContext, const cell_t* params)
 	dpp::snowflake user_id;
 	if (!ParseSnowflake(pContext, user_id_str, user_id)) return 0;
 
-	uint32_t delete_message_seconds = params[3];
+	uint32_t delete_message_seconds;
+	if (!GetNativeUInt32(pContext, params[3], 604800, "Delete message seconds", delete_message_seconds)) return 0;
 
 	char* reason;
 	pContext->LocalToString(params[4], &reason);
@@ -725,7 +757,8 @@ static cell_t guild_CreateRole(IPluginContext* pContext, const cell_t* params)
 	char* name;
 	pContext->LocalToString(params[2], &name);
 
-	uint32_t color = params[3];
+	uint32_t color;
+	if (!GetNativeUInt32(pContext, params[3], 0xFFFFFF, "Role color", color)) return 0;
 	bool hoist = params[4] != 0;
 	bool mentionable = params[5] != 0;
 
@@ -838,7 +871,8 @@ static cell_t guild_GetPruneCount(IPluginContext* pContext, const cell_t* params
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	uint16_t days = static_cast<uint16_t>(params[2]);
+	uint16_t days;
+	if (!GetNativeUInt16(pContext, params[2], 30, "Prune days", days)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
 	if (!callback) {
@@ -856,7 +890,8 @@ static cell_t guild_BeginPrune(IPluginContext* pContext, const cell_t* params)
 	DiscordGuild* guild = Handles.GetPointer<DiscordGuild>(pContext, params[1]);
 	if (!guild) return 0;
 
-	uint16_t days = static_cast<uint16_t>(params[2]);
+	uint16_t days;
+	if (!GetNativeUInt16(pContext, params[2], 30, "Prune days", days)) return 0;
 
 	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
 
@@ -871,11 +906,11 @@ static cell_t guild_EditRolePositions(IPluginContext* pContext, const cell_t* pa
 	if (!guild) return 0;
 
 	int role_count = params[3];
-	if (role_count <= 0) return 0;
+	if (!GetNativeIntInRange(pContext, role_count, 1, 250, "Role position count", role_count)) return 0;
 
 	std::vector<dpp::role> roles;
 	cell_t* role_array;
-	pContext->LocalToPhysAddr(params[2], &role_array);
+	if (!GetNativeArray(pContext, params[2], &role_array, "role position")) return 0;
 
 	for (int i = 0; i < role_count; i++) {
 		DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, role_array[i]);
@@ -899,11 +934,11 @@ static cell_t guild_EditChannelPositions(IPluginContext* pContext, const cell_t*
 	if (!guild) return 0;
 
 	int channel_count = params[3];
-	if (channel_count <= 0) return 0;
+	if (!GetNativeIntInRange(pContext, channel_count, 1, 500, "Channel position count", channel_count)) return 0;
 
 	std::vector<dpp::channel> channels;
 	cell_t* channel_array;
-	pContext->LocalToPhysAddr(params[2], &channel_array);
+	if (!GetNativeArray(pContext, params[2], &channel_array, "channel position")) return 0;
 
 	for (int i = 0; i < channel_count; i++) {
 		DiscordChannel* channel = Handles.GetPointer<DiscordChannel>(pContext, channel_array[i]);

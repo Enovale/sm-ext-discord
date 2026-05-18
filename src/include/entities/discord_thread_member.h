@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -33,7 +33,7 @@ public:
 
 	std::string GetThreadId() const { return m_member.thread_id.str(); }
 	std::string GetUserId() const { return m_member.user_id.str(); }
-	int GetJoinedTimestamp() const { return static_cast<int>(m_member.joined); }
+	time_t GetJoinedTimestamp() const { return m_member.joined; }
 	uint32_t GetFlags() const { return m_member.flags; }
 
 	const dpp::thread_member& GetDPPThreadMember() const { return m_member; }

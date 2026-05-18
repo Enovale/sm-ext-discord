@@ -19,10 +19,11 @@ methodmap DiscordThreadMember < Handle
 
   /**
    * Gets the timestamp when the user joined the thread
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int JoinedTimestamp {
-    public native get();
-  }
+  public native void GetJoinedTimestamp(char[] buffer, int maxlength);
 
   /**
    * Gets the thread member flags

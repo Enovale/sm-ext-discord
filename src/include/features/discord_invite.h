@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,13 +20,14 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_common.h"
 
 class DiscordInvite
 {
 private:
 	dpp::invite m_invite;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 
 public:
 	DiscordInvite(const dpp::invite& invite, DiscordClient* client = nullptr) : m_invite(invite), m_client(client) {}
@@ -67,7 +68,7 @@ public:
 	void SetMaxAge(uint32_t max_age) { m_invite.set_max_age(max_age); }
 	void SetMaxUses(uint8_t max_uses) { m_invite.set_max_uses(max_uses); }
 	void SetTargetUserId(dpp::snowflake user_id) { m_invite.set_target_user_id(user_id); }
-	void SetTargetType(uint8_t type) { m_invite.set_target_type(static_cast<dpp::invite_target_t>(type)); }
+	void SetTargetType(dpp::invite_target_t type) { m_invite.set_target_type(type); }
 	void SetTemporary(bool temporary) { m_invite.set_temporary(temporary); }
 	void SetUnique(bool unique) { m_invite.set_unique(unique); }
 

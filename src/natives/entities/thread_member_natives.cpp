@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -33,7 +33,7 @@ static cell_t thread_member_GetThreadId(IPluginContext* pContext, const cell_t* 
 extern const sp_nativeinfo_t thread_member_natives[] = {
 	{"DiscordThreadMember.GetThreadId", thread_member_GetThreadId},
 	{"DiscordThreadMember.GetUserId", EntityGetUserId<DiscordThreadMember>},
-	{"DiscordThreadMember.JoinedTimestamp.get", EntityGetInt<DiscordThreadMember, int, &DiscordThreadMember::GetJoinedTimestamp>},
+	{"DiscordThreadMember.GetJoinedTimestamp", EntityGetTimestampString<DiscordThreadMember, &DiscordThreadMember::GetJoinedTimestamp>},
 	{"DiscordThreadMember.Flags.get", EntityGetFlags<DiscordThreadMember>},
 	{nullptr, nullptr}
 };

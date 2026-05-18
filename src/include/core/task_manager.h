@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -22,20 +22,70 @@
 
 #include <queue>
 #include <mutex>
-#include <functional>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 class TaskManager {
 public:
 	static TaskManager& Instance();
 
-	void Push(std::function<void()> task);
-	void ProcessFrame(int maxTasks = 20);
+	class Task {
+	public:
+		Task() = default;
+
+		template<typename Func>
+		explicit Task(Func&& func)
+			: m_impl(std::make_unique<TaskImpl<std::decay_t<Func>>>(std::forward<Func>(func))) {}
+
+		Task(Task&&) noexcept = default;
+		Task& operator=(Task&&) noexcept = default;
+
+		Task(const Task&) = delete;
+		Task& operator=(const Task&) = delete;
+
+		explicit operator bool() const { return static_cast<bool>(m_impl); }
+		void operator()() { m_impl->Run(); }
+
+	private:
+		struct TaskBase {
+			virtual ~TaskBase() = default;
+			virtual void Run() = 0;
+		};
+
+		template<typename Func>
+		struct TaskImpl final : TaskBase {
+			template<typename Callable>
+			explicit TaskImpl(Callable&& func) : m_func(std::forward<Callable>(func)) {}
+			void Run() override { m_func(); }
+
+			Func m_func;
+		};
+
+		std::unique_ptr<TaskBase> m_impl;
+	};
+
+	template<typename Func>
+	void Push(Func&& task) {
+		PushTask(Task(std::forward<Func>(task)));
+	}
+
+	void ProcessFrame(size_t maxTasks = 0);
 	void Clear();
+	void SetAccepting(bool accepting);
+	void SetMaxTasksPerFrame(size_t maxTasks);
+	void SetMaxQueueSize(size_t maxQueueSize);
 
 private:
 	TaskManager() = default;
-	std::queue<std::function<void()>> m_queue;
+	void PushTask(Task task);
+
+	std::queue<Task> m_queue;
 	mutable std::mutex m_mutex;
+	bool m_accepting{true};
+	size_t m_maxTasksPerFrame{256};
+	size_t m_maxQueueSize{4096};
+	size_t m_droppedTasks{0};
 };
 
 inline TaskManager& Tasks = TaskManager::Instance();

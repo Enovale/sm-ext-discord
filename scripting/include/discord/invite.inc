@@ -152,18 +152,20 @@ methodmap DiscordInvite < Handle
   }
 
   /**
-   * Timestamp at which the invite was created
+   * Gets the timestamp at which the invite was created
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int CreatedAt {
-    public native get();
-  }
+  public native void GetCreatedAt(char[] buffer, int maxlength);
 
   /**
-   * Timestamp at which the invite expires (0 if doesn't expire)
+   * Gets the timestamp at which the invite expires (0 if it doesn't expire)
+   *
+   * @param buffer      Buffer to store the Unix timestamp string
+   * @param maxlength   Maximum length of the buffer
    */
-  property int ExpiresAt {
-    public native get();
-  }
+  public native void GetExpiresAt(char[] buffer, int maxlength);
 
   /**
    * Sets the target user ID for this voice channel stream invite

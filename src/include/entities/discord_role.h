@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_common.h"
 
 class DiscordRole
@@ -27,7 +28,7 @@ class DiscordRole
 private:
 	dpp::role m_role;
 	dpp::snowflake m_guild_id;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 
 public:
 	DiscordRole(DiscordClient* client) : m_guild_id(0), m_client(client) {}

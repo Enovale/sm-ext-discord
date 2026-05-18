@@ -19,6 +19,8 @@ for cxx in builder.targets:
     binary.compiler.cxxflags += ['/bigobj']
 
   binary.compiler.defines += ['DPP_STATIC']
+  if binary.compiler.target.platform == 'linux':
+    binary.compiler.defines += ['_TIME_BITS=64', '_FILE_OFFSET_BITS=64']
 
   # Platform-specific socket engine
   if binary.compiler.target.platform == 'linux':

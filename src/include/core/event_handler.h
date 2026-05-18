@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -24,6 +24,7 @@
 #include "callback_manager.h"
 #include "discord_event.h"
 #include <bitset>
+#include <mutex>
 
 class DiscordClient;
 
@@ -33,12 +34,13 @@ public:
 	~EventHandler();
 	void Detach();
 	void RegisterEvent(CallbackId id);
-	void UnregisterEvent(CallbackId id);
+	void DetachEvent(CallbackId id);
 
 private:
 	DiscordClient* m_client;
 	dpp::cluster* m_cluster;
 	CallbackManager& m_callbacks;
+	std::mutex m_eventMutex;
 	std::array<std::function<void()>, static_cast<size_t>(CallbackId::Count)> m_detachFuncs;
 	std::bitset<static_cast<size_t>(CallbackId::Count)> m_registeredEvents;
 

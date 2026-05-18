@@ -7,7 +7,7 @@ methodmap DiscordRole < Handle
    * @param discord     Discord client handle
    * @param guild_id    Optional guild ID as string
    * @return            DiscordRole handle or null on failure
-   * @note              Call with no parameters to create an empty role template for CreateRoleFromObject
+   * @note              Omit guild_id to create an empty role template for CreateRoleFromObject
    */
   public native DiscordRole(Discord discord, const char[] guild_id = NULL_STRING);
 
@@ -107,6 +107,7 @@ methodmap DiscordRole < Handle
    * Sets the role icon from a file
    *
    * @note               Must call Modify() after to sync changes to Discord
+   * @note               Image file must be less than 256KB and in a supported format (PNG, JPG, GIF, WEBP)
    *
    * @param filepath     Path to the image file (relative to game directory)
    * @param type         Image type (Image_PNG, Image_JPG, Image_GIF, Image_WEBP)

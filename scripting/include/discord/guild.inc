@@ -504,7 +504,7 @@ methodmap DiscordGuild < Handle
    * @param after       Get bans after this user ID (optional, use "" for none)
    * @param limit       Maximum number of bans to return (1-1000, default 1000)
    * @param data        Optional data to pass to callback
-   * @note              Result contains: "items" (DiscordHandleArray of DiscordUser), "count" (int)
+   * @note              Result contains: "items" (DiscordHandleArray of DiscordBan), "count" (int)
    */
   public native void GetBans(DiscordResultCallback callback, const char[] before = NULL_STRING, const char[] after = NULL_STRING, int limit = 1000, any data = 0);
 
@@ -516,6 +516,7 @@ methodmap DiscordGuild < Handle
    * @param type        Image type (Image_PNG, Image_GIF, etc.)
    * @param callback    Optional callback to receive the created emoji
    * @param data        Optional data to pass to callback
+   * @note              Image file must be less than 256KB and in a supported format
    * @note              Result contains: "emoji" (DiscordEmoji handle)
    */
   public native void CreateEmoji(const char[] name, const char[] image_path, DiscordImageType type = Image_PNG, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
@@ -559,14 +560,14 @@ methodmap DiscordGuild < Handle
    * @param name        Name of the event
    * @param description Description of the event
    * @param channel_id  Channel ID where the event will be hosted
-   * @param start_time  Unix timestamp for event start
-   * @param end_time    Unix timestamp for event end (0 for no end time)
+   * @param start_time  Unix timestamp string for event start
+   * @param end_time    Unix timestamp string for event end (empty for no end time)
    * @param type        Event entity type (voice, stage, etc.)
    * @param callback    Optional callback to receive the created event
    * @param data        Optional data to pass to callback
    * @note              Result contains: "event" (DiscordScheduledEvent handle)
    */
-  public native void CreateScheduledEvent(const char[] name, const char[] description, const char[] channel_id, int start_time, int end_time = 0, DiscordEventEntityType type = EventEntityType_Voice, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void CreateScheduledEvent(const char[] name, const char[] description, const char[] channel_id, const char[] start_time, const char[] end_time = NULL_STRING, DiscordEventEntityType type = EventEntityType_Voice, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Creates an external scheduled event in this guild
@@ -574,13 +575,13 @@ methodmap DiscordGuild < Handle
    * @param name        Name of the event
    * @param description Description of the event
    * @param location    Location string for the external event
-   * @param start_time  Unix timestamp for event start
-   * @param end_time    Unix timestamp for event end
+   * @param start_time  Unix timestamp string for event start
+   * @param end_time    Unix timestamp string for event end
    * @param callback    Optional callback to receive the created event
    * @param data        Optional data to pass to callback
    * @note              Result contains: "event" (DiscordScheduledEvent handle)
    */
-  public native void CreateExternalScheduledEvent(const char[] name, const char[] description, const char[] location, int start_time, int end_time, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
+  public native void CreateExternalScheduledEvent(const char[] name, const char[] description, const char[] location, const char[] start_time, const char[] end_time, DiscordResultCallback callback = INVALID_FUNCTION, any data = 0);
 
   /**
    * Gets all scheduled events in this guild

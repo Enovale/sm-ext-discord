@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_common.h"
 #include "core/handle_manager.h"
 #include "entities/discord_user.h"
@@ -33,7 +34,7 @@ class DiscordInteractionBase
 {
 protected:
 	EventType m_event;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	mutable CachedHandle<DiscordUser> m_userHandle;
 	mutable CachedHandle<DiscordChannel> m_channelHandle;
 
@@ -78,7 +79,7 @@ public:
 
 	DiscordUser* GetUser() const {
 		if (!m_client) return nullptr;
-		return new DiscordUser(m_event.command.usr, m_client);
+		return new DiscordUser(m_event.command.usr, m_client.Get());
 	}
 
 	Handle_t GetUserHandle() const {
@@ -89,7 +90,7 @@ public:
 		if (!m_client) return nullptr;
 		dpp::channel* ch = dpp::find_channel(m_event.command.channel_id);
 		if (!ch) return nullptr;
-		return new DiscordChannel(*ch, m_client);
+		return new DiscordChannel(*ch, m_client.Get());
 	}
 
 	Handle_t GetChannelHandle() const {
@@ -136,7 +137,7 @@ public:
 
 	DiscordMessage* GetMessage() const {
 		if (!this->m_client) return nullptr;
-		return new DiscordMessage(this->m_event.command.msg, this->m_client);
+		return new DiscordMessage(this->m_event.command.msg, this->m_client.Get());
 	}
 
 	Handle_t GetMessageHandle() const {

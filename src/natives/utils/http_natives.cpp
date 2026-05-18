@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -133,22 +133,8 @@ static cell_t httpcompletion_GetResponseHeaders(IPluginContext* pContext, const 
 	HttpCompletion* completion = Handles.GetPointer<HttpCompletion>(pContext, params[1]);
 	if (!completion) return 0;
 
-	// Check if we already created the ResponseHeaders handle
-	Handle_t existingHandle = completion->GetResponseHeadersHandle();
-	if (existingHandle) {
-		return existingHandle;
-	}
-
-	HttpHeaders* headers = completion->CreateResponseHeaders();
-	if (!headers) {
-		return 0;
-	}
-
-	Handle_t handle = Handles.Create(pContext, headers, HandleId::HttpHeaders);
+	Handle_t handle = completion->GetResponseHeadersHandle();
 	if (!handle) return 0;
-
-	// Store the handle in HttpCompletion for automatic cleanup
-	completion->SetResponseHeadersHandle(handle);
 
 	return handle;
 }

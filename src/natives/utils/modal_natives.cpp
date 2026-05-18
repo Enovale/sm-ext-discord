@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -18,6 +18,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "natives/natives_common.h"
 #include "core/handle_manager.h"
 #include "utils/discord_modal.h"
 #include "utils/discord_component.h"
@@ -76,11 +77,13 @@ static cell_t discord_modal_AddTextInput(IPluginContext* pContext, const cell_t*
 	char *custom_id, *label, *placeholder = nullptr, *default_value = nullptr;
 	pContext->LocalToString(params[2], &custom_id);
 	pContext->LocalToString(params[3], &label);
-	int style = params[4];
+	dpp::text_style_type style = static_cast<dpp::text_style_type>(params[4]);
 	bool required = params[5] != 0;
 	pContext->LocalToString(params[6], &placeholder);
-	int min_length = params[7];
-	int max_length = params[8];
+	uint16_t min_length;
+	if (!GetNativeUInt16(pContext, params[7], 4000, "Minimum length", min_length)) return 0;
+	uint16_t max_length;
+	if (!GetNativeUInt16(pContext, params[8], 4000, "Maximum length", max_length)) return 0;
 	pContext->LocalToString(params[9], &default_value);
 
 	return modal->AddTextInput(custom_id, label, style, required,

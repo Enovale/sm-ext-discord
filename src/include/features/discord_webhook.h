@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "core/discord_client_ref.h"
 #include "utils/discord_embed.h"
 #include "entities/discord_user.h"
 #include "core/handle_manager.h"
@@ -28,7 +29,7 @@ class DiscordWebhook
 {
 private:
 	dpp::webhook m_webhook;
-	DiscordClient* m_client;
+	DiscordClientRef m_client;
 	mutable CachedHandle<DiscordUser> m_userHandle;
 	dpp::snowflake m_thread_id = 0;
 	std::string m_thread_name;
@@ -53,7 +54,7 @@ public:
 
 	DiscordUser* GetUser() const {
 		if (!m_client) return nullptr;
-		return new DiscordUser(m_webhook.user_obj, m_client);
+		return new DiscordUser(m_webhook.user_obj, m_client.Get());
 	}
 	const char* GetName() const { return m_webhook.name.c_str(); }
 	void SetName(const char* value) { m_webhook.name = value; }

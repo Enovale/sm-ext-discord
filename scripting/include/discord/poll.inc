@@ -37,11 +37,12 @@ methodmap DiscordPoll < Handle
   public native void GetQuestion(char[] buffer, int maxlength);
 
   /**
-   * Gets the poll expiry time (hours when creating, timestamp when received)
+   * Gets the poll expiry value (hours when creating, timestamp when received)
+   *
+   * @param buffer      Buffer to store the value
+   * @param maxlength   Maximum length of the buffer
    */
-  property float Expiry {
-    public native get();
-  }
+  public native void GetExpiry(char[] buffer, int maxlength);
 
   /**
    * Whether users can select multiple answers

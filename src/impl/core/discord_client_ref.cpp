@@ -18,15 +18,13 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "core/discord_client_ref.h"
+#include "core/discord_client.h"
+#include "core/handle_manager.h"
 
-#include "smsdk_ext.h"
+DiscordClientRef::DiscordClientRef(DiscordClient* client)
+	: m_handle(client ? client->GetHandle() : BAD_HANDLE) {}
 
-class DiscordExtension : public SDKExtension
-{
-public:
-	virtual bool SDK_OnLoad(char* error, size_t maxlength, bool late);
-	virtual void SDK_OnUnload();
-};
-
-extern DiscordExtension g_DiscordExt;
+DiscordClient* DiscordClientRef::Get() const {
+	return Handles.Read<DiscordClient>(m_handle);
+}

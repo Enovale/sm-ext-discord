@@ -103,18 +103,36 @@ methodmap DiscordSlashCommand < Handle
    * @param type         Option type from DiscordCommandOptionType enum
    * @param required     Whether the option is required
    * @param autocomplete Whether the option supports autocomplete
+   * @note               Autocomplete is only valid for Option_String, Option_Integer, and Option_Number
    */
   public native void AddOption(const char[] name, const char[] description, DiscordCommandOptionType type, bool required = false, bool autocomplete = false);
 
   /**
-   * Adds a choice-based option to the slash command
+   * Adds a string option that supports choices
    *
    * @param name        Option name
    * @param description Option description
-   * @param type        Option type from DiscordCommandOptionType enum
    * @param required    Whether the option is required
    */
-  public native void AddChoiceOption(const char[] name, const char[] description, DiscordCommandOptionType type, bool required = false);
+  public native void AddStringOptionWithChoices(const char[] name, const char[] description, bool required = false);
+
+  /**
+   * Adds an integer option that supports choices
+   *
+   * @param name        Option name
+   * @param description Option description
+   * @param required    Whether the option is required
+   */
+  public native void AddIntOptionWithChoices(const char[] name, const char[] description, bool required = false);
+
+  /**
+   * Adds a float option that supports choices
+   *
+   * @param name        Option name
+   * @param description Option description
+   * @param required    Whether the option is required
+   */
+  public native void AddFloatOptionWithChoices(const char[] name, const char[] description, bool required = false);
 
   /**
    * Adds a string choice to the last added choice option
@@ -129,8 +147,17 @@ methodmap DiscordSlashCommand < Handle
    *
    * @param choice_name  Display name of the choice
    * @param choice_value Integer value of the choice
+   *                     Use AddInt64Choice() when the value exceeds int32 range.
    */
   public native void AddIntChoice(const char[] choice_name, int choice_value);
+
+  /**
+   * Adds an integer choice to the last added choice option using a 64-bit value string
+   *
+   * @param choice_name  Display name of the choice
+   * @param choice_value Integer value string of the choice
+   */
+  public native void AddInt64Choice(const char[] choice_name, const char[] choice_value);
 
   /**
    * Adds a float choice to the last added choice option
@@ -280,6 +307,7 @@ methodmap DiscordSlashCommand < Handle
    * Sets minimum value for numeric options (co_number/co_integer)
    *
    * @param min_value  Minimum value
+   * @note             Applies to the last added option
    */
   public native void SetOptionMinValue(float min_value);
 
@@ -287,6 +315,7 @@ methodmap DiscordSlashCommand < Handle
    * Sets maximum value for numeric options (co_number/co_integer)
    *
    * @param max_value  Maximum value
+   * @note             Applies to the last added option
    */
   public native void SetOptionMaxValue(float max_value);
 
@@ -294,6 +323,7 @@ methodmap DiscordSlashCommand < Handle
    * Sets minimum length for string options (co_string)
    *
    * @param min_length  Minimum string length (0-6000)
+   * @note              Applies to the last added option
    */
   public native void SetOptionMinLength(int min_length);
 
@@ -301,6 +331,7 @@ methodmap DiscordSlashCommand < Handle
    * Sets maximum length for string options (co_string)
    *
    * @param max_length  Maximum string length (1-6000)
+   * @note              Applies to the last added option
    */
   public native void SetOptionMaxLength(int max_length);
 
@@ -308,6 +339,7 @@ methodmap DiscordSlashCommand < Handle
    * Adds a channel type filter for channel options (co_channel)
    *
    * @param channel_type  Channel type from DiscordChannelType enum
+   * @note                Applies to the last added option
    */
   public native void AddOptionChannelType(DiscordChannelType channel_type);
 

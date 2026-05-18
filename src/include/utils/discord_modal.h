@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -60,9 +60,9 @@ public:
 	 * @param default_value Pre-filled default value (optional)
 	 * @return true if added successfully, false if modal is full
 	 */
-	bool AddTextInput(const char* custom_id, const char* label, int style,
+	bool AddTextInput(const char* custom_id, const char* label, dpp::text_style_type style,
 					  bool required, const char* placeholder = nullptr,
-					  int min_length = 0, int max_length = 4000,
+					  uint16_t min_length = 0, uint16_t max_length = 4000,
 					  const char* default_value = nullptr) {
 		if (m_rows.size() >= 5) {
 			return false;
@@ -70,7 +70,7 @@ public:
 
 		dpp::component text_input;
 		text_input.set_type(dpp::cot_text);
-		text_input.set_text_style(static_cast<dpp::text_style_type>(style));
+		text_input.set_text_style(style);
 		text_input.set_label(label ? label : "");
 		text_input.set_id(custom_id ? custom_id : "");
 

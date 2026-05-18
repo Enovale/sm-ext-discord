@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -55,25 +55,32 @@ static cell_t role_FetchRole(IPluginContext* pContext, const cell_t* params)
 	if (!ParseSnowflake(pContext, roleId, roleFlake)) return 0;
 
 	Handle_t client_handle = discord->GetHandle();
+	AsyncCallback async(client_handle, callback, data);
 	dpp::role* cached_role = dpp::find_role(roleFlake);
 	if (cached_role) {
 		DiscordRole* role = new DiscordRole(*cached_role, guildFlake, discord);
-		PushCachedResult<DiscordRole>(client_handle, discord, callback, data, role);
+		async.CachedResult<DiscordRole>(role);
 		return 1;
 	}
-	discord->Roles().GetAll(guildFlake, [client_handle, discord, callback, data, guildFlake, roleFlake](const dpp::confirmation_callback_t& confirmation) {
+	discord->Roles().GetAll(guildFlake, [callback = async, guildFlake, roleFlake](const dpp::confirmation_callback_t& confirmation) {
 		if (confirmation.is_error()) {
-			PushError(client_handle, discord, callback, data, confirmation.get_error().human_readable, DiscordResultType::Role);
+			callback.Error(confirmation.get_error().human_readable, DiscordResultType::Role);
 			return;
 		}
 		auto roles = confirmation.get<dpp::role_map>();
 		auto it = roles.find(roleFlake);
 		if (it == roles.end()) {
-			PushError(client_handle, discord, callback, data, "Role not found", DiscordResultType::Role);
+			callback.Error("Role not found", DiscordResultType::Role);
 			return;
 		}
-		DiscordRole* role = new DiscordRole(it->second, guildFlake, discord);
-		PushCachedResult<DiscordRole>(client_handle, discord, callback, data, role);
+		dpp::role role = it->second;
+		callback.ResultCustom(DiscordResultType::Role, [guildFlake, role](DiscordResult& result, DiscordClient* client) {
+			result.SetSuccess(true);
+
+			auto discordRole = std::make_unique<DiscordRole>(role, guildFlake, client);
+			Handle_t roleHandle = Handles.CreateCallback(discordRole.release(), HandleId::DiscordRole);
+			result.SetHandle("role", roleHandle);
+		});
 	});
 
 	return 1;
@@ -199,7 +206,8 @@ static cell_t role_SetColor(IPluginContext* pContext, const cell_t* params)
 	DiscordRole* role = Handles.GetPointer<DiscordRole>(pContext, params[1]);
 	if (!role) return 0;
 
-	uint32_t color = static_cast<uint32_t>(params[2]);
+	uint32_t color;
+	if (!GetNativeUInt32(pContext, params[2], 0xFFFFFF, "Role color", color)) return 0;
 	role->SetColor(color);
 	return 1;
 }

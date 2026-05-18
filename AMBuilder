@@ -12,8 +12,10 @@ for cxx in builder.targets:
     'src/extension.cpp',
     # Core managers
     'src/impl/core/handle_manager.cpp',
+    'src/impl/core/discord_client_ref.cpp',
     'src/impl/core/natives_manager.cpp',
     'src/impl/core/task_manager.cpp',
+    'src/impl/core/async_callback.cpp',
     'src/impl/core/discord_event_impl.cpp',
     'src/impl/core/logger.cpp',
     # Implementation files
@@ -90,6 +92,8 @@ for cxx in builder.targets:
   ]
 
   binary.compiler.defines += ['DPP_STATIC']
+  if binary.compiler.target.platform == 'linux':
+    binary.compiler.defines += ['_TIME_BITS=64', '_FILE_OFFSET_BITS=64'] # not sure if these are necessary but just in case
 
   binary.compiler.includes += [
     os.path.join(builder.sourcePath, 'src'),

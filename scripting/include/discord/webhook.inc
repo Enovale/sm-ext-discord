@@ -28,8 +28,6 @@ methodmap DiscordWebhook < Handle
    * @param webhook_id  Webhook ID
    * @param callback    Function to call when webhook info is received
    * @param data        Optional data to pass to callback
-   * @note              This method first checks the cache for webhook data. If found in cache,
-   *                    the callback is called immediately. If not cached, an API request is made
    * @note              Result contains: "webhook" (DiscordWebhook handle)
    */
   public static native void FetchWebhook(Discord discord, const char[] webhook_id, DiscordResultCallback callback, any data = 0);
@@ -80,6 +78,7 @@ methodmap DiscordWebhook < Handle
    *
    * @note               Must call Modify() after to sync changes to Discord
    * @note               Mutually exclusive with SetAvatarFromUrl - use one or the other, not both
+   * @note               Image file must be less than 256KB and in a supported format (PNG, JPG, GIF, WEBP)
    *
    * @param filepath     Path to the image file (relative to game directory)
    * @param type         Image type (Image_PNG, Image_JPG, Image_GIF, Image_WEBP)

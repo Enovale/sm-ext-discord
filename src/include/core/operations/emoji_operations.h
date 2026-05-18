@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,12 +21,13 @@
 #pragma once
 
 #include "base_operations.h"
+#include <string>
 
 class EmojiOperations : public BaseOperations {
 public:
 	using BaseOperations::BaseOperations;
 
-	void Create(dpp::snowflake guild_id, const char* name, const char* image_path, dpp::image_type type, Callback callback = nullptr);
+	void Create(dpp::snowflake guild_id, const char* name, const std::string& image_data, dpp::image_type type, Callback callback = nullptr);
 	void Modify(dpp::snowflake guild_id, dpp::snowflake emoji_id, const char* name, Callback callback = nullptr);
 	void Delete(dpp::snowflake guild_id, dpp::snowflake emoji_id, Callback callback = nullptr);
 	void Get(dpp::snowflake guild_id, dpp::snowflake emoji_id, Callback callback);

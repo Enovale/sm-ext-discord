@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * SourceMod Discord Extension
- * Copyright 2024-2025 ProjectSky
+ * Copyright 2024-2026 ProjectSky
  * =============================================================================
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,11 +21,11 @@
 #include "core/operations/emoji_operations.h"
 #include "utils/discord_common.h"
 
-void EmojiOperations::Create(dpp::snowflake guild_id, const char* name, const char* image_path, dpp::image_type type, Callback callback) {
-	if (!IsValid() || !name || !image_path) return;
+void EmojiOperations::Create(dpp::snowflake guild_id, const char* name, const std::string& image_data, dpp::image_type type, Callback callback) {
+	if (!IsValid() || !name || image_data.empty()) return;
 	dpp::emoji em;
 	em.name = name;
-	em.load_image(image_path, type);
+	em.load_image(image_data, type);
 	m_cluster->guild_emoji_create(guild_id, em, callback ? callback : [](const dpp::confirmation_callback_t& cb) { Log.DppError(cb, "Failed to create emoji"); });
 }
 
