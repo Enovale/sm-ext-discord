@@ -95,7 +95,7 @@ jobs:
       - name: Compiling ${{ github.event.repository.name }} files
         working-directory: extension
         run: |
-          find ./ -type f -exec sed -i 's/discord.com\"/fluxer.app\"/g' {} \
+          find ./ -type f -exec sed -i 's/discord.com\"/fluxer.app\"/g' {} \;
           mkdir build
           cd build
           python ../configure.py --enable-optimize --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --targets=x86,x64
